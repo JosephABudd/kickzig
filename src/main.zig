@@ -1,24 +1,82 @@
 const std = @import("std");
 const stdout = @import("stdout");
+const paths = @import("paths");
+const usage = @import("usage");
+const framework = @import("commands/framework/api.zig");
 
 pub fn main() !void {
     // Memory allocator.
     var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
     const gpa = gpa_instance.allocator();
-    _ = gpa;
 
     // Current working directory.
-    var cwd_buffer: []const u8 = [255]u8;
-    var cwd: []const u8 = try std.os.getcwd(cwd_buffer);
-    _ = cwd;
+    var cwd_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    var cwd_app_name: []const u8 = try std.os.getcwd(&cwd_buffer);
 
-    // Is this folder built yet?
-    var is_built: bool =
+    // Init the paths module.
+    try paths.init(gpa, cwd_app_name);
 
-        // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-        std.debug.print("debug:  All your {s} are belong to us.\n", .{"codebase"});
-    _ = is_built;
-    try stdout.print("stdout: All your {s} are belong to us.\n", .{"codebase"});
+    // Process the args.
+    var args: [][]u8 = try getProcessArgs(gpa);
+    var cli_name: []const u8 = std.fs.path.basename(args[0]);
+    defer freeProcessArgs(gpa, args);
+    if (args.len == 1) {
+        var use = try usage.application(gpa, cli_name, cwd_app_name);
+        try stdout.print(use);
+        return;
+    }
+    var command: []u8 = args[1];
+    var remaining_args: [][]u8 = undefined;
+    if (args.len > 2) {
+        remaining_args = args[2..args.len];
+    } else {
+        remaining_args = args[0..0];
+    }
+    try handleCommand(gpa, cli_name, cwd_app_name, command, remaining_args);
+}
+
+/// handleCommand dispatches the user input to the proper handlers.
+fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, cwd_app_name: []const u8, command: []u8, remaining_args: [][]u8) !void {
+
+    // Process the command.
+
+    // framework command.
+    if (std.mem.eql(u8, command, framework.command)) {
+        try framework.handleCommand(allocator, cli_name, cwd_app_name, remaining_args);
+        return;
+    }
+
+    // unknown user input.
+    var application_usage: []const u8 = try usage.application(allocator, cli_name, cwd_app_name);
+    defer allocator.free(application_usage);
+    try stdout.print(application_usage);
+}
+
+fn getProcessArgs(allocator: std.mem.Allocator) ![][]u8 {
+    var process_args: []const [:0]u8 = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, process_args);
+    var fixed_args: [][]u8 = try allocator.alloc([]u8, process_args.len);
+    for (process_args, 0..) |process_arg, i| {
+        var fixedArg: []u8 = try allocator.alloc(u8, process_arg.len);
+        errdefer {
+            if (i > 0) {
+                i -= 1;
+                while (i >= 0) {
+                    allocator.free(fixed_args[i]);
+                }
+            }
+        }
+        @memcpy(fixedArg, process_arg);
+        fixed_args[i] = fixedArg;
+    }
+    return fixed_args;
+}
+
+fn freeProcessArgs(allocator: std.mem.Allocator, fixed_args: [][]u8) void {
+    for (fixed_args) |arg| {
+        allocator.free(arg);
+    }
+    allocator.free(fixed_args);
 }
 
 test "simple test" {

@@ -17,11 +17,15 @@ pub fn build(b: *std.Build) void {
 
     // Local shared/ modules.
     const stdout_mod = b.addModule("stdout", .{
-        .source_file = .{ .path = "src/shared/stdout/api.zig" },
+        .source_file = .{ .path = "src/libs/stdout/api.zig" },
         .dependencies = &.{},
     });
 
     // Local commands/libs/ modules.
+    const usage_mod = b.addModule("usage", .{
+        .source_file = .{ .path = "src/commands/libs/usage.zig" },
+        .dependencies = &.{},
+    });
     const warning_mod = b.addModule("warning", .{
         .source_file = .{ .path = "src/commands/libs/warning.zig" },
         .dependencies = &.{},
@@ -49,6 +53,16 @@ pub fn build(b: *std.Build) void {
         .dependencies = &.{},
     });
 
+    // Local source/ module.
+    const source_mod = b.addModule("source", .{
+        .source_file = .{ .path = "src/source/api.zig" },
+        .dependencies = &.{
+            .{ .name = "paths", .module = paths_mod },
+            .{ .name = "filenames", .module = filenames_mod },
+            .{ .name = "slices", .module = slices_mod },
+        },
+    });
+
     const exe = b.addExecutable(.{
         .name = "kickzig",
         // In this case the main source file is merely a path, however, in more
@@ -61,8 +75,11 @@ pub fn build(b: *std.Build) void {
     // Local src/shared/ modules.
     exe.addModule("stdout", stdout_mod);
     // Local src/commands/libs/ modules.
+    exe.addModule("usage", usage_mod);
     exe.addModule("warning", warning_mod);
     exe.addModule("verify", verify_mod);
+    // Local src/source/ module.
+    exe.addModule("source", source_mod);
     // Local src/source/libs/ modules.
     exe.addModule("paths", paths_mod);
     exe.addModule("filenames", filenames_mod);
