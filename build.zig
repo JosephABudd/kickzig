@@ -15,13 +15,13 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    // Local shared/ modules.
+    // Internal src/libs/ modules.
     const stdout_mod = b.addModule("stdout", .{
         .source_file = .{ .path = "src/libs/stdout/api.zig" },
         .dependencies = &.{},
     });
 
-    // Local commands/libs/ modules.
+    // Internal src/commands/libs/ modules.
     const usage_mod = b.addModule("usage", .{
         .source_file = .{ .path = "src/commands/libs/usage.zig" },
         .dependencies = &.{},
@@ -35,14 +35,16 @@ pub fn build(b: *std.Build) void {
         .dependencies = &.{},
     });
 
-    // Local source/libs/ modules.
+    // Internal src/source/libs/ modules.
     const paths_mod = b.addModule("paths", .{
         .source_file = .{ .path = "src/source/libs/paths/api.zig" },
         .dependencies = &.{},
     });
     const filenames_mod = b.addModule("filenames", .{
         .source_file = .{ .path = "src/source/libs/filenames/api.zig" },
-        .dependencies = &.{},
+        .dependencies = &.{
+            .{ .name = "paths", .module = paths_mod },
+        },
     });
     const slices_mod = b.addModule("slices", .{
         .source_file = .{ .path = "src/source/libs/slices.zig" },
@@ -53,13 +55,14 @@ pub fn build(b: *std.Build) void {
         .dependencies = &.{},
     });
 
-    // Local source/ module.
+    // Internal source/ module.
     const source_mod = b.addModule("source", .{
         .source_file = .{ .path = "src/source/api.zig" },
         .dependencies = &.{
             .{ .name = "paths", .module = paths_mod },
             .{ .name = "filenames", .module = filenames_mod },
             .{ .name = "slices", .module = slices_mod },
+            .{ .name = "strings", .module = strings_mod },
         },
     });
 
@@ -72,7 +75,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // Local src/shared/ modules.
+    // Local src/libs/ modules.
     exe.addModule("stdout", stdout_mod);
     // Local src/commands/libs/ modules.
     exe.addModule("usage", usage_mod);

@@ -1,9 +1,10 @@
 const std = @import("std");
 const paths = @import("paths");
-const warning = @import("warning");
 const stdout = @import("stdout");
-const usage = @import("usage");
 const source = @import("source");
+
+const warning = @import("warning");
+const usage = @import("usage");
 
 pub const command: []const u8 = "framework";
 pub const verb_help: []const u8 = "help";
@@ -20,6 +21,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
             try stdout.print(framework_usage);
         } else if (std.mem.eql(u8, remaining_args[0], verb_restart)) {
             // User input is "framework restart".
+            // Remove and then create a new root/src/@This/.
             folder_paths.reBuild() catch |restart_err| {
                 var user_input: []const u8 = undefined;
                 user_input = std.fmt.allocPrint(allocator, "{s} {s}", .{ command, verb_restart }) catch {
@@ -32,6 +34,19 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 };
                 try stdout.print(msg);
                 allocator.free(msg);
+            };
+
+            // Create the framework.
+            source.recreate(allocator, app_name) catch |create_err| {
+                // Have input so make the error message.
+                var user_command: []const u8 = try std.fmt.allocPrint(allocator, "{s} {s}", .{ command, verb_restart });
+                defer allocator.free(user_command);
+                const msg: []const u8 = warning.fatal(allocator, create_err, user_command) catch {
+                    return create_err;
+                };
+                try stdout.print(msg);
+                allocator.free(msg);
+                return create_err;
             };
         } else {
             // User input is "framework ????".

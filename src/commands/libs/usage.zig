@@ -34,10 +34,10 @@ const framework_template: []const u8 =
     \\🌐 THE FRAMEWORK:
     \\The framework is contained in 5 folders.
     \\1. ./ which contains build.zig, main.zig and main-test.zig.
-    \\2. ./src/ which contains the backend/, frontend/ and shared/ folders.
+    \\2. ./src/ which contains the backend/, frontend/ and deps/ folders.
     \\3. ./src/backend/ which contains the back-end code.
     \\4. ./src/frontend/ which contains the front-end code.
-    \\5. ./src/shared/ which contains shared modules.
+    \\5. ./src/deps/ which contains the dependencies.
     \\
     \\🔨 BUILDING THE APP:
     \\You can build the app after running the command "＄ {{cli_name}} framework".

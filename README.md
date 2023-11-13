@@ -1,5 +1,33 @@
 # kickzig "zig and dvui my way"
 
+## Example
+
+```shell
+＄ mkdir myapp
+＄ cd myapp
+＄ kickzig framework
+＄ git clone https://github.com/david-vanderson/dvui.git src/vendor/dvui/
+＄ zig build -freference-trace=255
+＄ ./zig-out/bin/standalone-sdl
+```
+
+![The app's example screen.](images/example.png)
+![The app's OK modal screen.](images/modal.png)
+
+## Oct 12, 2023
+
+### A running framework
+
+1. The command `kickzig framework` creates a running framework. It has an **Example** screen as the opening screen which has a button to open the **OK** modal screen. So one can see how modals are used.
+1. Added modal screens. The **OK** modal screen is provided by default. Any other modal screens can be easily created for any reason.
+1. The framework now puts the application code at
+   * «app-folder»/src/@This/backend/
+   * «app-folder»/src/@This/frontend/
+   * «app-folder»/src/@This/deps/
+1. Vendor code is in «app-folder»/src/vendor/. The framework's build.zig expects dvui to be cloned into «app-folder»/src/vendor/dvui/.
+1. Now that I have the framework closer to how I want it for zig, I still need to Add the tests and documentation for the working code.
+1. For templating, I'm now just using using std.mem.replace and std.fmt.print.
+
 ## Sep 8, 2023
 
 ### Completed so far

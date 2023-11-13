@@ -1,96 +1,111 @@
 const std = @import("std");
 const backend = @import("backend.zig");
 const frontend = @import("frontend.zig");
-const shared = @import("shared.zig");
+const deps = @import("deps.zig");
 const fspath = std.fs.path;
 const folder_name_src: []const u8 = "src";
+pub const folder_name_this: []const u8 = "@This";
+pub const folder_name_framers: []const u8 = "framers";
+pub const folder_name_lock: []const u8 = "lock";
+pub const folder_name_vendor: []const u8 = "vendor";
+pub const modal_folder_name_ok = frontend.folder_name_ok;
 
 /// FolderPaths is each of the application's folder paths.
 pub const FolderPaths = struct {
     built: bool,
     allocator: std.mem.Allocator,
-    app: ?[]u8,
-    app_src: ?[]u8,
-    app_src_backend: ?[]u8,
-    app_src_backend_messenger: ?[]u8,
-    app_src_backend_store: ?[]u8,
-    app_src_frontend: ?[]u8,
-    app_src_frontend_screen: ?[]u8,
-    app_src_frontend_screen_panel: ?[]u8,
-    app_src_frontend_screen_tab: ?[]u8,
-    app_src_frontend_lib: ?[]u8,
-    app_src_frontend_framers: ?[]u8,
-    app_src_shared: ?[]u8,
-    app_src_shared_channel: ?[]u8,
-    app_src_shared_channel_src: ?[]u8,
-    app_src_shared_message: ?[]u8,
-    app_src_shared_message_src: ?[]u8,
-    app_src_shared_record: ?[]u8,
+    root: ?[]const u8,
+    root_src: ?[]const u8,
+    root_src_vendor: ?[]const u8,
+    root_src_this: ?[]const u8,
+    root_src_this_backend: ?[]const u8,
+    root_src_this_backend_messenger: ?[]const u8,
+    root_src_this_frontend: ?[]const u8,
+    root_src_this_frontend_screen: ?[]const u8,
+    root_src_this_frontend_screen_panel: ?[]const u8,
+    root_src_this_frontend_screen_htab: ?[]const u8,
+    root_src_this_frontend_screen_vtab: ?[]const u8,
+    root_src_this_frontend_screen_modal: ?[]const u8,
+    root_src_this_frontend_screen_modal_ok: ?[]const u8,
+    root_src_this_deps: ?[]const u8,
+    root_src_this_deps_channel: ?[]const u8,
+    root_src_this_deps_message: ?[]const u8,
+    root_src_this_deps_framers: ?[]const u8,
+    root_src_this_deps_lock: ?[]const u8,
+    root_src_this_deps_modal_params: ?[]const u8,
 
     pub fn deinit(self: *FolderPaths) void {
         const allocator: std.mem.Allocator = self.allocator;
-        if (self.app_src_backend) |text| {
-            allocator.free(text);
+        if (self.root) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_backend_messenger) |text| {
-            allocator.free(text);
+        if (self.root_src) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_backend_store) |text| {
-            allocator.free(text);
+        if (self.root_src_vendor) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_frontend) |text| {
-            allocator.free(text);
+        if (self.root_src_this) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_frontend_framers) |text| {
-            allocator.free(text);
+        if (self.root_src_this_backend) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_frontend_lib) |text| {
-            allocator.free(text);
+        if (self.root_src_this_backend_messenger) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_frontend_screen_panel) |text| {
-            allocator.free(text);
+        if (self.root_src_this_frontend) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_frontend_screen_tab) |text| {
-            allocator.free(text);
+        if (self.root_src_this_frontend_screen_panel) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_frontend_screen) |text| {
-            allocator.free(text);
+        if (self.root_src_this_frontend_screen_htab) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_shared) |text| {
-            allocator.free(text);
+        if (self.root_src_this_frontend_screen_vtab) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_shared_channel) |text| {
-            allocator.free(text);
+        if (self.root_src_this_frontend_screen_modal) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_shared_channel_src) |text| {
-            allocator.free(text);
+        if (self.root_src_this_frontend_screen_modal_ok) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_shared_message) |text| {
-            allocator.free(text);
+        if (self.root_src_this_frontend_screen) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_shared_message_src) |text| {
-            allocator.free(text);
+        if (self.root_src_this_deps) |member| {
+            allocator.free(member);
         }
-        if (self.app_src_shared_record) |text| {
-            allocator.free(text);
+        if (self.root_src_this_deps_channel) |member| {
+            allocator.free(member);
         }
-        if (self.app_src) |text| {
-            allocator.free(text);
+        if (self.root_src_this_deps_message) |member| {
+            allocator.free(member);
         }
-        if (self.app) |text| {
-            allocator.free(text);
+        if (self.root_src_this_deps_framers) |member| {
+            allocator.free(member);
+        }
+        if (self.root_src_this_deps_lock) |member| {
+            allocator.free(member);
+        }
+        if (self.root_src_this_deps_modal_params) |member| {
+            allocator.free(member);
         }
         allocator.destroy(self);
     }
 
-    // unBuild removes the source folder.
-    pub fn unBuild(self: *FolderPaths) !void {
+    // unBuild removes the root/src/@This/ folder.
+    fn unBuild(self: *FolderPaths) !void {
         if (!_isBuilt()) {
+            // root/src/@This/ does not exist.
             return;
         }
+        // Remove root/src/@This/.
         var dir: std.fs.Dir = undefined;
-        dir = try std.fs.openDirAbsolute(self.app.?, .{});
-        try dir.deleteTree(folder_name_src);
+        dir = try std.fs.openDirAbsolute(self.root_src_this.?, .{});
+        try dir.deleteTree(folder_name_this);
     }
 
     // isBuilt returns if the frame work is already built.
@@ -99,90 +114,109 @@ pub const FolderPaths = struct {
         return _isBuilt();
     }
 
-    // reBuild builds the paths is they are not already built.
+    // reBuild only rebuilds root/src/@This/.
     pub fn reBuild(self: *FolderPaths) !void {
-        if (_isBuilt()) {
-            return;
-        }
         try self.unBuild();
-        try self.build();
+        var src_dir: std.fs.Dir = try std.fs.openDirAbsolute(self.root_src.?, .{});
+        defer src_dir.close();
+        try self.buildThis(src_dir);
     }
 
     /// build creates the src folder and it's sub folders.
     pub fn build(self: *FolderPaths) !void {
-        var dir: std.fs.Dir = undefined;
-        dir = try std.fs.openDirAbsolute(self.app.?, .{});
-        var srcdir: std.fs.Dir = try dir.makeOpenPath(folder_name_src, .{});
-        errdefer dir.close();
-        defer srcdir.close();
+        var root_dir: std.fs.Dir = try std.fs.openDirAbsolute(self.root.?, .{});
+        defer root_dir.close();
+        var src_dir: std.fs.Dir = try root_dir.makeOpenPath(folder_name_src, .{});
+        defer src_dir.close();
+        try self.buildThis(src_dir);
+        var vendor_dir: std.fs.Dir = try src_dir.makeOpenPath(folder_name_vendor, .{});
+        defer vendor_dir.close();
+    }
+
+    /// buildThis creates the root/src/@This folder and it's sub folders.
+    /// Param src_dir is the root/src/ folder.
+    fn buildThis(self: *FolderPaths, src_dir: std.fs.Dir) !void {
+        var this_dir: std.fs.Dir = try src_dir.makeOpenPath(folder_name_this, .{});
+        defer this_dir.close();
 
         var temp: []const u8 = undefined;
 
-        // Backend folder paths.
-        try srcdir.makePath(backend.folder_name_backend);
+        // root/src/@This/backend/ folder paths.
+        try this_dir.makePath(backend.folder_name_backend);
         temp = try backend.pathMessengerFolder(self.allocator);
-        try srcdir.makePath(temp);
-        self.allocator.free(temp);
-        temp = try backend.pathStoreFolder(self.allocator);
-        try srcdir.makePath(temp);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
 
-        // Frontend folder paths.
-        try srcdir.makePath(frontend.folder_name_frontend);
+        // root/src/@This/frontend/ folder paths.
+        try this_dir.makePath(frontend.folder_name_frontend);
+        // frontend/screen/
         temp = try frontend.pathScreenFolder(self.allocator);
-        try srcdir.makePath(temp);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
+        // frontend/screen/panel/
         temp = try frontend.pathScreenPanelFolder(self.allocator);
-        try srcdir.makePath(temp);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
-        temp = try frontend.pathScreenTabFolder(self.allocator);
-        try srcdir.makePath(temp);
+        // frontend/screen/htab/
+        temp = try frontend.pathScreenHTabFolder(self.allocator);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
-        temp = try frontend.pathLibFolder(self.allocator);
-        try srcdir.makePath(temp);
+        // frontend/screen/vtab/
+        temp = try frontend.pathScreenVTabFolder(self.allocator);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
-        temp = try frontend.pathLibFramersFolder(self.allocator);
-        try srcdir.makePath(temp);
+        // frontend/screen/modal/
+        temp = try frontend.pathScreenModalFolder(self.allocator);
+        try this_dir.makePath(temp);
+        self.allocator.free(temp);
+        // frontend/screen/modal/OK/
+        temp = try frontend.pathScreenModalOKFolder(self.allocator);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
 
-        // Shared folder paths.
-        try srcdir.makePath(shared.folder_name_shared);
-        temp = try shared.pathChannelFolder(self.allocator);
-        try srcdir.makePath(temp);
+        // root/src/@This/deps/ folder paths.
+        try this_dir.makePath(deps.folder_name_deps);
+        // deps/channel/
+        temp = try deps.pathChannelFolder(self.allocator);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
-        temp = try shared.pathChannelSrcFolder(self.allocator);
-        try srcdir.makePath(temp);
+        // deps/framers/
+        temp = try deps.pathFramersFolder(self.allocator);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
-        temp = try shared.pathMessageFolder(self.allocator);
-        try srcdir.makePath(temp);
+        // deps/lock/
+        temp = try deps.pathLockFolder(self.allocator);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
-        temp = try shared.pathMessageSrcFolder(self.allocator);
-        try srcdir.makePath(temp);
+        // deps/message/
+        temp = try deps.pathMessageFolder(self.allocator);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
-        temp = try shared.pathRecordFolder(self.allocator);
-        try srcdir.makePath(temp);
+        // deps/modal_params/
+        temp = try deps.pathModalParamsFolder(self.allocator);
+        try this_dir.makePath(temp);
         self.allocator.free(temp);
     }
 };
 
-var _application_path: []u8 = undefined;
+var _root_path: []u8 = undefined;
 var _allocator: std.mem.Allocator = undefined;
 
-/// init stores the app path, and allocator.
+/// init stores the root path, and allocator.
 /// whoever calls init must eventually call deinit();
-pub fn init(allocator: std.mem.Allocator, app_path: []const u8) !void {
+pub fn init(allocator: std.mem.Allocator, root_path: []const u8) !void {
     _allocator = allocator;
 
     // App folder paths.
-    _application_path = try allocator.alloc(u8, app_path.len);
-    @memcpy(_application_path, app_path);
+    _root_path = try allocator.alloc(u8, root_path.len);
+    @memcpy(_root_path, root_path);
 }
 
 fn _isBuilt() bool {
     var folder_paths: *FolderPaths = folders() catch {
         return false;
     };
-    var dir: std.fs.Dir = std.fs.openDirAbsolute(folder_paths.app_src.?, .{}) catch {
+    var dir: std.fs.Dir = std.fs.openDirAbsolute(folder_paths.root_src_this.?, .{}) catch {
         return false;
     };
     dir.close();
@@ -193,453 +227,212 @@ fn _isBuilt() bool {
 /// The caller owns the returned value.
 pub fn folders() !*FolderPaths {
     var folder_paths: *FolderPaths = try _allocator.create(FolderPaths);
-    folder_paths.app = try _allocator.alloc(u8, _application_path.len);
-    errdefer {
-        folder_paths.deinit();
-    }
+    folder_paths.root = try _allocator.alloc(u8, _root_path.len);
+    errdefer folder_paths.deinit();
     folder_paths.allocator = _allocator;
-    @memcpy(folder_paths.app.?, _application_path);
+
+    // The root folder path.
+    @memcpy(@constCast(folder_paths.root.?), _root_path);
+
+    // The root/src/ folder path.
     var params2: [][]const u8 = try _allocator.alloc([]const u8, 2);
     defer _allocator.free(params2);
-    params2[0] = folder_paths.app.?;
+    params2[0] = folder_paths.root.?;
     params2[1] = folder_name_src;
-    folder_paths.app_src = try fspath.join(_allocator, params2);
-    errdefer {
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
-    // Backend folder paths.
-    params2[0] = folder_paths.app_src.?;
+    folder_paths.root_src = try fspath.join(_allocator, params2);
+    errdefer folder_paths.deinit();
+
+    // The root/src/vendor/ folder path.
+    params2[0] = folder_paths.root_src.?;
+    params2[1] = folder_name_vendor;
+    folder_paths.root_src_vendor = try fspath.join(_allocator, params2);
+    errdefer folder_paths.deinit();
+
+    // The root/src/@This/ folder path.
+    params2[1] = folder_name_this;
+    folder_paths.root_src_this = try fspath.join(_allocator, params2);
+    errdefer folder_paths.deinit();
+
+    // This application's folder path. /src/@This/
+    params2[0] = folder_paths.root_src_this.?;
+    folder_paths.root_src_this_backend = try fspath.join(_allocator, params2[0..0]);
+    errdefer folder_paths.deinit();
+
+    // /src/@This/backend/ path.
     params2[1] = backend.folder_name_backend;
-    folder_paths.app_src_backend = try fspath.join(_allocator, params2);
-    errdefer {
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
+    folder_paths.root_src_this_backend = try fspath.join(_allocator, params2);
+    errdefer folder_paths.deinit();
+
+    // /src/@This/backend/messenger/ path.
     var temp: []const u8 = undefined;
     temp = try backend.pathMessengerFolder(_allocator);
     errdefer {
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
-    params2[0] = folder_paths.app_src_backend.?;
-    params2[1] = temp;
-    folder_paths.app_src_backend_messenger = try fspath.join(_allocator, params2);
-    errdefer {
-        _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
-    _allocator.free(temp);
-    temp = try backend.pathStoreFolder(_allocator);
-    errdefer {
-        _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     params2[1] = temp;
-    folder_paths.app_src_backend_store = try fspath.join(_allocator, params2);
+    folder_paths.root_src_this_backend_messenger = try fspath.join(_allocator, params2);
     errdefer {
         _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     _allocator.free(temp);
 
-    // Frontend folder paths.
-    params2[0] = folder_paths.app_src.?;
+    // /src/@This/frontend/ path.
     params2[1] = frontend.folder_name_frontend;
-    folder_paths.app_src_frontend = try fspath.join(_allocator, params2);
+    folder_paths.root_src_this_frontend = try fspath.join(_allocator, params2);
     errdefer {
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
+
+    // /src/@This/frontend/screen/ path.
     temp = try frontend.pathScreenFolder(_allocator);
     errdefer {
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     params2[1] = temp;
-    folder_paths.app_src_frontend_screen = try fspath.join(_allocator, params2);
+    folder_paths.root_src_this_frontend_screen = try fspath.join(_allocator, params2);
     errdefer {
         _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     _allocator.free(temp);
+
+    // /src/@This/frontend/screen/panel/ path.
     temp = try frontend.pathScreenPanelFolder(_allocator);
     errdefer {
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     params2[1] = temp;
-    folder_paths.app_src_frontend_screen_panel = try fspath.join(_allocator, params2);
+    folder_paths.root_src_this_frontend_screen_panel = try fspath.join(_allocator, params2);
     errdefer {
         _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
-    _allocator.free(temp);
-    temp = try frontend.pathScreenTabFolder(_allocator);
-    errdefer {
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.app_src_frontend_screen_tab = try fspath.join(_allocator, params2);
-    _allocator.free(temp);
-    temp = try frontend.pathLibFolder(_allocator);
-    errdefer {
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
-    params2[1] = frontend.folder_name_frontend;
-    folder_paths.app_src_frontend_lib = try fspath.join(_allocator, params2);
-    errdefer {
-        _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
-    temp = try frontend.pathLibFramersFolder(_allocator);
-    errdefer {
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.app_src_frontend_framers = try fspath.join(_allocator, params2);
-    errdefer {
-        _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     _allocator.free(temp);
 
-    // Shared folder paths.
-    params2[1] = shared.folder_name_shared;
-    folder_paths.app_src_shared = try fspath.join(_allocator, params2);
+    // /src/@This/frontend/screen/htab/ path.
+    temp = try frontend.pathScreenHTabFolder(_allocator);
     errdefer {
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
-        folder_paths.deinit();
-    }
-    temp = try shared.pathChannelFolder(_allocator);
-    errdefer {
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     params2[1] = temp;
-    folder_paths.app_src_shared_channel = try fspath.join(_allocator, params2);
+    folder_paths.root_src_this_frontend_screen_htab = try fspath.join(_allocator, params2);
     errdefer {
         _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     _allocator.free(temp);
-    temp = try shared.pathChannelSrcFolder(_allocator);
+
+    // /src/@This/frontend/screen/vtab/ path.
+    temp = try frontend.pathScreenVTabFolder(_allocator);
     errdefer {
-        _allocator.free(folder_paths.app_src_shared_channel.?);
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     params2[1] = temp;
-    folder_paths.app_src_shared_channel_src = try fspath.join(_allocator, params2);
+    folder_paths.root_src_this_frontend_screen_vtab = try fspath.join(_allocator, params2);
     errdefer {
         _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_shared_channel.?);
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     _allocator.free(temp);
-    temp = try shared.pathMessageFolder(_allocator);
+
+    // /src/@This/frontend/screen/modal/ path.
+    temp = try frontend.pathScreenModalFolder(_allocator);
     errdefer {
-        _allocator.free(folder_paths.app_src_shared_channel_src.?);
-        _allocator.free(folder_paths.app_src_shared_channel.?);
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     params2[1] = temp;
-    folder_paths.app_src_shared_message = try fspath.join(_allocator, params2);
+    folder_paths.root_src_this_frontend_screen_modal = try fspath.join(_allocator, params2);
     errdefer {
         _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_shared_channel_src.?);
-        _allocator.free(folder_paths.app_src_shared_channel.?);
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     _allocator.free(temp);
-    temp = try shared.pathMessageSrcFolder(_allocator);
+
+    // /src/@This/frontend/screen/modal/OK/ path.
+    temp = try frontend.pathScreenModalOKFolder(_allocator);
     errdefer {
-        _allocator.free(folder_paths.app_src_shared_message.?);
-        _allocator.free(folder_paths.app_src_shared_channel_src.?);
-        _allocator.free(folder_paths.app_src_shared_channel.?);
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     params2[1] = temp;
-    folder_paths.app_src_shared_message_src = try fspath.join(_allocator, params2);
+    folder_paths.root_src_this_frontend_screen_modal_ok = try fspath.join(_allocator, params2);
     errdefer {
         _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_shared_message.?);
-        _allocator.free(folder_paths.app_src_shared_channel_src.?);
-        _allocator.free(folder_paths.app_src_shared_channel.?);
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     _allocator.free(temp);
-    temp = try shared.pathRecordFolder(_allocator);
+
+    // /src/@This/deps/ path.
+    params2[1] = deps.folder_name_deps;
+    folder_paths.root_src_this_deps = try fspath.join(_allocator, params2);
     errdefer {
-        _allocator.free(folder_paths.app_src_shared_message_src.?);
-        _allocator.free(folder_paths.app_src_shared_message.?);
-        _allocator.free(folder_paths.app_src_shared_channel_src.?);
-        _allocator.free(folder_paths.app_src_shared_channel.?);
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
+        folder_paths.deinit();
+    }
+
+    // /src/@This/deps/channel/ path.
+    temp = try deps.pathChannelFolder(_allocator);
+    errdefer {
         folder_paths.deinit();
     }
     params2[1] = temp;
-    folder_paths.app_src_shared_record = try fspath.join(_allocator, params2);
+    folder_paths.root_src_this_deps_channel = try fspath.join(_allocator, params2);
     errdefer {
         _allocator.free(temp);
-        _allocator.free(folder_paths.app_src_shared_message_src.?);
-        _allocator.free(folder_paths.app_src_shared_message.?);
-        _allocator.free(folder_paths.app_src_shared_channel_src.?);
-        _allocator.free(folder_paths.app_src_shared_channel.?);
-        _allocator.free(folder_paths.app_src_shared.?);
-        _allocator.free(folder_paths.app_src_frontend_framers.?);
-        _allocator.free(folder_paths.app_src_frontend_lib.?);
-        _allocator.free(folder_paths.app_src_frontend_screen_panel.?);
-        _allocator.free(folder_paths.app_src_frontend_screen.?);
-        _allocator.free(folder_paths.app_src_frontend.?);
-        _allocator.free(folder_paths.app_src_backend_store.?);
-        _allocator.free(folder_paths.app_src_backend_messenger.?);
-        _allocator.free(folder_paths.app_src_backend.?);
-        _allocator.free(folder_paths.app_src.?);
-        _allocator.free(folder_paths.app.?);
         folder_paths.deinit();
     }
     _allocator.free(temp);
+
+    // /src/@This/deps/message/ path.
+    temp = try deps.pathMessageFolder(_allocator);
+    errdefer {
+        folder_paths.deinit();
+    }
+    params2[1] = temp;
+    folder_paths.root_src_this_deps_message = try fspath.join(_allocator, params2);
+    errdefer {
+        _allocator.free(temp);
+        folder_paths.deinit();
+    }
+    _allocator.free(temp);
+
+    // /src/@This/deps/framers/ path.
+    temp = try deps.pathFramersFolder(_allocator);
+    errdefer {
+        folder_paths.deinit();
+    }
+    params2[1] = temp;
+    folder_paths.root_src_this_deps_framers = try fspath.join(_allocator, params2);
+    errdefer {
+        _allocator.free(temp);
+        folder_paths.deinit();
+    }
+    _allocator.free(temp);
+
+    // /src/@This/deps/lock/ path.
+    temp = try deps.pathLockFolder(_allocator);
+    errdefer {
+        folder_paths.deinit();
+    }
+    params2[1] = temp;
+    folder_paths.root_src_this_deps_lock = try fspath.join(_allocator, params2);
+    errdefer {
+        _allocator.free(temp);
+        folder_paths.deinit();
+    }
+    _allocator.free(temp);
+
+    // /src/@This/deps/modal_params/ path.
+    temp = try deps.pathModalParamsFolder(_allocator);
+    errdefer {
+        folder_paths.deinit();
+    }
+    params2[1] = temp;
+    folder_paths.root_src_this_deps_modal_params = try fspath.join(_allocator, params2);
+    errdefer {
+        _allocator.free(temp);
+        folder_paths.deinit();
+    }
+    _allocator.free(temp);
+
     return folder_paths;
-}
-
-pub fn deinit(self: *FolderPaths) void {
-    if (self.app) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_backend) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_backend_messenger) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_backend_store) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_frontend) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_frontend_screen) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_frontend_screen_panel) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_frontend_screen_tab) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_frontend_lib) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_frontend_framers) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_shared) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_shared_channel) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_shared_channel_src) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_shared_message) |member| {
-        self.allocator.free(member);
-    }
-    if (self.app_src_shared_record) |member| {
-        self.allocator.free(member);
-    }
-    self.allocator.destroy(self);
 }
