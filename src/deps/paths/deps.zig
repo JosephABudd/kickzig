@@ -8,6 +8,7 @@ const folder_name_framers: []const u8 = "framers";
 const folder_name_lock: []const u8 = "lock";
 const folder_name_src: []const u8 = "src";
 const folder_name_modal_params: []const u8 = "modal_params";
+const folder_name_widget: []const u8 = "widget";
 
 /// returns the deps/channel/ path.
 /// The caller owns the returned value.
@@ -45,6 +46,14 @@ pub fn pathLockFolder(allocator: std.mem.Allocator) ![]const u8 {
 /// The caller owns the returned value.
 pub fn pathModalParamsFolder(allocator: std.mem.Allocator) ![]const u8 {
     var params = [2][]const u8{ folder_name_deps, folder_name_modal_params };
+    var path = try fspath.join(allocator, &params);
+    return path;
+}
+
+/// returns the deps/widget/ path.
+/// The caller owns the returned value.
+pub fn pathWidgetFolder(allocator: std.mem.Allocator) ![]const u8 {
+    var params = [2][]const u8{ folder_name_deps, folder_name_widget };
     var path = try fspath.join(allocator, &params);
     return path;
 }

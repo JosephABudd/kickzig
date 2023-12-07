@@ -16,7 +16,9 @@ pub fn isValidScreenName(name: []const u8) bool {
 
 /// isNewScreenName returns if the screen name is unique.
 pub fn isNewScreenName(allocator: std.mem.Allocator, new_name: []const u8) bool {
-    var names: [][]const u8 = try filenames.allFrontendScreenNames(allocator);
+    var names: [][]const u8 = try filenames.allFrontendScreenNames(allocator) catch {
+        return false;
+    };
     defer {
         for (names) |name| {
             allocator.free(name);
@@ -25,6 +27,29 @@ pub fn isNewScreenName(allocator: std.mem.Allocator, new_name: []const u8) bool 
     }
     for (names) |name| {
         if (std.mem.eql(u8, name, new_name)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Panel name.
+
+
+/// isNewScreenName returns if the screen name is unique.
+pub fn isNewScreenPanelName(allocator: std.mem.Allocator, screen_name: []const u8, panel_name: []const u8) bool {
+    _ = screen_name;
+    var names: [][]const u8 = try filenames.allFrontendScreenNames(allocator) catch {
+        return false;
+    };
+    defer {
+        for (names) |name| {
+            allocator.free(name);
+        }
+        allocator.free(names);
+    }
+    for (names) |name| {
+        if (std.mem.eql(u8, name, panel_name)) {
             return false;
         }
     }
@@ -40,7 +65,9 @@ pub fn isValidChannelName(name: []const u8) bool {
 
 /// isNewChannelName returns if the channel name is unique.
 pub fn isNewChannelName(allocator: std.mem.Allocator, new_name: []const u8) bool {
-    var names: [][]const u8 = try filenames.allDepsChannelNames(allocator);
+    var names: [][]const u8 = try filenames.allDepsChannelNames(allocator) catch {
+        return false;
+    };
     defer {
         for (names) |name| {
             allocator.free(name);
@@ -68,17 +95,10 @@ pub fn isValidMessageName(name: []const u8) bool {
     return !std.mem.eql(u8, name, initMessageName);
 }
 
-/// isNewMesssageName returns if the message name is unique.
-pub fn isNewMesssageName(allocator: std.mem.Allocator, new_name: []const u8) !bool {
-    var isNew: bool = try isNewSharedMesssageName(allocator, new_name);
-    if (!isNew) {
-        return isNew;
-    }
-    return isNewSharedMesssageName(allocator, new_name);
-}
-
-fn isNewSharedMesssageName(allocator: std.mem.Allocator, new_name: []const u8) !bool {
-    var names: [][]const u8 = try filenames.allDepsMessageNames(allocator);
+fn isNewMesssageName(allocator: std.mem.Allocator, new_name: []const u8) bool {
+    var names: [][]const u8 = try filenames.allDepsMessageNames(allocator) catch {
+        return false;
+    };
     defer {
         for (names) |name| {
             allocator.free(name);
@@ -107,4 +127,17 @@ pub fn isNewBackendMesssageHandlerName(allocator: std.mem.Allocator, new_name: [
         }
     }
     return true;
+}
+
+// Tab name.
+
+/// isValidTabName returns if the message name is valid.
+pub fn isValidTabName(name: []const u8) bool {
+    var tab_name: []const u8 = undefined;
+    if (name[0] == '+') {
+        tab_name = name[1..];
+    } else {
+        tab_name = name;
+    }
+    return strings.isValid(tab_name);
 }

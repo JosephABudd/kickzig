@@ -4,11 +4,11 @@ const strings = @import("strings");
 
 pub const Template = struct {
     allocator: std.mem.Allocator,
-    src_app_folder_name: *strings.UTF8,
+    app_name: *strings.UTF8,
 
-    pub fn init(allocator: std.mem.Allocator, name: []const u8) !*Template {
+    pub fn init(allocator: std.mem.Allocator, app_name: []const u8) !*Template {
         var data: *Template = try allocator.create(Template);
-        data.src_app_folder_name = try strings.UTF8.init(allocator, name);
+        data.app_name = try strings.UTF8.init(allocator, app_name);
         errdefer {
             allocator.destroy(data);
         }
@@ -17,18 +17,18 @@ pub const Template = struct {
     }
 
     pub fn deinit(self: *Template) void {
-        self.src_app_folder_name.deinit();
+        self.app_name.deinit();
         self.allocator.destroy(self);
     }
 
     pub fn content(self: *Template) ![]const u8 {
-        // Replace {{src_app_folder_name}} with the message name.
-        const copy: []const u8 = try self.src_app_folder_name.copy();
+        // Replace {{ app_name }} with the app name.
+        const copy: []const u8 = try self.app_name.copy();
         defer self.allocator.free(copy);
-        var replacement_size: usize = std.mem.replacementSize(u8, template, "{{src_app_folder_name}}", copy);
-        var with_src_app_folder_name: []u8 = try self.allocator.alloc(u8, replacement_size);
-        _ = std.mem.replace(u8, template, "{{src_app_folder_name}}", copy, with_src_app_folder_name);
-        return with_src_app_folder_name;
+        var replacement_size: usize = std.mem.replacementSize(u8, template, "{{ app_name }}", copy);
+        var with_app_name: []u8 = try self.allocator.alloc(u8, replacement_size);
+        _ = std.mem.replace(u8, template, "{{ app_name }}", copy, with_app_name);
+        return with_app_name;
     }
 };
 
@@ -37,14 +37,18 @@ pub const template =
     \\const dvui = @import("dvui");
     \\const SDLBackend = @import("SDLBackend");
     \\
-    \\const _frontend_ = @import("src/{{src_app_folder_name}}/frontend/api.zig");
-    \\const _backend_ = @import("src/{{src_app_folder_name}}/backend/api.zig");
+    \\const _frontend_ = @import("src/@This/frontend/api.zig");
+    \\const _backend_ = @import("src/@This/backend/api.zig");
     \\const _channel_ = @import("channel");
     \\const _framers_ = @import("framers");
+    \\
+    \\const window_icon_png = @embedFile("src/vendor/dvui/src/zig-favicon.png");
     \\
     \\// General Purpose Allocator for frontend-state, backend and channels.
     \\var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
     \\const gpa = gpa_instance.allocator();
+    \\
+    \\const vsync = true;
     \\
     \\var show_dialog_outside_frame: bool = false;
     \\
@@ -54,10 +58,11 @@ pub const template =
     \\pub fn main() !void {
     \\    // init SDL gui_backend (creates OS window)
     \\    var gui_backend = try SDLBackend.init(.{
-    \\        .width = 500,
-    \\        .height = 600,
-    \\        .vsync = true,
-    \\        .title = "GUI Standalone Example",
+    \\        .size = .{ .w = 500.0, .h = 400.0 },
+    \\        .min_size = .{ .w = 500.0, .h = 400.0 },
+    \\        .vsync = vsync,
+    \\        .title = "{{ app_name }}",
+    \\        .icon = window_icon_png, // can also call setIconFromFileContent()
     \\    });
     \\    defer gui_backend.deinit();
     \\
@@ -104,6 +109,10 @@ pub const template =
     \\        // send all SDL events to dvui for processing
     \\        const quit = try gui_backend.addAllEvents(&win);
     \\        if (quit) break :main_loop;
+    \\
+    \\        // if dvui widgets might not cover the whole window, then need to clear
+    \\        // the previous frame's render
+    \\        gui_backend.clear();
     \\
     \\        try _frontend_.frame(arena, all_screens);
     \\

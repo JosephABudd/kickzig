@@ -1,8 +1,9 @@
 const std = @import("std");
-const stdout = @import("stdout");
-const paths = @import("paths");
-const usage = @import("usage");
-const framework = @import("commands/framework/api.zig");
+const _stdout_ = @import("stdout");
+const _paths_ = @import("paths");
+const _usage_ = @import("usage");
+const _framework_ = @import("commands/framework/api.zig");
+const _screen_ = @import("commands/screen/api.zig");
 
 pub fn main() !void {
     // Memory allocator.
@@ -11,18 +12,18 @@ pub fn main() !void {
 
     // Current working directory.
     var cwd_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
-    var cwd_app_name: []const u8 = try std.os.getcwd(&cwd_buffer);
+    const cwd_app_name: []const u8 = try std.os.getcwd(&cwd_buffer);
 
     // Init the paths module.
-    try paths.init(gpa, cwd_app_name);
+    try _paths_.init(gpa, cwd_app_name);
 
     // Process the args.
     var args: [][]u8 = try getProcessArgs(gpa);
-    var cli_name: []const u8 = std.fs.path.basename(args[0]);
     defer freeProcessArgs(gpa, args);
+    var cli_name: []const u8 = std.fs.path.basename(args[0]);
     if (args.len == 1) {
-        var use = try usage.application(gpa, cli_name, cwd_app_name);
-        try stdout.print(use);
+        var use = try _usage_.application(gpa, cli_name);
+        try _stdout_.print(use);
         return;
     }
     var command: []u8 = args[1];
@@ -37,19 +38,26 @@ pub fn main() !void {
 
 /// handleCommand dispatches the user input to the proper handlers.
 fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, cwd_app_name: []const u8, command: []u8, remaining_args: [][]u8) !void {
+    const app_name: []const u8 = std.fs.path.basename(cwd_app_name);
 
     // Process the command.
 
     // framework command.
-    if (std.mem.eql(u8, command, framework.command)) {
-        try framework.handleCommand(allocator, cli_name, cwd_app_name, remaining_args);
+    if (std.mem.eql(u8, command, _framework_.command)) {
+        try _framework_.handleCommand(allocator, cli_name, app_name, remaining_args);
+        return;
+    }
+
+    // screen command.
+    if (std.mem.eql(u8, command, _screen_.command)) {
+        try _screen_.handleCommand(allocator, cli_name, app_name, remaining_args);
         return;
     }
 
     // unknown user input.
-    var application_usage: []const u8 = try usage.application(allocator, cli_name, cwd_app_name);
+    var application_usage: []const u8 = try _usage_.application(allocator, cli_name);
     defer allocator.free(application_usage);
-    try stdout.print(application_usage);
+    try _stdout_.print(application_usage);
 }
 
 fn getProcessArgs(allocator: std.mem.Allocator) ![][]u8 {

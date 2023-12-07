@@ -1,6 +1,7 @@
 pub const content =
     \\const std = @import("std");
     \\const Pkg = std.build.Pkg;
+    \\const Compile = std.Build.Step.Compile;
     \\
     \\const Packages = struct {
     \\    // Declared here because submodule may not be cloned at the time build.zig runs.
@@ -14,11 +15,19 @@ pub const content =
     \\    const target = b.standardTargetOptions(.{});
     \\    const optimize = b.standardOptimizeOption(.{});
     \\
+    \\    const lib_bundle = b.addStaticLibrary(.{
+    \\        .name = "dvui_libs",
+    \\        .target = target,
+    \\        .optimize = optimize,
+    \\        .link_libc = true,
+    \\    });
+    \\    link_deps(b, lib_bundle);
+    \\    b.installArtifact(lib_bundle);
+    \\
     \\    const dvui_mod = b.addModule("dvui", .{
     \\        .source_file = .{ .path = "src/vendor/dvui/src/dvui.zig" },
     \\        .dependencies = &.{},
     \\    });
-    \\
     \\    const sdl_mod = b.addModule("SDLBackend", .{
     \\        .source_file = .{ .path = "src/vendor/dvui/src/backends/SDLBackend.zig" },
     \\        .dependencies = &.{
@@ -49,6 +58,12 @@ pub const content =
     \\        .source_file = .{ .path = "src/@This/deps/modal_params/api.zig" },
     \\        .dependencies = &.{},
     \\    });
+    \\    const widget_mod = b.addModule("widget", .{
+    \\        .source_file = .{ .path = "src/@This/deps/widget/api.zig" },
+    \\        .dependencies = &.{
+    \\            .{ .name = "dvui", .module = dvui_mod },
+    \\        },
+    \\    });
     \\
     \\    const examples = [_][]const u8{
     \\        "standalone-sdl",
@@ -72,8 +87,10 @@ pub const content =
     \\        exe.addModule("channel", channel_mod);
     \\        exe.addModule("lock", lock_mod);
     \\        exe.addModule("modal_params", modal_params_mod);
+    \\        exe.addModule("widget", widget_mod);
     \\
-    \\        link_deps(exe, b);
+    \\        exe.linkLibrary(lib_bundle);
+    \\        add_include_paths(b, exe);
     \\
     \\        const compile_step = b.step(ex, "Compile " ++ ex);
     \\        compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
@@ -86,9 +103,42 @@ pub const content =
     \\        run_step.dependOn(&run_cmd.step);
     \\    }
     \\
+    \\    // sdl test
+    \\    //{
+    \\        //const exe = b.addExecutable(.{
+    \\            //.name = "sdl-test",
+    \\            //.root_source_file = .{ .path = "sdl-test.zig" },
+    \\            //.target = target,
+    \\            //.optimize = optimize,
+    \\        //});
+    \\
+    \\        //exe.addModule("dvui", dvui_mod);
+    \\        //exe.addModule("SDLBackend", sdl_mod);
+    \\
+    \\        // deps modules.
+    \\        //exe.addModule("framers", framers_mod);
+    \\        //exe.addModule("message", message_mod);
+    \\        //exe.addModule("channel", channel_mod);
+    \\        //exe.addModule("lock", lock_mod);
+    \\        //exe.addModule("modal_params", modal_params_mod);
+    \\        //exe.addModule("widget", widget_mod);
+    \\
+    \\        //exe.linkLibrary(lib_bundle);
+    \\        //add_include_paths(b, exe);
+    \\
+    \\        //const compile_step = b.step("compile-sdl-test", "Compile the SDL test");
+    \\        //compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    \\        //b.getInstallStep().dependOn(compile_step);
+    \\
+    \\        //const run_cmd = b.addRunArtifact(exe);
+    \\        //run_cmd.step.dependOn(compile_step);
+    \\
+    \\        //const run_step = b.step("sdl-test", "Run the SDL test");
+    \\        //run_step.dependOn(&run_cmd.step);
+    \\    //}
     \\}
     \\
-    \\fn link_deps(exe: *std.Build.Step.Compile, b: *std.Build) void {
+    \\pub fn link_deps(b: *std.Build, exe: *std.Build.Step.Compile) void {
     \\    // TODO: remove this part about freetype (pulling it from the dvui_dep
     \\    // sub-builder) once https://github.com/ziglang/zig/pull/14731 lands
     \\    const freetype_dep = b.dependency("freetype", .{
@@ -146,5 +196,28 @@ pub const content =
     \\        //exe.addIncludePath(.{.path = "/Users/dvanderson/SDL2-2.24.1/include"});
     \\        //exe.addObjectFile(.{.path = "/Users/dvanderson/SDL2-2.24.1/build/.libs/libSDL2.a"});
     \\    }
+    \\}
+    \\
+    \\const build_runner = @import("root");
+    \\const deps = build_runner.dependencies;
+    \\
+    \\pub fn get_dependency_build_root(dep_prefix: []const u8, name: []const u8) []const u8 {
+    \\    inline for (@typeInfo(deps.imports).Struct.decls) |decl| {
+    \\        if (std.mem.startsWith(u8, decl.name, dep_prefix) and
+    \\            std.mem.endsWith(u8, decl.name, name) and
+    \\            decl.name.len == dep_prefix.len + name.len)
+    \\        {
+    \\            return @field(deps.build_root, decl.name);
+    \\        }
+    \\    }
+    \\
+    \\    std.debug.print("no dependency named '{s}'\n", .{name});
+    \\    std.process.exit(1);
+    \\}
+    \\
+    \\/// prefix: library prefix. e.g. "dvui."
+    \\pub fn add_include_paths(b: *std.Build, exe: *std.Build.CompileStep) void {
+    \\    exe.addIncludePath(.{ .path = b.fmt("{s}{s}", .{ get_dependency_build_root(b.dep_prefix, "freetype"), "/include" }) });
+    \\    exe.addIncludePath(.{ .path = b.fmt("{s}{s}", .{ get_dependency_build_root(b.dep_prefix, "stb_image"), "/include" }) });
     \\}
 ;

@@ -1,6 +1,12 @@
 const std = @import("std");
 const paths = @import("paths");
 
+/// Returns the name of a panel file.
+/// The caller owns the return value;
+pub fn screen_panel_file_name(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    var line: []const u8 = try std.fmt.allocPrint(allocator, "{s}_panel.zig", .{name});
+    return line;
+}
 /// Returns the names of each panel/ screen.
 /// The caller owns the return value;
 pub fn allPanelFolders(allocator: std.mem.Allocator) ![][]const u8 {
@@ -17,12 +23,18 @@ pub fn allPanelFolders(allocator: std.mem.Allocator) ![][]const u8 {
             try folder_names.append(file.name);
         }
     }
-    var slice = try folder_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try folder_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -43,12 +55,18 @@ pub fn allHTabFolders(allocator: std.mem.Allocator) ![][]const u8 {
             try folder_names.append(file.name);
         }
     }
-    var slice = try folder_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try folder_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -69,12 +87,18 @@ pub fn allVTabFolders(allocator: std.mem.Allocator) ![][]const u8 {
             try folder_names.append(file.name);
         }
     }
-    var slice = try folder_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try folder_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -95,12 +119,50 @@ pub fn allModalFolders(allocator: std.mem.Allocator) ![][]const u8 {
             try folder_names.append(file.name);
         }
     }
-    var slice = try folder_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try folder_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
+    }
+    return names;
+}
+
+/// Returns the names of each book/ screen.
+/// The caller owns the return value;
+pub fn allBookFolders(allocator: std.mem.Allocator) ![][]const u8 {
+    var folders = try paths.folders();
+    var folder_names = std.ArrayList([]const u8).init(allocator);
+    defer folder_names.deinit();
+
+    var dir = try std.fs.openIterableDirAbsolute(folders.root_src_this_frontend_screen_book.?, .{});
+    defer dir.close();
+
+    var iterator = dir.iterate();
+    while (try iterator.next()) |file| {
+        if (file.kind == .directory) {
+            try folder_names.append(file.name);
+        }
+    }
+    var owned: [][]const u8 = try folder_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -132,14 +194,18 @@ pub fn allPanelScreenFileNames(allocator: std.mem.Allocator, screen_name: []cons
             try file_names.append(file.name);
         }
     }
-
-    // A slice that the caller owns.
-    var slice = try file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -170,14 +236,18 @@ pub fn allModalScreenFileNames(allocator: std.mem.Allocator, screen_name: []cons
             try file_names.append(file.name);
         }
     }
-
-    // A slice that the caller owns.
-    var slice = try folder_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -192,7 +262,7 @@ pub fn allVTabScreenFileNames(allocator: std.mem.Allocator, screen_name: []const
     // The screen's folder path.
     try folder_names.append(folders.root_src_this_frontend_screen_vtab.?);
     try folder_names.append(screen_name);
-    var folder_path: []const []const u8 = folder_names.toOwnedSlice();
+    var folder_path: [][]const u8 = try folder_names.toOwnedSlice();
     defer allocator.free(folder_path);
     var dir_path: []const u8 = try std.fs.path.join(allocator, folder_path);
     defer allocator.free(dir_path);
@@ -208,14 +278,18 @@ pub fn allVTabScreenFileNames(allocator: std.mem.Allocator, screen_name: []const
             try file_names.append(file.name);
         }
     }
-
-    // A slice that the caller owns.
-    var slice = try folder_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -230,7 +304,7 @@ pub fn allHTabScreenFileNames(allocator: std.mem.Allocator, screen_name: []const
     // The screen's folder path.
     try folder_names.append(folders.root_src_this_frontend_screen_htab.?);
     try folder_names.append(screen_name);
-    var folder_path: []const []const u8 = folder_names.toOwnedSlice();
+    var folder_path: [][]const u8 = try folder_names.toOwnedSlice();
     defer allocator.free(folder_path);
     var dir_path: []const u8 = try std.fs.path.join(allocator, folder_path);
     defer allocator.free(dir_path);
@@ -246,14 +320,60 @@ pub fn allHTabScreenFileNames(allocator: std.mem.Allocator, screen_name: []const
             try file_names.append(file.name);
         }
     }
+    var owned: [][]const u8 = try file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
+    }
+    return names;
+}
 
-    // A slice that the caller owns.
-    var slice = try folder_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+/// allBookScreenFileNames returns the names of each file in a book-screen's folder.
+/// The caller owns the return value.
+pub fn allBookScreenFileNames(allocator: std.mem.Allocator, screen_name: []const u8) ![][]const u8 {
+    var folders = try paths.folders();
+    var folder_names = std.ArrayList([]const u8).init(allocator);
+    defer folder_names.deinit();
+
+    // The screen's folder path.
+    try folder_names.append(folders.root_src_this_frontend_screen_book.?);
+    try folder_names.append(screen_name);
+    var folder_path: [][]const u8 = try folder_names.toOwnedSlice();
+    defer allocator.free(folder_path);
+    var dir_path: []const u8 = try std.fs.path.join(allocator, folder_path);
+    defer allocator.free(dir_path);
+    var dir = try std.fs.openIterableDirAbsolute(dir_path, .{});
+    defer dir.close();
+
+    // The files.
+    var file_names = std.ArrayList([]const u8).init(allocator);
+    defer file_names.deinit();
+    var iterator = dir.iterate();
+    while (try iterator.next()) |file| {
+        if (file.kind == .file) {
+            try file_names.append(file.name);
+        }
+    }
+    var owned: [][]const u8 = try file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }

@@ -1,6 +1,7 @@
 const std = @import("std");
 const unicode = std.unicode;
 const strings = @import("strings");
+
 const uc_vowels = []const u8{ 'A', 'E', 'I', 'O', 'U' };
 const lc_vowels = []const u8{ 'a', 'e', 'i', 'o', 'u' };
 

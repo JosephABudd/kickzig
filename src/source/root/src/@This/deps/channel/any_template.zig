@@ -43,10 +43,10 @@ const template =
     \\
     \\/// Behavior is call-backs and state.
     \\/// .receiveFn is a call-back, a function that receives the message.
-    \\/// .self is the state required for the call-back. It is the implementor of the recieveFn.
+    \\/// .implementor implements the recieveFn.
     \\pub const Behavior = struct {
-    \\    receiveFn: *const fn (self: *anyopaque, message: *_message_.Message) void,
-    \\    self: *anyopaque,
+    \\    receiveFn: *const fn (implementor: *anyopaque, message: *_message_.Message) void,
+    \\    implementor: *anyopaque,
     \\};
     \\
     \\pub const Group = struct {
@@ -66,7 +66,7 @@ const template =
     \\    /// subscribe adds a receiver of the message to the Group.
     \\    /// The receiver must implement Behavior.
     \\    pub fn subscribe(self: *Group, cb: *Behavior) !void {
-    \\        try self.members.put(cb.self, cb);
+    \\        try self.members.put(cb.implementor, cb);
     \\    }
     \\
     \\    /// unsubscribe removes a subscriber from the Group.
@@ -113,7 +113,7 @@ const template =
     \\    var iterator = members.iterator();
     \\    while (iterator.next()) |entry| {
     \\        var behavior: *Behavior = entry.value_ptr.*;
-    \\        behavior.receiveFn(behavior.self, message);
+    \\        behavior.receiveFn(behavior.implementor, message);
     \\    }
     \\};
     \\

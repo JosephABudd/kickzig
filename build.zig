@@ -15,50 +15,50 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    // Internal src/libs/ modules.
+    // Internal src/deps/ modules.
     const stdout_mod = b.addModule("stdout", .{
-        .source_file = .{ .path = "src/libs/stdout/api.zig" },
+        .source_file = .{ .path = "src/deps/stdout/api.zig" },
         .dependencies = &.{},
     });
-
-    // Internal src/commands/libs/ modules.
     const usage_mod = b.addModule("usage", .{
-        .source_file = .{ .path = "src/commands/libs/usage.zig" },
+        .source_file = .{ .path = "src/deps/usage.zig" },
         .dependencies = &.{},
     });
     const warning_mod = b.addModule("warning", .{
-        .source_file = .{ .path = "src/commands/libs/warning.zig" },
+        .source_file = .{ .path = "src/deps/warning.zig" },
         .dependencies = &.{},
     });
-    const verify_mod = b.addModule("verify", .{
-        .source_file = .{ .path = "src/commands/libs/verify.zig" },
-        .dependencies = &.{},
-    });
-
-    // Internal src/source/libs/ modules.
     const paths_mod = b.addModule("paths", .{
-        .source_file = .{ .path = "src/source/libs/paths/api.zig" },
+        .source_file = .{ .path = "src/deps/paths/api.zig" },
         .dependencies = &.{},
     });
     const filenames_mod = b.addModule("filenames", .{
-        .source_file = .{ .path = "src/source/libs/filenames/api.zig" },
+        .source_file = .{ .path = "src/deps/filenames/api.zig" },
         .dependencies = &.{
             .{ .name = "paths", .module = paths_mod },
         },
     });
     const slices_mod = b.addModule("slices", .{
-        .source_file = .{ .path = "src/source/libs/slices.zig" },
+        .source_file = .{ .path = "src/deps/slices.zig" },
         .dependencies = &.{},
     });
     const strings_mod = b.addModule("strings", .{
-        .source_file = .{ .path = "src/source/libs/strings.zig" },
+        .source_file = .{ .path = "src/deps/strings.zig" },
         .dependencies = &.{},
+    });
+    const verify_mod = b.addModule("verify", .{
+        .source_file = .{ .path = "src/deps/verify.zig" },
+        .dependencies = &.{
+            .{ .name = "filenames", .module = filenames_mod },
+            .{ .name = "strings", .module = strings_mod },
+        },
     });
 
     // Internal source/ module.
     const source_mod = b.addModule("source", .{
         .source_file = .{ .path = "src/source/api.zig" },
         .dependencies = &.{
+            .{ .name = "stdout", .module = stdout_mod },
             .{ .name = "paths", .module = paths_mod },
             .{ .name = "filenames", .module = filenames_mod },
             .{ .name = "slices", .module = slices_mod },

@@ -75,7 +75,7 @@ const template =
     \\    /// frameFn is an implementation of _framers_.Behavior.
     \\    fn frameFn(self_ptr: *anyopaque, arena: std.mem.Allocator) anyerror {
     \\        var self: *Screen = @alignCast(@ptrCast(self_ptr));
-    \\        var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both, .color_style = .window });
+    \\        var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
     \\        defer scroll.deinit();
     \\
     \\        try self.all_panels.frameCurrent(arena);

@@ -1,5 +1,6 @@
 const std = @import("std");
 const fmt = std.fmt;
+const _strings_ = @import("strings");
 
 pub const Template = struct {
     allocator: std.mem.Allocator,
@@ -12,8 +13,7 @@ pub const Template = struct {
         self.allocator.destroy(self);
     }
 
-    // content builds and returns the content.
-    // The caller owns the return value.
+    // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
         // screen_name
         var size: usize = std.mem.replacementSize(u8, template, "{{ screen_name }}", self.screen_name);
@@ -44,7 +44,6 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, panel_name: [
     self.allocator = allocator;
     return self;
 }
-
 const template =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
@@ -52,6 +51,8 @@ const template =
     \\const _panels_ = @import("panels.zig");
     \\const _messenger_ = @import("messenger.zig");
     \\
+    \\/// {{ panel_name }} panel.
+    \\/// This panel is the content for the {{ panel_name }} tab.
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator, // For persistant state data.
     \\    all_screens: *_framers_.Group,

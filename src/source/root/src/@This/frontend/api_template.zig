@@ -9,11 +9,13 @@ pub const Template = struct {
     _vtab_screen_names: []*strings.UTF8,
     _panel_screen_names: []*strings.UTF8,
     _modal_screen_names: []*strings.UTF8,
+    _book_screen_names: []*strings.UTF8,
 
     _htab_screen_names_index: usize,
     _vtab_screen_names_index: usize,
     _panel_screen_names_index: usize,
     _modal_screen_names_index: usize,
+    _book_screen_names_index: usize,
 
     _app_name: []const u8,
 
@@ -49,6 +51,14 @@ pub const Template = struct {
             name.deinit();
         }
         self.allocator.free(self._modal_screen_names);
+
+        for (self._book_screen_names, 0..) |name, i| {
+            if (i == self._book_screen_names_index) {
+                break;
+            }
+            name.deinit();
+        }
+        self.allocator.free(self._book_screen_names);
 
         self.allocator.free(self._app_name);
         self.allocator.destroy(self);
@@ -102,6 +112,22 @@ pub const Template = struct {
         self._panel_screen_names_index += 1;
     }
 
+    pub fn addBookScreenName(self: *Template, new_screen_name: []const u8) !void {
+        if (self._book_screen_names_index == self._book_screen_names.len) {
+            // Full list so create a new bigger one.
+            var new_screen_names: []*strings.UTF8 = try self.allocator.alloc(*strings.UTF8, (self._book_screen_names.len + 5));
+            for (self._book_screen_names, 0..) |book_screen_name, i| {
+                new_screen_names[i] = book_screen_name;
+            }
+            // Replace the old list with the new bigger one.
+            self.allocator.free(self._book_screen_names);
+            self._book_screen_names = new_screen_names;
+        }
+        var utf8: *strings.UTF8 = try strings.UTF8.init(self.allocator, new_screen_name);
+        self._book_screen_names[self._book_screen_names_index] = utf8;
+        self._book_screen_names_index += 1;
+    }
+
     pub fn addModalScreenName(self: *Template, new_screen_name: []const u8) !void {
         if (self._modal_screen_names_index == self._modal_screen_names.len) {
             // Full list so create a new bigger one.
@@ -149,6 +175,15 @@ pub const Template = struct {
             copy = try name.copy();
             defer self.allocator.free(copy);
             line = try fmt.allocPrint(self.allocator, "const _{s}_ = @import(\"screen/panel/{s}/screen.zig\");\n", .{ copy, copy });
+            try lines.appendSlice(line);
+            self.allocator.free(line);
+        }
+        // book screens.
+        var book_screen_names: []*strings.UTF8 = self._book_screen_names[0..self._book_screen_names_index];
+        for (book_screen_names) |name| {
+            copy = try name.copy();
+            defer self.allocator.free(copy);
+            line = try fmt.allocPrint(self.allocator, "const _{s}_ = @import(\"screen/book/{s}/screen.zig\");\n", .{ copy, copy });
             try lines.appendSlice(line);
             self.allocator.free(line);
         }
@@ -200,7 +235,18 @@ pub const Template = struct {
         // init panel screens.
         for (panel_screen_names, 0..) |name, i| {
             if (i == 0) {
-                try lines.appendSlice("    // Simple screens.\n");
+                try lines.appendSlice("    // Panel screens.\n");
+            }
+            copy = try name.copy();
+            defer self.allocator.free(copy);
+            line = try fmt.allocPrint(self.allocator, "    try _{s}_.init(allocator, all_screens, send_channel, receive_channel);\n", .{copy});
+            try lines.appendSlice(line);
+            self.allocator.free(line);
+        }
+        // init book screens.
+        for (book_screen_names, 0..) |name, i| {
+            if (i == 0) {
+                try lines.appendSlice("    // Book screens.\n");
             }
             copy = try name.copy();
             defer self.allocator.free(copy);
@@ -229,10 +275,12 @@ pub fn init(allocator: std.mem.Allocator, app_name: []const u8) !*Template {
     self._vtab_screen_names = try allocator.alloc(*strings.UTF8, 5);
     self._panel_screen_names = try allocator.alloc(*strings.UTF8, 5);
     self._modal_screen_names = try allocator.alloc(*strings.UTF8, 5);
+    self._book_screen_names = try allocator.alloc(*strings.UTF8, 5);
     self._htab_screen_names_index = 0;
     self._vtab_screen_names_index = 0;
     self._panel_screen_names_index = 0;
     self._modal_screen_names_index = 0;
+    self._book_screen_names_index = 0;
     return self;
 }
 
@@ -270,6 +318,12 @@ const line2 =
 
 const line3 =
     \\
+    \\    // Initialze the example demo window.
+    \\    // KICKZIG TODO:
+    \\    // When you no longer want to display the example demo window
+    \\    //  you can comment the following line out.
+    \\    dvui.Examples.show_demo_window = false;
+    \\
     \\    // Set the default screen.
     \\    try all_screens.setCurrent(_main_menu_.startup_screen_name);
     \\    return all_screens;
@@ -286,28 +340,46 @@ const line3 =
     \\
     \\pub fn frame_main_menu(all_screens: *_framers_.Group) !void {
     \\    var m = try dvui.menu(@src(), .horizontal, .{ .background = true, .expand = .horizontal });
+    \\    defer m.deinit();
     \\
-    \\    if (try dvui.menuItemIcon(@src(), "{{app_name}}", dvui.entypo.menu, .{ .submenu = true }, .{ .expand = .none })) |r| {
+    \\    if (try dvui.menuItemIcon(@src(), "menu", dvui.entypo.menu, .{ .submenu = true }, .{ .expand = .none })) |r| {
     \\        var fw = try dvui.popup(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
     \\        defer fw.deinit();
     \\        
-    \\        for (_main_menu_.sorted_main_menu_screen_names) |screen_name| {
-    \\            if (try dvui.menuItemLabel(@src(), screen_name, .{}, .{}) != null) {
+    \\        for (_main_menu_.sorted_main_menu_screen_names, 0..) |screen_name, id_extra| {
+    \\            if (try dvui.menuItemLabel(@src(), screen_name, .{}, .{ .id_extra = id_extra }) != null) {
     \\                m.close();
-    \\                m.deinit();
     \\                try all_screens.setCurrent(screen_name);
     \\                return;
     \\            }
     \\        }
     \\
-    \\        if (try dvui.menuItemLabel(@src(), "Close Menu", .{}, .{}) != null) {
-    \\            // dvui.menuGet().?.close();
-    \\            m.close();
-    \\            m.deinit();
-    \\            return;
+    \\        if (try dvui.menuItemLabel(@src(), "DVUI Debug", .{}, .{}) != null) {
+    \\            dvui.toggleDebugWindow();
+    \\        }
+    \\
+    \\        // KICKZIG TODO:
+    \\        // When you no longer want to display the developer menu items.
+    \\        //  set _main_menu_.show_developer_menu_items to false.
+    \\        // Developer menu items.
+    \\        if (_main_menu_.show_developer_menu_items) {
+    \\            if (dvui.Examples.show_demo_window) {
+    \\                if (try dvui.menuItemLabel(@src(), "Hide the DVUI Demo", .{}, .{}) != null) {
+    \\                    dvui.Examples.show_demo_window = false;
+    \\                }
+    \\            } else {
+    \\                if (try dvui.menuItemLabel(@src(), "Show the DVUI Demo", .{}, .{}) != null) {
+    \\                    dvui.Examples.show_demo_window = true;
+    \\                }
+    \\            }
     \\        }
     \\    }
-    \\    m.deinit();
+    \\
+    \\    // look at demo() for examples of dvui widgets, shows in a floating window
+    \\    // KICKZIG TODO:
+    \\    // When you no longer want to display the example demo window
+    \\    //  you can comment the following line out.
+    \\    try dvui.Examples.demo();
     \\}
     \\
 ;

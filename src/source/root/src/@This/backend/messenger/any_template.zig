@@ -80,7 +80,7 @@ const template =
     \\    errdefer {
     \\        messenger.deinit();
     \\    }
-    \\    behavior.self = messenger;
+    \\    behavior.implementor = messenger;
     \\    behavior.receiveFn = &Messenger.receiveFn;
     \\    try receive_channels.{{message_name}}.subscribe(behavior);
     \\    errdefer {

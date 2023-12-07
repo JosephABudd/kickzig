@@ -54,7 +54,7 @@ pub const content =
     \\            .border = dvui.Rect.all(10),
     \\            .padding = dvui.Rect.all(10),
     \\            .corner_radius = dvui.Rect.all(5),
-    \\            .color_border = theme.style_accent.accent.?, //dvui.options.color(.accent),
+    \\            .color_border = theme.style_accent.color_accent.?, //dvui.options.color(.accent),
     \\        };
     \\        var padding: *dvui.BoxWidget = try dvui.box(@src(), .vertical, padding_options);
     \\        defer padding.deinit();
@@ -88,7 +88,7 @@ pub const content =
     \\            var row = try dvui.box(@src(), .horizontal, .{ .expand = .horizontal });
     \\            defer row.deinit();
     \\
-    \\            if (try dvui.button(@src(), "OK", .{})) {
+    \\            if (try dvui.button(@src(), "OK", .{}, .{})) {
     \\                try self.close();
     \\            }
     \\        }

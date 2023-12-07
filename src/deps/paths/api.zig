@@ -25,6 +25,7 @@ pub const FolderPaths = struct {
     root_src_this_frontend_screen_panel: ?[]const u8,
     root_src_this_frontend_screen_htab: ?[]const u8,
     root_src_this_frontend_screen_vtab: ?[]const u8,
+    root_src_this_frontend_screen_book: ?[]const u8,
     root_src_this_frontend_screen_modal: ?[]const u8,
     root_src_this_frontend_screen_modal_ok: ?[]const u8,
     root_src_this_deps: ?[]const u8,
@@ -33,6 +34,7 @@ pub const FolderPaths = struct {
     root_src_this_deps_framers: ?[]const u8,
     root_src_this_deps_lock: ?[]const u8,
     root_src_this_deps_modal_params: ?[]const u8,
+    root_src_this_deps_widget: ?[]const u8,
 
     pub fn deinit(self: *FolderPaths) void {
         const allocator: std.mem.Allocator = self.allocator;
@@ -66,6 +68,9 @@ pub const FolderPaths = struct {
         if (self.root_src_this_frontend_screen_vtab) |member| {
             allocator.free(member);
         }
+        if (self.root_src_this_frontend_screen_book) |member| {
+            allocator.free(member);
+        }
         if (self.root_src_this_frontend_screen_modal) |member| {
             allocator.free(member);
         }
@@ -93,6 +98,9 @@ pub const FolderPaths = struct {
         if (self.root_src_this_deps_modal_params) |member| {
             allocator.free(member);
         }
+        if (self.root_src_this_deps_widget) |member| {
+            allocator.free(member);
+        }
         allocator.destroy(self);
     }
 
@@ -104,7 +112,7 @@ pub const FolderPaths = struct {
         }
         // Remove root/src/@This/.
         var dir: std.fs.Dir = undefined;
-        dir = try std.fs.openDirAbsolute(self.root_src_this.?, .{});
+        dir = try std.fs.openDirAbsolute(self.root_src.?, .{});
         try dir.deleteTree(folder_name_this);
     }
 
@@ -165,6 +173,10 @@ pub const FolderPaths = struct {
         temp = try frontend.pathScreenVTabFolder(self.allocator);
         try this_dir.makePath(temp);
         self.allocator.free(temp);
+        // frontend/screen/book/
+        temp = try frontend.pathScreenBookFolder(self.allocator);
+        try this_dir.makePath(temp);
+        self.allocator.free(temp);
         // frontend/screen/modal/
         temp = try frontend.pathScreenModalFolder(self.allocator);
         try this_dir.makePath(temp);
@@ -194,6 +206,10 @@ pub const FolderPaths = struct {
         self.allocator.free(temp);
         // deps/modal_params/
         temp = try deps.pathModalParamsFolder(self.allocator);
+        try this_dir.makePath(temp);
+        self.allocator.free(temp);
+        // deps/widget/
+        temp = try deps.pathWidgetFolder(self.allocator);
         try this_dir.makePath(temp);
         self.allocator.free(temp);
     }
@@ -336,6 +352,19 @@ pub fn folders() !*FolderPaths {
     }
     _allocator.free(temp);
 
+    // /src/@This/frontend/screen/book/ path.
+    temp = try frontend.pathScreenBookFolder(_allocator);
+    errdefer {
+        folder_paths.deinit();
+    }
+    params2[1] = temp;
+    folder_paths.root_src_this_frontend_screen_book = try fspath.join(_allocator, params2);
+    errdefer {
+        _allocator.free(temp);
+        folder_paths.deinit();
+    }
+    _allocator.free(temp);
+
     // /src/@This/frontend/screen/modal/ path.
     temp = try frontend.pathScreenModalFolder(_allocator);
     errdefer {
@@ -428,6 +457,19 @@ pub fn folders() !*FolderPaths {
     }
     params2[1] = temp;
     folder_paths.root_src_this_deps_modal_params = try fspath.join(_allocator, params2);
+    errdefer {
+        _allocator.free(temp);
+        folder_paths.deinit();
+    }
+    _allocator.free(temp);
+
+    // /src/@This/deps/widget/ path.
+    temp = try deps.pathWidgetFolder(_allocator);
+    errdefer {
+        folder_paths.deinit();
+    }
+    params2[1] = temp;
+    folder_paths.root_src_this_deps_widget = try fspath.join(_allocator, params2);
     errdefer {
         _allocator.free(temp);
         folder_paths.deinit();

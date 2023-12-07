@@ -83,7 +83,7 @@ const template =
     \\    errdefer {
     \\        allocator.destroy(messenger);
     \\    }
-    \\    initializeBehavior.self = messenger;
+    \\    initializeBehavior.implementor = messenger;
     \\    initializeBehavior.receiveFn = Messenger.receiveInitialize;
     \\    // Subscribe in order to receive the Initialize messages.
     \\    try receive_channels.Initialize.subscribe(initializeBehavior);

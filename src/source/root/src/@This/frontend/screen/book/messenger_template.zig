@@ -1,38 +1,4 @@
-const std = @import("std");
-const fmt = std.fmt;
-
-pub const Template = struct {
-    allocator: std.mem.Allocator,
-    screen_name: []const u8,
-
-    pub fn deinit(self: *Template) void {
-        self.allocator.free(self.screen_name);
-        self.allocator.destroy(self);
-    }
-
-    // content builds and returns the content.
-    // The caller owns the return value.
-    pub fn content(self: *Template) ![]const u8 {
-        // screen_name
-        var size: usize = std.mem.replacementSize(u8, template, "{{screen_name}}", self.screen_name);
-        var with_screen_name: []u8 = try self.allocator.alloc(u8, size);
-        _ = std.mem.replace(u8, template, "{{screen_name}}", self.screen_name, with_screen_name);
-        return with_screen_name;
-    }
-};
-
-pub fn init(allocator: std.mem.Allocator, screen_name: []const u8) !*Template {
-    var self: *Template = try allocator.create(Template);
-    self.screen_name = try allocator.alloc(u8, screen_name.len);
-    errdefer {
-        allocator.destroy(self);
-    }
-    @memcpy(@constCast(self.screen_name), screen_name);
-    self.allocator = allocator;
-    return self;
-}
-
-const template =
+pub const content =
     \\const std = @import("std");
     \\
     \\const _message_ = @import("message");
@@ -95,4 +61,5 @@ const template =
     \\
     \\    return messenger;
     \\}
+    \\
 ;

@@ -41,7 +41,7 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
     {
         // standalone-sdl.zig
         // Build the data for the template.
-        var template: *standalone_template.Template = try standalone_template.Template.init(allocator, paths.folder_name_this);
+        var template: *standalone_template.Template = try standalone_template.Template.init(allocator, app_name);
         defer template.deinit();
         var content: []const u8 = try template.content();
         defer allocator.free(content);

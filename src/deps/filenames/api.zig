@@ -16,6 +16,7 @@ pub const frontent_main_menu_file_name: []const u8 = "main_menu.zig";
 pub const initialize_file_name: []const u8 = "Initialize.zig";
 pub const fatal_file_name: []const u8 = "Fatal.zig";
 pub const ok_file_name: []const u8 = "OK.zig";
+pub const tabbar_file_name: []const u8 = "tabbar.zig";
 
 // backend.
 
@@ -64,12 +65,18 @@ pub fn allBackendMessageHandlerNames(allocator: std.mem.Allocator) ![][]const u8
             }
         }
     }
-    var slice = try handler_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try handler_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -103,12 +110,7 @@ pub fn frontendPanelNameFromPanelFileName(file_name: []const u8) ?[]const u8 {
 /// allFrontendPanelScreenPanelNames returns the names of each panel-file in a panel-screen.
 pub fn allFrontendPanelScreenPanelNames(allocator: std.mem.Allocator, screen_name: []const u8) ![][]const u8 {
     var folder_file_names: [][]const u8 = try frontend.allPanelScreenFileNames(allocator, screen_name);
-    defer {
-        for (folder_file_names) |name| {
-            allocator.free(name);
-        }
-        allocator.free(folder_file_names);
-    }
+    defer allocator.free(folder_file_names);
     // Collect panel names from panel files.
     var panel_file_names = std.ArrayList([]const u8).init(allocator);
     defer panel_file_names.deinit();
@@ -117,13 +119,18 @@ pub fn allFrontendPanelScreenPanelNames(allocator: std.mem.Allocator, screen_nam
             try panel_file_names.append(panel_file_name);
         }
     }
-    // Return a slice of the panel file names that the caller owns.
-    var slice = try panel_file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -131,12 +138,7 @@ pub fn allFrontendPanelScreenPanelNames(allocator: std.mem.Allocator, screen_nam
 /// allFrontendModalScreenPanelNames returns the names of each panel-file in a modal-screen.
 pub fn allFrontendModalScreenPanelNames(allocator: std.mem.Allocator, screen_name: []const u8) ![][]const u8 {
     var folder_file_names: [][]const u8 = try frontend.allModalScreenFileNames(allocator, screen_name);
-    defer {
-        for (folder_file_names) |name| {
-            allocator.free(name);
-        }
-        allocator.free(folder_file_names);
-    }
+    defer allocator.free(folder_file_names);
     // Collect panel names from panel files.
     var panel_file_names = std.ArrayList([]const u8).init(allocator);
     defer panel_file_names.deinit();
@@ -145,13 +147,18 @@ pub fn allFrontendModalScreenPanelNames(allocator: std.mem.Allocator, screen_nam
             try panel_file_names.append(panel_file_name);
         }
     }
-    // Return a slice of the panel file names that the caller owns.
-    var slice = try panel_file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -159,27 +166,27 @@ pub fn allFrontendModalScreenPanelNames(allocator: std.mem.Allocator, screen_nam
 /// allFrontendVTabScreenPanelNames returns the names of each panel-file in a vtab-screen.
 pub fn allFrontendVTabScreenPanelNames(allocator: std.mem.Allocator, screen_name: []const u8) ![][]const u8 {
     var folder_file_names: [][]const u8 = try frontend.allVTabScreenFileNames(allocator, screen_name);
-    defer {
-        for (folder_file_names) |name| {
-            allocator.free(name);
-        }
-        allocator.free(folder_file_names);
-    }
+    defer allocator.free(folder_file_names);
     // Collect panel names from panel files.
     var panel_file_names = std.ArrayList([]const u8).init(allocator);
     defer panel_file_names.deinit();
     for (folder_file_names) |folder_file_name| {
         if (frontendPanelNameFromPanelFileName(folder_file_name)) |panel_file_name| {
-            panel_file_names.append(panel_file_name);
+            try panel_file_names.append(panel_file_name);
         }
     }
-    // Return a slice of the panel file names that the caller owns.
-    var slice = try panel_file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -187,27 +194,55 @@ pub fn allFrontendVTabScreenPanelNames(allocator: std.mem.Allocator, screen_name
 /// allFrontendHTabScreenPanelNames returns the names of each panel-file in a htab-screen.
 pub fn allFrontendHTabScreenPanelNames(allocator: std.mem.Allocator, screen_name: []const u8) ![][]const u8 {
     var folder_file_names: [][]const u8 = try frontend.allHTabScreenFileNames(allocator, screen_name);
-    defer {
-        for (folder_file_names) |name| {
-            allocator.free(name);
-        }
-        allocator.free(folder_file_names);
-    }
+    defer allocator.free(folder_file_names);
     // Collect panel names from panel files.
     var panel_file_names = std.ArrayList([]const u8).init(allocator);
     defer panel_file_names.deinit();
     for (folder_file_names) |folder_file_name| {
         if (frontendPanelNameFromPanelFileName(folder_file_name)) |panel_file_name| {
-            panel_file_names.append(panel_file_name);
+            try panel_file_names.append(panel_file_name);
         }
     }
-    // Return a slice of the panel file names that the caller owns.
-    var slice = try panel_file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
+    }
+    return names;
+}
+
+/// allFrontendBookScreenPanelNames returns the names of each panel-file in a book-screen.
+pub fn allFrontendBookScreenPanelNames(allocator: std.mem.Allocator, screen_name: []const u8) ![][]const u8 {
+    var folder_file_names: [][]const u8 = try frontend.allBookScreenFileNames(allocator, screen_name);
+    defer allocator.free(folder_file_names);
+    // Collect panel names from panel files.
+    var panel_file_names = std.ArrayList([]const u8).init(allocator);
+    defer panel_file_names.deinit();
+    for (folder_file_names) |folder_file_name| {
+        if (frontendPanelNameFromPanelFileName(folder_file_name)) |panel_file_name| {
+            try panel_file_names.append(panel_file_name);
+        }
+    }
+    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }
@@ -248,6 +283,16 @@ pub fn allFrontendScreenNames(allocator: std.mem.Allocator) ![][]const u8 {
     }
     try all_folders.appendSlice(vtab_folders);
 
+    // Book screens.
+    var book_folders: [][]const u8 = try frontend.allBookFolders(allocator);
+    defer {
+        for (book_folders) |folder| {
+            allocator.free(folder);
+        }
+        allocator.free(book_folders);
+    }
+    try all_folders.appendSlice(book_folders);
+
     // Modal screens.
     var modal_folders: [][]const u8 = try frontend.allModalFolders(allocator);
     defer {
@@ -257,13 +302,18 @@ pub fn allFrontendScreenNames(allocator: std.mem.Allocator) ![][]const u8 {
         allocator.free(modal_folders);
     }
     try all_folders.appendSlice(modal_folders);
-
-    var all_folders_slice: [][]const u8 = try all_folders.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, all_folders_slice.len);
-    for (all_folders_slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
+    var owned: [][]const u8 = try all_folders.toOwnedSlice();
+    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
+    for (owned, 0..) |name, i| {
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            for (names, 0..) |deinit_name, j| {
+                if (j == i) break;
+                allocator.free(deinit_name);
+            }
+            allocator.free(names);
+        }
+        @memcpy(@constCast(names[i]), name);
     }
     return names;
 }

@@ -1,44 +1,45 @@
 const std = @import("std");
 const fmt = std.fmt;
-const strings = @import("strings");
+const _strings_ = @import("strings");
 
 pub const Template = struct {
     allocator: std.mem.Allocator,
-    _panel_names: []*strings.UTF8,
-    _panel_names_index: usize,
+    panel_names: []*_strings_.UTF8,
+    panel_names_index: usize,
 
     pub fn deinit(self: *Template) void {
-        for (self._panel_names, 0..) |name, i| {
-            if (i == self._panel_names_index) {
+        for (self.panel_names, 0..) |name, i| {
+            if (i == self.panel_names_index) {
                 break;
             }
             name.deinit();
         }
-        self.allocator.free(self._panel_names);
+        self.allocator.free(self.panel_names);
         self.allocator.destroy(self);
     }
 
     pub fn addName(self: *Template, new_name: []const u8) !void {
-        if (self._panel_names_index == self._panel_names.len) {
+        if (self.panel_names_index == self.panel_names.len) {
             // Full list so create a new bigger one.
-            var new_panel_names: []*strings.UTF8 = try self.allocator.alloc(*strings.UTF8, (self._panel_names.len + 5));
-            for (self._panel_names, 0..) |name, i| {
+            var new_panel_names: []*_strings_.UTF8 = try self.allocator.alloc(*_strings_.UTF8, (self.panel_names.len + 5));
+            for (self.panel_names, 0..) |name, i| {
                 new_panel_names[i] = name;
             }
             // Replace the old list with the new bigger one.
-            self.allocator.free(self._panel_names);
-            self._panel_names = new_panel_names;
+            self.allocator.free(self.panel_names);
+            self.panel_names = new_panel_names;
         }
-        var utf8: *strings.UTF8 = try strings.UTF8.init(self.allocator, new_name);
-        self._panel_names[self._panel_names_index] = utf8;
-        self._panel_names_index += 1;
+        var utf8: *_strings_.UTF8 = try _strings_.UTF8.init(self.allocator, new_name);
+        self.panel_names[self.panel_names_index] = utf8;
+        self.panel_names_index += 1;
     }
 
+    // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
         var line: []u8 = undefined;
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
-        var names: []*strings.UTF8 = self._panel_names[0..self._panel_names_index];
+        var names: []*_strings_.UTF8 = self.panel_names[0..self.panel_names_index];
         var copy: []const u8 = undefined;
 
         try lines.appendSlice(line1a);
@@ -148,15 +149,15 @@ pub const Template = struct {
 
 pub fn init(allocator: std.mem.Allocator) !*Template {
     var data: *Template = try allocator.create(Template);
-    data._panel_names = try allocator.alloc(*strings.UTF8, 5);
+    data.panel_names = try allocator.alloc(*_strings_.UTF8, 5);
     errdefer {
         allocator.destroy(data);
     }
     errdefer {
-        allocator.free(data._panel_names);
+        allocator.free(data.panel_names);
         allocator.destroy(data);
     }
-    data._panel_names_index = 0;
+    data.panel_names_index = 0;
     data.allocator = allocator;
     return data;
 }

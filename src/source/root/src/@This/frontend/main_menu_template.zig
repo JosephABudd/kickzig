@@ -1,7 +1,7 @@
 const std = @import("std");
 const fmt = std.fmt;
 const strings = @import("strings");
-pub const default_landing_screen_name: []const u8 = "Example";
+pub const default_landing_screen_name: []const u8 = "HelloWorld";
 
 pub const Template = struct {
     _allocator: std.mem.Allocator,
@@ -25,6 +25,9 @@ pub fn init(allocator: std.mem.Allocator) !*Template {
 }
 
 const template =
+    \\// menu items for the developer, not for release.
+    \\pub const show_developer_menu_items: bool = true;
+    \\
     \\// startup_screen_name is the screen displayed at statup.
     \\pub const startup_screen_name = "{{startup_screen_name}}";
     \\
