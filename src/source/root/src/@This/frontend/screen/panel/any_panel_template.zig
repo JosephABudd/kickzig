@@ -68,8 +68,11 @@ const template =
     \\        _ = self;
     \\        _ = arena;
     \\
-    \\        var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
-    \\        defer scroll.deinit();
+    \\        var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
+    \\        defer scroller.deinit();
+    \\
+    \\        var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
+    \\        defer layout.deinit();
     \\
     \\        // Example 1: The screen's name.
     \\        var example_title = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });

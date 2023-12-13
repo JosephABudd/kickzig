@@ -1,114 +1,95 @@
 const std = @import("std");
 const fmt = std.fmt;
-const strings = @import("strings");
 
 pub const Template = struct {
     allocator: std.mem.Allocator,
-    _message_names: []*strings.UTF8,
-    _message_names_index: usize,
+    message_names: [][]const u8,
+    message_names_index: usize,
 
+    // The caller owns the returned value.
     pub fn init(allocator: std.mem.Allocator) !*Template {
         var data: *Template = try allocator.create(Template);
-        data._message_names = try allocator.alloc(*strings.UTF8, 5);
+        data.message_names = try allocator.alloc([]const u8, 5);
         errdefer {
             allocator.destroy(data);
         }
-        data._message_names_index = 0;
+        data.message_names_index = 0;
         data.allocator = allocator;
         return data;
     }
 
     pub fn deinit(self: *Template) void {
-        for (self._message_names, 0..) |name, i| {
-            if (i == self._message_names_index) {
+        for (self.message_names, 0..) |name, i| {
+            if (i == self.message_names_index) {
                 break;
             }
-            name.deinit();
+            self.allocator.free(name);
         }
-        self.allocator.free(self._message_names);
+        self.allocator.free(self.message_names);
         self.allocator.destroy(self);
     }
 
     pub fn addName(self: *Template, new_name: []const u8) !void {
-        var new_message_names: []*strings.UTF8 = undefined;
-        if (self._message_names_index == self._message_names.len) {
+        var new_message_names: [][]const u8 = undefined;
+        if (self.message_names_index == self.message_names.len) {
             // Full list so create a new bigger one.
-            new_message_names = try self.allocator.alloc(*strings.UTF8, (self._message_names.len + 5));
-            for (self._message_names, 0..) |name, i| {
+            new_message_names = try self.allocator.alloc([]const u8, (self.message_names.len + 5));
+            for (self.message_names, 0..) |name, i| {
                 new_message_names[i] = name;
             }
             // Replace the old list with the new bigger one.
-            self.allocator.free(self._message_names);
-            self._message_names = new_message_names;
+            self.allocator.free(self.message_names);
+            self.message_names = new_message_names;
         }
-        var utf8: *strings.UTF8 = try strings.UTF8.init(self.allocator, new_name);
-        self._message_names[self._message_names_index] = utf8;
-        self._message_names_index += 1;
+        self.message_names[self.message_names_index] = try self.allocator.alloc(u8, new_name.len);
+        @memcpy(@constCast(self.message_names[self.message_names_index]), new_name);
+        self.message_names_index += 1;
     }
 
+    // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
         var line: []u8 = undefined;
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
         try lines.appendSlice(line1);
-        var names: []*strings.UTF8 = self._message_names[0..self._message_names_index];
-        var lc: []const u8 = undefined;
-        var copy: []const u8 = undefined;
+        var names: [][]const u8 = self.message_names[0..self.message_names_index];
         for (names) |name| {
-            {
-                lc = try name.lowerCased();
-                defer self.allocator.free(lc);
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "const _{s}_ = @import(\"{s}.zig\");\n", .{ lc, copy });
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"{0s}.zig\");\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
         try lines.appendSlice(line2);
         for (names) |name| {
-            {
-                lc = try name.lowerCased();
-                defer self.allocator.free(lc);
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "    {s}: *_{s}_.Messenger,\n", .{ copy, lc });
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "    {0s}: *_{0s}_.Messenger,\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
         try lines.appendSlice(line3);
         for (names) |name| {
-            {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "        self.{s}.deinit();\n", .{copy});
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "        self.{0s}.deinit();\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
         try lines.appendSlice(line4);
         for (names, 0..) |name, i| {
             {
-                lc = try name.lowerCased();
-                copy = try name.copy();
-                line = try fmt.allocPrint(self.allocator, "    messenger.{s} = try _{s}_.init(allocator, send_channels, receive_channels);\n", .{ copy, lc });
+                line = try fmt.allocPrint(self.allocator, "    messenger.{0s} = try _{0s}_.init(allocator, send_channels, receive_channels);\n", .{name});
+                defer self.allocator.free(line);
                 try lines.appendSlice(line);
-                self.allocator.free(line);
-                try lines.appendSlice("    errdefer {\n");
-                var deinit_names: []*strings.UTF8 = names[0..i];
-                for (deinit_names, 0..i) |deinit_name, j| {
-                    _ = deinit_name;
-                    if (j < i) {
-                        line = try fmt.allocPrint(self.allocator, "        messenger.{s}.deinit();\n", .{copy});
-                        try lines.appendSlice(line);
-                        self.allocator.free(line);
-                    }
-                }
+            }
+            try lines.appendSlice("    errdefer {\n");
+            var deinit_names: [][]const u8 = names[0..i];
+            for (deinit_names) |deinit_name| {
+                line = try fmt.allocPrint(self.allocator, "        messenger.{0s}.deinit();\n", .{deinit_name});
+                defer self.allocator.free(line);
+                try lines.appendSlice(line);
             }
         }
         try lines.appendSlice(line5);
-        return try lines.toOwnedSlice();
+        var temp: []const u8 = try lines.toOwnedSlice();
+        line = try self.allocator.alloc(u8, temp.len);
+        @memcpy(@constCast(line), temp);
+        return line;
     }
 };
 

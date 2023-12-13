@@ -6,18 +6,20 @@
 /// - deps/message/api.zig
 /// - deps/widget/api.zig, tabbar.zig
 const std = @import("std");
-const channel = @import("channel/framework.zig");
-const framers = @import("framers/framework.zig");
-const lock = @import("lock/framework.zig");
-const message = @import("message/framework.zig");
-const modal_params = @import("modal_params/framework.zig");
-const widget = @import("widget/framework.zig");
+const _channel_ = @import("channel/framework.zig");
+const _framers_ = @import("framers/framework.zig");
+const _lock_ = @import("lock/framework.zig");
+const _message_ = @import("message/framework.zig");
+const _modal_params_ = @import("modal_params/framework.zig");
+const _widget_ = @import("widget/framework.zig");
+
+pub const modal_params = _modal_params_;
 
 pub fn create(allocator: std.mem.Allocator) !void {
-    try channel.create(allocator);
-    try framers.create();
-    try lock.create();
-    try message.create(allocator);
-    try modal_params.create(allocator);
-    try widget.create(allocator);
+    try _channel_.create(allocator);
+    try _framers_.create();
+    try _lock_.create();
+    try _message_.create(allocator);
+    try _modal_params_.create(allocator);
+    try _widget_.create(allocator);
 }

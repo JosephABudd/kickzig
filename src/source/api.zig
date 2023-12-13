@@ -1,6 +1,7 @@
 const std = @import("std");
 const _root_ = @import("root/framework.zig");
-pub const frontend = @import("root/src/@This/frontend/framework.zig");
+
+pub const frontend = _root_.frontend;
 
 pub fn recreate(allocator: std.mem.Allocator, app_name: []const u8) !void {
     try _root_.recreate(allocator, app_name);

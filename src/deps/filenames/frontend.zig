@@ -181,6 +181,7 @@ pub fn allPanelScreenFileNames(allocator: std.mem.Allocator, screen_name: []cons
     defer allocator.free(folder_path);
     var dir_path: []const u8 = try std.fs.path.join(allocator, folder_path);
     defer allocator.free(dir_path);
+    std.debug.print("dir_path is {s}\n", .{dir_path});
     var dir = try std.fs.openIterableDirAbsolute(dir_path, .{});
     defer dir.close();
 
@@ -220,7 +221,7 @@ pub fn allModalScreenFileNames(allocator: std.mem.Allocator, screen_name: []cons
     // The screen's folder path.
     try folder_names.append(folders.root_src_this_frontend_screen_modal.?);
     try folder_names.append(screen_name);
-    var folder_path: []const []const u8 = folder_names.toOwnedSlice();
+    var folder_path: []const []const u8 = try folder_names.toOwnedSlice();
     defer allocator.free(folder_path);
     var dir_path: []const u8 = try std.fs.path.join(allocator, folder_path);
     defer allocator.free(dir_path);

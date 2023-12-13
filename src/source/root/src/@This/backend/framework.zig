@@ -1,8 +1,8 @@
 const std = @import("std");
 const paths = @import("paths");
-const filenames = @import("filenames");
-const api_template = @import("api_template.zig");
-const messenger = @import("messenger/framework.zig");
+const _filenames_ = @import("filenames");
+const _api_template_ = @import("api_template.zig");
+const _messenger_ = @import("messenger/framework.zig");
 
 pub fn create(allocator: std.mem.Allocator) !void {
     // Open the folder.
@@ -12,10 +12,10 @@ pub fn create(allocator: std.mem.Allocator) !void {
     defer backend_dir.close();
 
     // Open, write and close the file.
-    var ofile: std.fs.File = try backend_dir.createFile(filenames.api_file_name, .{});
+    var ofile: std.fs.File = try backend_dir.createFile(_filenames_.api_file_name, .{});
     defer ofile.close();
-    try ofile.writeAll(api_template.content);
+    try ofile.writeAll(_api_template_.content);
 
     // Create the files for the backend/messenger folder.
-    try messenger.create(allocator);
+    try _messenger_.create(allocator);
 }

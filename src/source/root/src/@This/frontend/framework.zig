@@ -14,7 +14,8 @@ const _panel_screen_ = @import("screen/panel/framework.zig");
 const _vtab_screen_ = @import("screen/vtab/framework.zig");
 const _htab_screen_ = @import("screen/htab/framework.zig");
 const _book_screen_ = @import("screen/book/framework.zig");
-const _ok_modal_screen_ = @import("screen/modal/ok/framework.zig");
+const _modal_screen_ = @import("screen/modal/framework.zig");
+const _modal_params_ = @import("source_deps").modal_params;
 
 pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
     // Add the main menu file which is a data file.
@@ -24,7 +25,7 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
     // It contains lots of example code.
     try _panel_screen_.createHelloWorldPackage(allocator);
     // Add the OK modal screen.
-    try _ok_modal_screen_.create(allocator);
+    try _modal_screen_.create(allocator);
     // Build api.zig with the initialize channel.
     try rebuildApiZig(allocator, app_name);
 }
@@ -177,6 +178,23 @@ pub fn addHTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_
 
 pub fn removeHTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
     var removed: bool = try _htab_screen_.remove(screen_name);
+    if (removed) {
+        try rebuildApiZig(allocator, app_name);
+    }
+    return removed;
+}
+
+// Add or remove modal screens.
+pub fn addModalScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, panel_names: [][]const u8) !void {
+    // Add the modal package.
+    try _modal_screen_.createAnyPackage(allocator, screen_name, panel_names);
+    // Build api.zig with the initialize channel.
+    try rebuildApiZig(allocator, app_name);
+    try _modal_params_.add(allocator, screen_name);
+}
+
+pub fn removeModalScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
+    var removed: bool = try _modal_screen_.remove(screen_name);
     if (removed) {
         try rebuildApiZig(allocator, app_name);
     }

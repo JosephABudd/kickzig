@@ -1,9 +1,9 @@
 const std = @import("std");
 const fspath = std.fs.path;
 const paths = @import("paths");
-const filenames = @import("filenames");
-const api_template = @import("api_template.zig");
-const tabbar_template = @import("tabbar_template.zig");
+const _filenames_ = @import("filenames");
+const _api_template_ = @import("api_template.zig");
+const _tabbar_template_ = @import("tabbar_template.zig");
 
 pub fn create(allocator: std.mem.Allocator) !void {
     // Open the write folder.
@@ -14,19 +14,19 @@ pub fn create(allocator: std.mem.Allocator) !void {
 
     {
         // api.zig
-        var template: *api_template.Template = try api_template.init(allocator);
+        var template: *_api_template_.Template = try _api_template_.init(allocator);
         defer template.deinit();
         var content: []const u8 = try template.content();
         defer allocator.free(content);
-        var ofile: std.fs.File = try dir.createFile(filenames.api_file_name, .{});
+        var ofile: std.fs.File = try dir.createFile(_filenames_.api_file_name, .{});
         defer ofile.close();
         try ofile.writeAll(content);
     }
 
     {
         // tabbar.zig
-        var ofile: std.fs.File = try dir.createFile(filenames.tabbar_file_name, .{});
+        var ofile: std.fs.File = try dir.createFile(_filenames_.tabbar_file_name, .{});
         defer ofile.close();
-        try ofile.writeAll(tabbar_template.content);
+        try ofile.writeAll(_tabbar_template_.content);
     }
 }

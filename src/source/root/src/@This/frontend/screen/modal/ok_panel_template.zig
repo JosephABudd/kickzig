@@ -4,6 +4,8 @@ pub const content =
     \\const _framers_ = @import("framers");
     \\const _panels_ = @import("panels.zig");
     \\const _messenger_ = @import("messenger.zig");
+    \\const _lock_ = @import("lock");
+    \\const ModalParams = @import("modal_params").OK;
     \\
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator,
@@ -13,19 +15,19 @@ pub const content =
     \\    heading: ?[]u8,
     \\    message: ?[]u8,
     \\
-    \\    pub fn presetModal(self: *Panel, heading: []const u8, message: []const u8) !void {
+    \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
     \\        // heading.
     \\        if (self.heading) |self_heading| {
     \\            self.allocator.free(self_heading);
     \\        }
-    \\        self.heading = try self.allocator.alloc(u8, heading.len);
-    \\        @memcpy(self.heading.?, heading);
+    \\        self.heading = try self.allocator.alloc(u8, setup_args.heading.len);
+    \\        @memcpy(self.heading.?, setup_args.heading);
     \\        // message.
     \\        if (self.message) |self_message| {
     \\            self.allocator.free(self_message);
     \\        }
-    \\        self.message = try self.allocator.alloc(u8, message.len);
-    \\        @memcpy(self.message.?, message);
+    \\        self.message = try self.allocator.alloc(u8, setup_args.message.len);
+    \\        @memcpy(self.message.?, setup_args.message);
     \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
@@ -59,11 +61,14 @@ pub const content =
     \\        var padding: *dvui.BoxWidget = try dvui.box(@src(), .vertical, padding_options);
     \\        defer padding.deinit();
     \\
-    \\        {
-    \\            // Row 1.
-    \\            var row = try dvui.box(@src(), .horizontal, .{ .expand = .horizontal });
-    \\            defer row.deinit();
+    \\        var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
+    \\        defer scroller.deinit();
     \\
+    \\        var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
+    \\        defer layout.deinit();
+    \\
+    \\        {
+    \\            // Row 1. Heading.
     \\            if (self.heading) |heading| {
     \\                var header = try dvui.textLayout(@src(), .{}, .{ .expand = .both, .font_style = .title_4 });
     \\                try header.addText(heading, .{});
@@ -72,10 +77,7 @@ pub const content =
     \\        }
     \\
     \\        {
-    \\            // Row 2.
-    \\            var row = try dvui.box(@src(), .horizontal, .{ .expand = .both });
-    \\            defer row.deinit();
-    \\
+    \\            // Row 2. Message.
     \\            if (self.message) |message| {
     \\                var content = try dvui.textLayout(@src(), .{}, .{ .expand = .both });
     \\                try content.addText(message, .{});
@@ -84,10 +86,7 @@ pub const content =
     \\        }
     \\
     \\        {
-    \\            // Row 3. buttons.
-    \\            var row = try dvui.box(@src(), .horizontal, .{ .expand = .horizontal });
-    \\            defer row.deinit();
-    \\
+    \\            // Row 3. Buttons.
     \\            if (try dvui.button(@src(), "OK", .{}, .{})) {
     \\                try self.close();
     \\            }

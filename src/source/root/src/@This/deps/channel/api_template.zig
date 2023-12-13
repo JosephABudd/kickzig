@@ -1,49 +1,48 @@
 const std = @import("std");
 const fmt = std.fmt;
-const strings = @import("strings");
 
 pub const Template = struct {
     allocator: std.mem.Allocator,
-    _channel_names: []*strings.UTF8,
-    _channel_names_index: usize,
+    channel_names: [][]const u8,
+    channel_names_index: usize,
 
     pub fn init(allocator: std.mem.Allocator) !*Template {
         var data: *Template = try allocator.create(Template);
-        data._channel_names = try allocator.alloc(*strings.UTF8, 5);
+        data.channel_names = try allocator.alloc([]const u8, 5);
         errdefer {
             allocator.destroy(data);
         }
-        data._channel_names_index = 0;
+        data.channel_names_index = 0;
         data.allocator = allocator;
         return data;
     }
 
     pub fn deinit(self: *Template) void {
-        for (self._channel_names, 0..) |name, i| {
-            if (i == self._channel_names_index) {
+        for (self.channel_names, 0..) |name, i| {
+            if (i == self.channel_names_index) {
                 break;
             }
-            name.deinit();
+            self.allocator.free(name);
         }
-        self.allocator.free(self._channel_names);
+        self.allocator.free(self.channel_names);
         self.allocator.destroy(self);
     }
 
     pub fn addName(self: *Template, new_name: []const u8) !void {
-        var new_channel_names: []*strings.UTF8 = undefined;
-        if (self._channel_names_index == self._channel_names.len) {
+        var new_channel_names: [][]const u8 = undefined;
+        if (self.channel_names_index == self.channel_names.len) {
             // Full list so create a new bigger one.
-            new_channel_names = try self.allocator.alloc(*strings.UTF8, (self._channel_names.len + 5));
-            for (self._channel_names, 0..) |name, i| {
+            new_channel_names = try self.allocator.alloc([]const u8, (self.channel_names.len + 5));
+            for (self.channel_names, 0..) |name, i| {
                 new_channel_names[i] = name;
             }
             // Replace the old list with the new bigger one.
-            self.allocator.free(self._channel_names);
-            self._channel_names = new_channel_names;
+            self.allocator.free(self.channel_names);
+            self.channel_names = new_channel_names;
         }
-        var utf8: *strings.UTF8 = try strings.UTF8.init(self.allocator, new_name);
-        self._channel_names[self._channel_names_index] = utf8;
-        self._channel_names_index += 1;
+        self.channel_names[self.channel_names_index] = try self.allocator.alloc(u8, new_name.len);
+        @memcpy(@constCast(self.channel_names[self.channel_names_index]), new_name);
+        self.channel_names_index += 1;
     }
 
     pub fn content(self: *Template) ![]const u8 {
@@ -51,66 +50,49 @@ pub const Template = struct {
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
         try lines.appendSlice(line1);
-        var names: []*strings.UTF8 = self._channel_names[0..self._channel_names_index];
+        var names: [][]const u8 = self.channel_names[0..self.channel_names_index];
         if (names.len > 0) {
             try lines.appendSlice("\n");
         }
-        var copy: []const u8 = undefined;
         for (names) |name| {
-            {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "const _{s}_ = @import(\"{s}.zig\");\n", .{ copy, copy });
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"{0s}.zig\");\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
         try lines.appendSlice(line2);
         for (names) |name| {
-            {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "    {s}: *_{s}_.Group,\n", .{ copy, copy });
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "    {0s}: *_{0s}_.Group,\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
         try lines.appendSlice(line3a);
         for (names) |name| {
             {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "        self.{s}.deinit();\n", .{copy});
+                line = try fmt.allocPrint(self.allocator, "        self.{0s}.deinit();\n", .{name});
+                defer self.allocator.free(line);
                 try lines.appendSlice(line);
-                self.allocator.free(line);
             }
         }
         try lines.appendSlice(line3b);
         for (names, 0..) |name, i| {
             {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "channels.{s} = _{s}_.init(allocator) catch |err| {{\n", .{ copy, copy });
+                line = try fmt.allocPrint(self.allocator, "channels.{0s} = _{0s}_.init(allocator) catch |err| {{\n", .{name});
+                defer self.allocator.free(line);
                 try lines.appendSlice(line);
-                self.allocator.free(line);
-                try lines.appendSlice("    channels.Fatal.deinit();\n");
-                try lines.appendSlice("    channels.Initialize.deinit();\n");
-                try lines.appendSlice("\n");
-                for (names, 0..) |deinit_name, j| {
-                    if (j == i) {
-                        break;
-                    }
-                    var deinit_copy: []const u8 = try deinit_name.copy();
-                    defer self.allocator.free(deinit_copy);
-                    line = try fmt.allocPrint(self.allocator, "    channels.{s}.deinit();\n", .{copy});
-                    try lines.appendSlice(line);
-                    self.allocator.free(line);
-                }
-                try lines.appendSlice("    allocator.destroy(channels);\n");
-                try lines.appendSlice("    return err;\n");
-                try lines.appendSlice("}}\n");
-                try lines.appendSlice("\n");
             }
+            try lines.appendSlice("    channels.Fatal.deinit();\n");
+            try lines.appendSlice("    channels.Initialize.deinit();\n");
+            try lines.appendSlice("\n");
+            var deinit_names: [][]const u8 = names[0..i];
+            for (deinit_names) |deinit_name| {
+                line = try fmt.allocPrint(self.allocator, "    channels.{0s}.deinit();\n", .{deinit_name});
+                defer self.allocator.free(line);
+                try lines.appendSlice(line);
+            }
+            try lines.appendSlice("    allocator.destroy(channels);\n");
+            try lines.appendSlice("    return err;\n");
+            try lines.appendSlice("}}\n");
+            try lines.appendSlice("\n");
         }
         try lines.appendSlice(line4);
         return try lines.toOwnedSlice();

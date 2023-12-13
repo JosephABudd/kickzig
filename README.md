@@ -2,25 +2,38 @@
 
 ## Project summary
 
+_Whenever I begin working with a new language I like to rewrite certain programs with that new language. So here I am rewriting my kick program which was previously written in GO._
+
 As I started learning zig, I found and started using [Dave Vanderson's dvui project](https://github.com/david-vanderson/dvui). Dvui is a very nice graphics framework that is young, easy to use and just keeps getting better.
 
 As I continue to learn and appreciate zig and dvui, I am recreating my kick code generator to work with zig and dvui.
 
-## Dec 7, 2023
+## Dec 13, 2023
+
+1. Added another example modal screen, the **YesNo** modal screen which also uses call-backs, one for each button. It can be accessed from the hello world screen.
+1. Modal screens management has been added.
+1. The app's window sizes to a 16 x 9 dimension.
+
+### To do
+
+1. Instructions that follow each command. Instructions often include links to new or important files.
+1. Message management. The message commands for adding, removing and listing messages.
 
 ### kickzig is a code generator
 
-It generates my version of an application framework that uses dvui. The application has a front-end which is the gui logic and it has the back-end which is the business logic.
-
-The front-end and back-end are separate threads which asynchronously communicate using messages. Kickzig also adds and removes those messages.
+Kickzig generates my version of an application framework, written in zig, using dvui, that is ready to build and run right away. The application has a front-end which is the gui logic and it has the back-end which is the business logic. The front-end and back-end are separate threads which asynchronously communicate using messages. Kickzig also adds and removes those messages.
 
 1. The framework puts the application code at
-   * «app-folder»/src/@This/back-end/
-   * «app-folder»/src/@This/front-end/
-   * «app-folder»/src/@This/deps/
-1. Vendor code is in «app-folder»/src/vendor/. The framework's build.zig expects dvui to be cloned into «app-folder»/src/vendor/dvui/.
+   * «app-folder»/ (build.zig, build.zig.zon, standalone.zig, etc)
+   * «app-folder»/src/@This/back-end/ (back-end code)
+   * «app-folder»/src/@This/front-end/ (front-end code)
+   * «app-folder»/src/@This/deps/ (dependencies)
+1. Vendor code can be placed in «app-folder»/src/vendor/.
+1. DVUI must be cloned into «app-folder»/src/vendor/dvui/.
 
-### Example: Creating an application
+### Example: Creating a framework, building and running an application
+
+The command `kickzig framework` generates the source code for a framework that is ready to run. The framework requires a vendored clone of David Vanderson's DVUI package.
 
 ```shell
 ＄ mkdir myapp
@@ -31,8 +44,17 @@ The front-end and back-end are separate threads which asynchronously communicate
 ＄ ./zig-out/bin/standalone-sdl
 ```
 
+#### The opening. Hello World
+
 ![The app's kickzig panel example.](images/open.png)
+
+#### The OK modal screen
+
 ![The app's OK modal screen.](images/modal.png)
+
+#### The YesNo modal screen
+
+![The app's YesNo modal screen.](images/yesno_modal.png)
 
 ### kickzig for the front-end
 
@@ -50,7 +72,7 @@ Whenever you add any type of screen with kickzig, it functions perfectly.
 
 ##### Panel screens
 
-A Panel screen is the simplist type of screen. It only displays one of it's panels. Any and only one of the panels can be display at a time. Panel screens always function when you create them although the panels display the screen name and panel name by default.
+A Panel screen is the simplest type of screen. It only displays one of it's panels at any one time. Panel screens always function when you create them although the panels display the screen name and panel name by default.
 
 `kickzig screen add-panel Edit Select Edit` creates a panel screen named **Edit** with a default panel named **Select** and another panel named **Edit**. By default the Select and Edit panels each display their screen and panel name.
 
@@ -82,13 +104,13 @@ Below is the ContactsH screen with the **Remove** tab selected. Notice that the 
 
 ##### Modal screens
 
-I haven't added the commands for adding and modal screens it is shown below.
+Modal screens are the framework's dialogs. They are the same as panel screens where one panel is displayed at a time.
 
-`kickzig screen add-modal YesNo YesNo` creates a modal screen named **YesNo** with a panel named **YesNo**.
+When a modal screen is to be displayed, the framwork pushes the current screen onto a screen stack before displaying the modal screen. When a modal screen is finally closed, the framework pulls that previous screen off the stack and displays it.
 
-Modal screens are the framework's dialogs. They are the same as simple panel screens where one panel is displayed at a time.
+An **OK** modal screen and a **YesNo** modal screen are provided as examples for writing other types of dialogs. The **YesNo** modal screen is interesting because it demostrates how to use call backs.
 
-When a modal screen is to be displayed, the framwork pushes the current screen onto a screen stack before displaying the modal screen. When a modal screen is finally closed, the framework pulls that previous screen off the stack and displays it. An *OK* modal screen is provided as en example for writing other types of dialogs.
+`kickzig screen add-modal YesNoMaybe YesNoMaybe` creates a modal screen named **YesNoMaybe** with a panel named **YesNoMaybe**. It also creates a **YesNoMaybe** modal parameter for passing information to the screen's goModalFn().
 
 ##### Removing an unwanted screen
 
@@ -96,7 +118,7 @@ When a modal screen is to be displayed, the framwork pushes the current screen o
 
 #### Screen panels
 
-I haven't added the commands for adding panels to and removeing panels from screens.
+I haven't added the commands for adding panels to and removing panels from screens.
 
 ### DVUI tools for the developer
 
@@ -111,7 +133,7 @@ I haven't added the commands for adding panels to and removeing panels from scre
 
 The front-end and back-end are separate threads that communicate using messages. Messages are sent and messages are received. There is no waiting for a message response. Responses happend when they happen.
 
-I haven't added the commands for adding and removeing messages but they are shown below.
+I haven't added the commands for adding and removing messages but they are shown below.
 
 #### Adding a message
 
@@ -125,3 +147,6 @@ Removing a message also removes the back-end's message handler at src/@This/back
 
 `kickzig message remove AddContact` will remove the **AddContact** message from the framework and the **AddContact** message handler at **src/@This/backend/messenger/AddContact.zig**.
 
+#### Listing all messages
+
+`kickzig message list` will display each message.

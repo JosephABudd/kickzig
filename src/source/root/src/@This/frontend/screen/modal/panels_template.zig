@@ -3,10 +3,12 @@ const fmt = std.fmt;
 
 pub const Template = struct {
     allocator: std.mem.Allocator,
+    screen_name: []const u8,
     panel_names: [][]const u8,
     panel_names_index: usize,
 
     pub fn deinit(self: *Template) void {
+        self.allocator.free(self.screen_name);
         for (self.panel_names, 0..) |name, i| {
             if (i == self.panel_names_index) {
                 break;
@@ -33,78 +35,104 @@ pub const Template = struct {
         self.panel_names_index += 1;
     }
 
-    // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
         var line: []u8 = undefined;
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
         var names: [][]const u8 = self.panel_names[0..self.panel_names_index];
+        var size: usize = 0;
 
-        try lines.appendSlice(line1a);
+        // line1a-c
+        {
+            size = std.mem.replacementSize(u8, line1a, "{{ screen_name }}", self.screen_name);
+            var with_screen_name: []u8 = try self.allocator.alloc(u8, size);
+            defer self.allocator.free(with_screen_name);
+            _ = std.mem.replace(u8, line1a, "{{ screen_name }}", self.screen_name, with_screen_name);
+            try lines.appendSlice(with_screen_name);
+        }
         for (names) |name| {
             line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"{0s}_panel.zig\");\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-
         try lines.appendSlice(line1b);
         for (names) |name| {
             line = try fmt.allocPrint(self.allocator, "    {0s},\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
+        try lines.appendSlice(line1c);
 
-        try lines.appendSlice(line2);
+        // lines 2a-b
+        try lines.appendSlice(line2a);
         for (names) |name| {
             line = try fmt.allocPrint(self.allocator, "    {0s}: ?*_{0s}_.Panel,\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
+        try lines.appendSlice(line2b);
 
-        try lines.appendSlice(line3);
+        // lines 3a-b
+        try lines.appendSlice(line3a);
         for (names) |name| {
             {
                 line = try fmt.allocPrint(self.allocator, "        if (self.{0s}) |{0s}| {{\n", .{name});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
+
             {
                 line = try fmt.allocPrint(self.allocator, "            {0s}.deinit();\n", .{name});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
+
             try lines.appendSlice("        }\n");
         }
+        try lines.appendSlice(line3b);
 
-        try lines.appendSlice(line4);
+        // lines 4a-b
+        try lines.appendSlice(line4a);
         for (names) |name| {
-            {
-                line = try fmt.allocPrint(self.allocator, "            .{0s} => self.{0s}.?.frame(allocator),\n", .{name});
-                defer self.allocator.free(line);
-                try lines.appendSlice(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "            .{0s} => self.{0s}.?.frame(allocator),\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
         if (names.len > 0) {
             line = try fmt.allocPrint(self.allocator, "            .none => self.{0s}.?.frame(allocator),\n", .{names[0]});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-
-        try lines.appendSlice(line5);
+        try lines.appendSlice(line4b);
         for (names) |name| {
-            try lines.appendSlice("\n");
             {
-                line = try fmt.allocPrint(self.allocator, "    pub fn setCurrentTo{0s}(self: *Panels) void {{\n", .{name});
+                try lines.appendSlice("\n");
+                line = try fmt.allocPrint(self.allocator, "    pub fn setCurrentTo{s}(self: *Panels) void {{\n", .{name});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
             {
-                line = try fmt.allocPrint(self.allocator, "        self.current_panel_tag = PanelTags.{0s};\n", .{name});
+                line = try fmt.allocPrint(self.allocator, "        self.current_panel_tag = PanelTags.{s};\n", .{name});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
             try lines.appendSlice("    }\n");
         }
+
+        // line5a-b
+        {
+            size = std.mem.replacementSize(u8, line5a, "{{ screen_name }}", self.screen_name);
+            var with_screen_name: []u8 = try self.allocator.alloc(u8, size);
+            defer self.allocator.free(with_screen_name);
+            _ = std.mem.replace(u8, line5a, "{{ screen_name }}", self.screen_name, with_screen_name);
+            try lines.appendSlice(with_screen_name);
+        }
+        for (names) |name| {
+            line = try fmt.allocPrint(self.allocator, "            try self.{0s}.presetModal(modal_params);\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
+        }
+        try lines.appendSlice(line5b);
 
         try lines.appendSlice(line6);
         if (names.len > 0) {
@@ -125,16 +153,25 @@ pub const Template = struct {
         }
 
         try lines.appendSlice(line7);
-        return try lines.toOwnedSlice();
+        var temp: []const u8 = try lines.toOwnedSlice();
+        line = try self.allocator.alloc(u8, temp.len);
+        @memcpy(line, temp);
+        return line;
     }
 };
 
-pub fn init(allocator: std.mem.Allocator) !*Template {
+pub fn init(allocator: std.mem.Allocator, screen_name: []const u8) !*Template {
     var data: *Template = try allocator.create(Template);
     data.panel_names = try allocator.alloc([]const u8, 5);
     errdefer {
         allocator.destroy(data);
     }
+    errdefer {
+        allocator.free(data.panel_names);
+        allocator.destroy(data);
+    }
+    data.screen_name = try allocator.alloc(u8, screen_name.len);
+    @memcpy(@constCast(data.screen_name), screen_name);
     errdefer {
         allocator.free(data.panel_names);
         allocator.destroy(data);
@@ -148,6 +185,7 @@ const line1a =
     \\const std = @import("std");
     \\const _framers_ = @import("framers");
     \\const _messenger_ = @import("messenger.zig");
+    \\const {{ screen_name }}ModalParams = @import("modal_params").{{ screen_name }};
     \\
 ;
 // \\const _Home_ = @import("home_panel.zig");
@@ -162,9 +200,13 @@ const line1b =
 // \\    other,
 // \\    none,
 
-const line2 =
+const line1c =
     \\    none,
     \\};
+    \\
+;
+
+const line2a =
     \\
     \\pub const Panels = struct {
     \\    allocator: std.mem.Allocator,
@@ -173,8 +215,12 @@ const line2 =
 // \\    home: ?*home_panel.Panel,
 // \\    other: ?*other_panel.Panel,
 
-const line3 =
+const line2b =
     \\    current_panel_tag: PanelTags,
+    \\
+;
+
+const line3a =
     \\
     \\    pub fn deinit(self: *Panels) void {
     \\
@@ -186,9 +232,13 @@ const line3 =
 // \\            other.deinit();
 // \\        }
 
-const line4 =
+const line3b =
     \\        self.allocator.destroy(self);
     \\    }
+    \\
+;
+
+const line4a =
     \\
     \\    pub fn frameCurrent(self: *Panels, allocator: std.mem.Allocator) !void {
     \\        var result = switch (self.current_panel_tag) {
@@ -197,7 +247,7 @@ const line4 =
 // \\            .home => self.home.?.frame(allocator),
 // \\            .other => self.other.?.frame(allocator),
 
-const line5 =
+const line4b =
     \\        };
     \\        return result;
     \\    }
@@ -210,6 +260,19 @@ const line5 =
 // \\    pub fn setCurrentToOther(self: *Panels) void {
 // \\        self.current_panel_tag = PanelTags.other;
 // \\    }
+
+const line5a =
+    \\
+    \\    pub fn presetModal(self: *Panels, modal_params: *{{ screen_name }}ModalParams) !void {
+    \\
+;
+// \\            try self.home.presetModal(modal_params);
+// \\            try self.other.presetModal(modal_params);
+
+const line5b =
+    \\    }
+    \\
+;
 
 const line6 =
     \\};

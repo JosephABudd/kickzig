@@ -1,33 +1,33 @@
 const std = @import("std");
 const fmt = std.fmt;
-const strings = @import("strings");
 
 pub const Template = struct {
     allocator: std.mem.Allocator,
-    app_name: *strings.UTF8,
+    app_name: []const u8,
 
+    // The caller owns the returned value.
     pub fn init(allocator: std.mem.Allocator, app_name: []const u8) !*Template {
         var data: *Template = try allocator.create(Template);
-        data.app_name = try strings.UTF8.init(allocator, app_name);
+        data.app_name = try allocator.alloc(u8, app_name.len);
         errdefer {
             allocator.destroy(data);
         }
+        @memcpy(@constCast(data.app_name), app_name);
         data.allocator = allocator;
         return data;
     }
 
     pub fn deinit(self: *Template) void {
-        self.app_name.deinit();
+        self.allocator.free(self.app_name);
         self.allocator.destroy(self);
     }
 
+    // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
         // Replace {{ app_name }} with the app name.
-        const copy: []const u8 = try self.app_name.copy();
-        defer self.allocator.free(copy);
-        var replacement_size: usize = std.mem.replacementSize(u8, template, "{{ app_name }}", copy);
+        var replacement_size: usize = std.mem.replacementSize(u8, template, "{{ app_name }}", self.app_name);
         var with_app_name: []u8 = try self.allocator.alloc(u8, replacement_size);
-        _ = std.mem.replace(u8, template, "{{ app_name }}", copy, with_app_name);
+        _ = std.mem.replace(u8, template, "{{ app_name }}", self.app_name, with_app_name);
         return with_app_name;
     }
 };

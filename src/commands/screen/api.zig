@@ -249,8 +249,41 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 break :blk try _source_.addHTabScreen(allocator, app_name, screen_name, tab_names);
             }
             if (std.mem.eql(u8, verb, verb_add_modal)) {
-                // "screen add-modal YesNo YesNo"
-                break :blk try addModal(allocator, screen_name, remaining_args[2..]);
+                // User input is "screen add-modal YesNo YesNo".
+                // The screen name must be valid.
+                is_valid = expectValidScreenName(allocator, screen_name) catch |err| {
+                    break :blk err;
+                };
+                if (!is_valid) {
+                    break :blk;
+                }
+                // The named screen must not exist.
+                is_valid = expectNewScreenName(allocator, screen_name) catch |err| {
+                    break :blk err;
+                };
+                if (!is_valid) {
+                    break :blk;
+                }
+                var panel_names: [][]const u8 = remaining_args[2..];
+                // The panel names must be valid.
+                is_valid = expectValidPanelNames(allocator, panel_names) catch |err| {
+                    break :blk err;
+                };
+                if (!is_valid) {
+                    break :blk;
+                }
+                // The panel names must be unique.
+                is_valid = expectUniquePanelNames(allocator, panel_names) catch |err| {
+                    break :blk err;
+                };
+                if (!is_valid) {
+                    break :blk;
+                }
+                // The user input is valid.
+                // Add the modal screen.
+                break :blk try _source_.addModalScreen(allocator, app_name, screen_name, panel_names);
+                // Add the modal screen params.
+
             }
             // "screen 💩 💩 💩..."
             // The user input is invalid so show the help.

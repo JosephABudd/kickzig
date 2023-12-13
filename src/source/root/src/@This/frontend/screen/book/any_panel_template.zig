@@ -1,6 +1,5 @@
 const std = @import("std");
 const fmt = std.fmt;
-const _strings_ = @import("strings");
 
 pub const Template = struct {
     allocator: std.mem.Allocator,

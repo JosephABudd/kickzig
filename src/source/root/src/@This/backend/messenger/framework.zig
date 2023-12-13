@@ -5,11 +5,11 @@
 /// - backend/messenger/src/<< message name >>.zig
 const std = @import("std");
 const fspath = std.fs.path;
-const paths = @import("paths");
-const filenames = @import("filenames");
-const api_template = @import("api_template.zig");
-const any_template = @import("any_template.zig");
-const initialize_template = @import("initialize_template.zig");
+const _paths_ = @import("paths");
+const _filenames_ = @import("filenames");
+const _api_template_ = @import("api_template.zig");
+const _any_template_ = @import("any_template.zig");
+const _initialize_template_ = @import("initialize_template.zig");
 const initialize_message_name: []const u8 = "Initialize";
 
 pub fn create(allocator: std.mem.Allocator) !void {
@@ -35,10 +35,10 @@ pub fn remove(allocator: std.mem.Allocator, message_name: []const u8) !void {
 
 fn buildApiZig(allocator: std.mem.Allocator) !void {
     // Build the template and the content.
-    const template: *api_template.Template = try api_template.Template.init(allocator);
+    const template: *_api_template_.Template = try _api_template_.Template.init(allocator);
     defer template.deinit();
     // Get the names of each message handler and add them to the template.
-    var current_message_names: [][]const u8 = try filenames.allBackendMessageHandlerNames(allocator);
+    var current_message_names: [][]const u8 = try _filenames_.allBackendMessageHandlerNames(allocator);
     defer {
         for (current_message_names) |name| {
             allocator.free(name);
@@ -52,46 +52,46 @@ fn buildApiZig(allocator: std.mem.Allocator) !void {
     defer allocator.free(content);
 
     // Open the folder.
-    var folders = try paths.folders();
+    var folders = try _paths_.folders();
     defer folders.deinit();
     var messenger_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_backend_messenger.?, .{});
     defer messenger_dir.close();
 
     // Open, write and close the file.
-    var ofile = try messenger_dir.createFile(filenames.api_file_name, .{});
+    var ofile = try messenger_dir.createFile(_filenames_.api_file_name, .{});
     defer ofile.close();
     try ofile.writeAll(content);
 }
 
 pub fn addInitialize(allocator: std.mem.Allocator) !void {
     // Open the folder.
-    var folders = try paths.folders();
+    var folders = try _paths_.folders();
     defer folders.deinit();
     var messenger_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_backend_messenger.?, .{});
     defer messenger_dir.close();
 
     // Open, write and close the file.
-    var file_name: []const u8 = try filenames.backendMessageHandlerFileName(allocator, initialize_message_name);
+    var file_name: []const u8 = try _filenames_.backendMessageHandlerFileName(allocator, initialize_message_name);
     var ofile = try messenger_dir.createFile(file_name, .{});
     defer ofile.close();
-    try ofile.writeAll(initialize_template.content);
+    try ofile.writeAll(_initialize_template_.content);
 }
 
 fn addMessenger(allocator: std.mem.Allocator, message_name: []const u8) !void {
     // Build the data for the template.
-    var template: *any_template.Template = try any_template.Data.init(allocator, message_name);
+    var template: *_any_template_.Template = try _any_template_.Data.init(allocator, message_name);
     defer template.deinit();
     var content: []const u8 = try template.content();
     defer allocator.free(content);
 
     // Open the folder.
-    var folders = try paths.folders();
+    var folders = try _paths_.folders();
     defer folders.deinit();
     var messenger_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_backend_messenger.?, .{});
     defer messenger_dir.close();
 
     // Open, write and close the file.
-    var file_name: []const u8 = try filenames.backendMessageHandlerFileName(allocator, message_name);
+    var file_name: []const u8 = try _filenames_.backendMessageHandlerFileName(allocator, message_name);
     var ofile = try messenger_dir.createFile(file_name, .{});
     defer ofile.close();
     try ofile.writeAll(content);
@@ -100,12 +100,12 @@ fn addMessenger(allocator: std.mem.Allocator, message_name: []const u8) !void {
 fn removeMessenger(allocator: std.mem.Allocator, message_name: []const u8) !void {
 
     // Open the folder.
-    var folders = try paths.folders();
+    var folders = try _paths_.folders();
     defer folders.deinit();
     var messenger_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_backend_messenger.?, .{});
     defer messenger_dir.close();
 
     // Remove the file.
-    var file_name: []const u8 = try filenames.backendMessageHandlerFileName(allocator, message_name);
+    var file_name: []const u8 = try _filenames_.backendMessageHandlerFileName(allocator, message_name);
     try messenger_dir.deleteFile(file_name);
 }

@@ -1,18 +1,19 @@
 const std = @import("std");
 const fmt = std.fmt;
-const strings = @import("strings");
+
 pub const default_landing_screen_name: []const u8 = "HelloWorld";
 
 pub const Template = struct {
-    _allocator: std.mem.Allocator,
+    allocator: std.mem.Allocator,
 
     pub fn deinit(self: *Template) void {
-        self._allocator.destroy(self);
+        self.allocator.destroy(self);
     }
 
+    // The caller owns the returned value;
     pub fn content(self: *Template) ![]const u8 {
         var replacement_size: usize = std.mem.replacementSize(u8, template, "{{startup_screen_name}}", default_landing_screen_name);
-        var with_startup_screen_name: []u8 = try self._allocator.alloc(u8, replacement_size);
+        var with_startup_screen_name: []u8 = try self.allocator.alloc(u8, replacement_size);
         _ = std.mem.replace(u8, template, "{{startup_screen_name}}", default_landing_screen_name, with_startup_screen_name);
         return with_startup_screen_name;
     }
@@ -20,7 +21,7 @@ pub const Template = struct {
 
 pub fn init(allocator: std.mem.Allocator) !*Template {
     var self: *Template = try allocator.create(Template);
-    self._allocator = allocator;
+    self.allocator = allocator;
     return self;
 }
 

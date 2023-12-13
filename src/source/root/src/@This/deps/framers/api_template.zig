@@ -138,13 +138,28 @@ pub const content =
     \\    /// Param behavior is the Behavior.
     \\    /// The Behavior will frame in the next frame.
     \\    pub fn setCurrentBehavior(self: *Group, behavior: *Behavior) !void {
-    \\        if (behavior.isModal()) {
-    \\            // Save the current Behavior onto the stack.
-    \\            if (self.current) |current| {
-    \\                try self.behavior_stack.push(current);
+    \\        if (self.current == null) {
+    \\            // There is no current behavior.
+    \\            if (behavior.isModal()) {
+    \\                // Can't start with a modal behavior.
+    \\                return error.CanStartWithModalBehavior;
     \\            }
+    \\            // Set the current behavior.
+    \\            self.current = behavior;
+    \\        } else if (self.current.?.isModal()) {
+    \\            // The user is currently viewing a modal screen.
+    \\            // Replace the last behavior pushed onto the stack.
+    \\            try self.behavior_stack.replacePush(behavior);
+    \\        } else {
+    \\            // Replace the current behavior.
+    \\            if (behavior.isModal()) {
+    \\                // Save the current Behavior onto the stack.
+    \\                if (self.current) |current| {
+    \\                    try self.behavior_stack.push(current);
+    \\                }
+    \\            }
+    \\            self.current = behavior;
     \\        }
-    \\        self.current = behavior;
     \\    }
     \\
     \\    /// getCurrent returns the current Behavior.
@@ -212,6 +227,12 @@ pub const content =
     \\        }
     \\        self.list[self.list_index] = behavior;
     \\        self.list_index += 1;
+    \\    }
+    \\
+    \\    fn replacePush(self: *BehaviorStack, behavior: *Behavior) !void {
+    \\        if (self.list_index > 0) {
+    \\            self.list[self.list_index - 1] = behavior;
+    \\        }
     \\    }
     \\
     \\    fn pop(self: *BehaviorStack) !*Behavior {

@@ -23,7 +23,7 @@ pub fn add(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: [][
         }
     }
     // Add the messenger file.
-    try addMessengerFile(package_dir, screen_name);
+    try addMessengerFile(package_dir);
     try rebuildPanelsZig(allocator, package_dir, screen_name);
 }
 
@@ -106,8 +106,7 @@ pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, s
 }
 
 /// addMessengerFile adds the messenger.zig to a screen package.
-fn addMessengerFile(package_dir: std.fs.Dir, screen_name: []const u8) !void {
-    _ = screen_name;
+fn addMessengerFile(package_dir: std.fs.Dir) !void {
     // Open, write and close the file.
     var ofile = try package_dir.createFile(_filenames_.screen_messenger_file_name, .{});
     defer ofile.close();

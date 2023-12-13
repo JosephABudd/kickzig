@@ -76,10 +76,10 @@ const screen_template: []const u8 =
     \\＄ cd myapp
     \\＄ {{cli_name}} screen help
     \\＄ {{cli_name}} screen list
-    \\＄ {{cli_name}} screen add-panel «screen-name» «panel-names, ...»
-    \\＄ {{cli_name}} screen add-vtab «screen-name» «[+]tab-names, ...»
-    \\＄ {{cli_name}} screen add-htab «screen-name» «[+]tab-names, ...»
-    \\＄ {{cli_name}} screen add-modal «screen-name» «panel-names, ...»
+    \\＄ {{cli_name}} screen add-panel «screen-name» «panel-name, ...»
+    \\＄ {{cli_name}} screen add-vtab «screen-name» «[+]tab-name, ...»
+    \\＄ {{cli_name}} screen add-htab «screen-name» «[+]tab-name, ...»
+    \\＄ {{cli_name}} screen add-modal «screen-name» «panel-name, ...»
     \\＄ {{cli_name}} screen remove «screen-name»
     \\
     \\A vtab and htab tab-name prefixed with '+' is given its own panel of the same name as the tab for content.

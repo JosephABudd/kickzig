@@ -1,140 +1,122 @@
 const std = @import("std");
 const fmt = std.fmt;
-const strings = @import("strings");
 
 pub const Template = struct {
     allocator: std.mem.Allocator,
-    _panel_names: []*strings.UTF8,
-    _panel_names_index: usize,
+    panel_names: [][]const u8,
+    panel_names_index: usize,
 
     pub fn deinit(self: *Template) void {
-        for (self._panel_names, 0..) |name, i| {
-            if (i == self._panel_names_index) {
+        for (self.panel_names, 0..) |name, i| {
+            if (i == self.panel_names_index) {
                 break;
             }
-            name.deinit();
+            self.allocator.free(name);
         }
-        self.allocator.free(self._panel_names);
+        self.allocator.free(self.panel_names);
         self.allocator.destroy(self);
     }
 
     pub fn addName(self: *Template, new_name: []const u8) !void {
-        if (self._panel_names_index == self._panel_names.len) {
+        if (self.panel_names_index == self.panel_names.len) {
             // Full list so create a new bigger one.
-            var new_panel_names: []*strings.UTF8 = try self.allocator.alloc(*strings.UTF8, (self._panel_names.len + 5));
-            for (self._panel_names, 0..) |name, i| {
+            var new_panel_names: [][]const u8 = try self.allocator.alloc([]const u8, (self.panel_names.len + 5));
+            for (self.panel_names, 0..) |name, i| {
                 new_panel_names[i] = name;
             }
             // Replace the old list with the new bigger one.
-            self.allocator.free(self._panel_names);
-            self._panel_names = new_panel_names;
+            self.allocator.free(self.panel_names);
+            self.panel_names = new_panel_names;
         }
-        var utf8: *strings.UTF8 = try strings.UTF8.init(self.allocator, new_name);
-        self._panel_names[self._panel_names_index] = utf8;
-        self._panel_names_index += 1;
+        self.panel_names[self.panel_names_index] = try self.allocator.alloc(u8, new_name.len);
+        @memcpy(@constCast(self.panel_names[self.panel_names_index]), new_name);
+        self.panel_names_index += 1;
     }
 
     pub fn content(self: *Template) ![]const u8 {
         var line: []u8 = undefined;
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
-        var names: []*strings.UTF8 = self._panel_names[0..self._panel_names_index];
-        var copy: []const u8 = undefined;
+        var names: [][]const u8 = self.panel_names[0..self.panel_names_index];
 
         try lines.appendSlice(line1a);
         for (names) |name| {
-            {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "const _{s}_ = @import(\"{s}_panel.zig\");\n", .{ copy, copy });
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"{0s}_panel.zig\");\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
 
         try lines.appendSlice(line1b);
         for (names) |name| {
-            {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "    {s},\n", .{copy});
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "    {0s},\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
 
         try lines.appendSlice(line2);
         for (names) |name| {
-            {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "    {s}: ?*_{s}_.Panel,\n", .{ copy, copy });
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "    {0s}: ?*_{0s}_.Panel,\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
 
         try lines.appendSlice(line3);
         for (names) |name| {
             {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "        if (self.{s}) |{s}| {{\n", .{ copy, copy });
+                line = try fmt.allocPrint(self.allocator, "        if (self.{0s}) |{0s}| {{\n", .{name});
+                defer self.allocator.free(line);
                 try lines.appendSlice(line);
-                self.allocator.free(line);
-                line = try fmt.allocPrint(self.allocator, "            {s}.deinit();\n", .{copy});
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-                try lines.appendSlice("        }\n");
             }
+            {
+                line = try fmt.allocPrint(self.allocator, "            {0s}.deinit();\n", .{name});
+                defer self.allocator.free(line);
+                try lines.appendSlice(line);
+            }
+            try lines.appendSlice("        }\n");
         }
 
         try lines.appendSlice(line4);
         for (names) |name| {
             {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                line = try fmt.allocPrint(self.allocator, "            .{s} => self.{s}.?.frame(allocator),\n", .{ copy, copy });
+                line = try fmt.allocPrint(self.allocator, "            .{0s} => self.{0s}.?.frame(allocator),\n", .{name});
+                defer self.allocator.free(line);
                 try lines.appendSlice(line);
-                self.allocator.free(line);
             }
         }
         if (names.len > 0) {
-            copy = try names[0].copy();
-            line = try fmt.allocPrint(self.allocator, "            .none => self.{s}.?.frame(allocator),\n", .{copy});
+            line = try fmt.allocPrint(self.allocator, "            .none => self.{0s}.?.frame(allocator),\n", .{names[0]});
+            defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
 
         try lines.appendSlice(line5);
         for (names) |name| {
+            try lines.appendSlice("\n");
             {
-                copy = try name.copy();
-                defer self.allocator.free(copy);
-                try lines.appendSlice("\n");
-                line = try fmt.allocPrint(self.allocator, "    pub fn setCurrentTo{s}(self: *Panels) void {{\n", .{copy});
+                line = try fmt.allocPrint(self.allocator, "    pub fn setCurrentTo{s}(self: *Panels) void {{\n", .{name});
+                defer self.allocator.free(line);
                 try lines.appendSlice(line);
-                self.allocator.free(line);
-                line = try fmt.allocPrint(self.allocator, "        self.current_panel_tag = PanelTags.{s};\n", .{copy});
-                try lines.appendSlice(line);
-                self.allocator.free(line);
-                try lines.appendSlice("    }\n");
             }
+            {
+                line = try fmt.allocPrint(self.allocator, "        self.current_panel_tag = PanelTags.{s};\n", .{name});
+                defer self.allocator.free(line);
+                try lines.appendSlice(line);
+            }
+            try lines.appendSlice("    }\n");
         }
 
         try lines.appendSlice(line6);
         if (names.len > 0) {
             for (names) |name| {
+                try lines.appendSlice("\n");
                 {
-                    copy = try name.copy();
-                    defer self.allocator.free(copy);
-                    try lines.appendSlice("\n");
-                    line = try fmt.allocPrint(self.allocator, "    panels.{s} = try _{s}_.init(allocator, all_screens, panels, messenger);\n", .{ copy, copy });
+                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, messenger);\n", .{name});
+                    defer self.allocator.free(line);
                     try lines.appendSlice(line);
-                    self.allocator.free(line);
-                    try lines.appendSlice("    errdefer {\n");
-                    try lines.appendSlice("        panels.deinit();\n");
-                    try lines.appendSlice("    }\n");
                 }
+                try lines.appendSlice("    errdefer {\n");
+                try lines.appendSlice("        panels.deinit();\n");
+                try lines.appendSlice("    }\n");
             }
         } else {
             try lines.appendSlice("    _ = all_screens;\n");
@@ -148,15 +130,15 @@ pub const Template = struct {
 
 pub fn init(allocator: std.mem.Allocator) !*Template {
     var data: *Template = try allocator.create(Template);
-    data._panel_names = try allocator.alloc(*strings.UTF8, 5);
+    data.panel_names = try allocator.alloc([]const u8, 5);
     errdefer {
         allocator.destroy(data);
     }
     errdefer {
-        allocator.free(data._panel_names);
+        allocator.free(data.panel_names);
         allocator.destroy(data);
     }
-    data._panel_names_index = 0;
+    data.panel_names_index = 0;
     data.allocator = allocator;
     return data;
 }

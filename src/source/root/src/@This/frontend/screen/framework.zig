@@ -1,7 +1,4 @@
 const std = @import("std");
-const fspath = std.fs.path;
-const _panel_screen_ = @import("panel/framework.zig");
-const _ok_modal_screen_ = @import("modal/ok/framework.zig");
 const _filenames_ = @import("filenames");
 const _stdout_ = @import("stdout");
 

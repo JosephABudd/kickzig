@@ -1,16 +1,15 @@
 const std = @import("std");
 const fmt = std.fmt;
-const _strings_ = @import("strings");
 
 pub const Template = struct {
     allocator: std.mem.Allocator,
     screen_name: []const u8,
-    tab_names: []*_strings_.UTF8,
+    tab_names: [][]const u8,
     tab_has_panel: []bool,
 
     pub fn deinit(self: *Template) void {
         for (self.tab_names) |tab_name| {
-            tab_name.deinit();
+            self.allocator.free(tab_name);
         }
         self.allocator.free(self.tab_names);
         self.allocator.free(self.tab_has_panel);
@@ -24,31 +23,24 @@ pub const Template = struct {
         var line: []u8 = undefined;
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
-        var copy: []const u8 = undefined;
 
         try lines.appendSlice(line1);
         for (self.tab_names) |name| {
-            copy = try name.copy();
-            defer self.allocator.free(copy);
-            line = try fmt.allocPrint(self.allocator, "    {s},\n", .{copy});
+            line = try fmt.allocPrint(self.allocator, "    {0s},\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
 
         try lines.appendSlice(line2);
         for (self.tab_names) |name| {
-            copy = try name.copy();
-            defer self.allocator.free(copy);
-            line = try fmt.allocPrint(self.allocator, "    const {0s}_label: []const u8 = \"{0s}\";\n", .{copy});
+            line = try fmt.allocPrint(self.allocator, "    const {0s}_label: []const u8 = \"{0s}\";\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
 
         try lines.appendSlice(line3);
         for (self.tab_names) |name| {
-            copy = try name.copy();
-            defer self.allocator.free(copy);
-            line = try fmt.allocPrint(self.allocator, line4, .{copy});
+            line = try fmt.allocPrint(self.allocator, line4, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -56,19 +48,17 @@ pub const Template = struct {
         // line6local
         // line6separate
         for (self.tab_names, 0..) |name, i| {
-            copy = try name.copy();
-            defer self.allocator.free(copy);
             if (i == 0) {
                 if (self.tab_has_panel[i] == true) {
-                    line = try fmt.allocPrint(self.allocator, line6FirstNoneLocal, .{copy});
+                    line = try fmt.allocPrint(self.allocator, line6FirstNoneLocal, .{name});
                 } else {
-                    line = try fmt.allocPrint(self.allocator, line6FirstNoneSeparate, .{copy});
+                    line = try fmt.allocPrint(self.allocator, line6FirstNoneSeparate, .{name});
                 }
             } else {
                 if (self.tab_has_panel[i] == true) {
-                    line = try fmt.allocPrint(self.allocator, line6local, .{copy});
+                    line = try fmt.allocPrint(self.allocator, line6local, .{name});
                 } else {
-                    line = try fmt.allocPrint(self.allocator, line6separate, .{copy});
+                    line = try fmt.allocPrint(self.allocator, line6separate, .{name});
                 }
             }
             defer self.allocator.free(line);
@@ -82,8 +72,7 @@ pub const Template = struct {
         }
 
         {
-            copy = try self.tab_names[0].copy(); // Default tab name.
-            line = try fmt.allocPrint(self.allocator, line8, .{copy});
+            line = try fmt.allocPrint(self.allocator, line8, .{self.tab_names[0]});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -100,7 +89,7 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: []
         allocator.destroy(self);
     }
     @memcpy(@constCast(self.screen_name), screen_name);
-    self.tab_names = try allocator.alloc(*_strings_.UTF8, tab_names.len);
+    self.tab_names = try allocator.alloc([]const u8, tab_names.len);
     errdefer {
         allocator.free(self.screen_name);
         allocator.destroy(self);
@@ -119,7 +108,7 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: []
             tab_name = name;
             has_panel = false;
         }
-        self.tab_names[i] = try _strings_.UTF8.init(allocator, tab_name);
+        self.tab_names[i] = try allocator.alloc(u8, tab_name.len);
         errdefer {
             allocator.free(self.screen_name);
             allocator.destroy(self);
@@ -131,6 +120,7 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: []
             }
             allocator.free(self.tab_names);
         }
+        @memcpy(@constCast(self.tab_names[i]), tab_name);
         self.tab_has_panel[i] = has_panel;
     }
     self.allocator = allocator;
@@ -303,7 +293,7 @@ const line7 =
     \\    screen.all_screens = all_screens;
     \\    screen.receive_channels = receive_channels;
     \\    screen.send_channels = send_channels;
-    \\    screen.name = "{s}";
+    \\    screen.name = "{0s}";
     \\
     \\
 ;

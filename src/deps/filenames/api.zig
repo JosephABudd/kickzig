@@ -16,6 +16,7 @@ pub const frontent_main_menu_file_name: []const u8 = "main_menu.zig";
 pub const initialize_file_name: []const u8 = "Initialize.zig";
 pub const fatal_file_name: []const u8 = "Fatal.zig";
 pub const ok_file_name: []const u8 = "OK.zig";
+pub const yesno_file_name: []const u8 = "YesNo.zig";
 pub const tabbar_file_name: []const u8 = "tabbar.zig";
 
 // backend.
@@ -515,31 +516,46 @@ pub fn allDepsModalParamsNames(allocator: std.mem.Allocator) ![][]const u8 {
             }
         }
     }
-    return modal_params_names.toOwnedSlice();
+    var slice: [][]const u8 = try modal_params_names.toOwnedSlice();
+    var all_names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
+    for (slice, 0..) |name, i| {
+        all_names[i] = try allocator.alloc(u8, name.len);
+        @memcpy(@constCast(all_names[i]), name);
+    }
+    return all_names;
 }
 
 /// allCustomDepsModalParamsNames returns the names of each custom modal_params.
-/// Does not return the name "OK".
+/// Does not return the name "OK" or "YesNo".
 /// The caller owns the return value;
 pub fn allCustomDepsModalParamsNames(allocator: std.mem.Allocator) ![][]const u8 {
     var all_names: [][]const u8 = try allDepsModalParamsNames(allocator);
-    var names: [][]const u8 = try allocator.alloc([]const u8, all_names.len - 1);
-    defer allocator.free(names);
+    defer allocator.free(all_names);
+    var names: [][]const u8 = try allocator.alloc([]const u8, all_names.len - 2);
+    if (names.len == 0) {
+        return names;
+    }
     var i: usize = 0;
     for (all_names) |name| {
-        if (!std.mem.eql(u8, name, "OK")) {
-            names[i] = try allocator.alloc(u8, name.len);
-            errdefer {
-                for (names, 0..) |deinit_name, j| {
-                    if (i == j) {
-                        break;
-                    }
+        std.debug.print("name:{s}, i:{d}\n", .{ name, i });
+        if (std.mem.eql(u8, name, "OK")) {
+            continue;
+        }
+        if (std.mem.eql(u8, name, "YesNo")) {
+            continue;
+        }
+        names[i] = try allocator.alloc(u8, name.len);
+        errdefer {
+            if (i > 0) {
+                var deinit_names: [][]const u8 = names[0..i];
+                for (deinit_names) |deinit_name| {
                     allocator.free(deinit_name);
                 }
                 allocator.free(names);
             }
-            @memcpy(@constCast(names[i]), name);
         }
+        @memcpy(@constCast(names[i]), name);
+        i += 1;
     }
     return names;
 }

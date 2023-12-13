@@ -3,12 +3,6 @@ const std = @import("std");
 pub const Template = struct {
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator) !*Template {
-        var data: *Template = try allocator.create(Template);
-        data.allocator = allocator;
-        return data;
-    }
-
     pub fn deinit(self: *Template) void {
         self.allocator.destroy(self);
     }
@@ -19,6 +13,12 @@ pub const Template = struct {
     }
 };
 
+pub fn init(allocator: std.mem.Allocator) !*Template {
+    var data: *Template = try allocator.create(Template);
+    data.allocator = allocator;
+    return data;
+}
+
 const template =
     \\const std = @import("std");
     \\
@@ -28,21 +28,21 @@ const template =
     \\/// For examples:
     \\/// * See OK.zig for a Params example.
     \\/// * See src/@This/frontend/screen/modal/OK/screen.zig goModalFn.
-    \\pub const Params = struct {
+    \\pub const Params = struct {{
     \\    allocator: std.mem.Allocator,
     \\
     \\    // Parameters.
     \\
     \\    /// The caller owns the returned value.
-    \\    pub fn init(allocator: std.mem.Allocator, heading: []const u8, message: []const u8) !*Params {
+    \\    pub fn init(allocator: std.mem.Allocator) !*Params {{
     \\        var args: *Params = try allocator.create(Params);
     \\        args.allocator = allocator;
     \\        return args;
-    \\    }
+    \\    }}
     \\
-    \\    pub fn deinit(self: *Params) void {
+    \\    pub fn deinit(self: *Params) void {{
     \\        self.allocator.destroy(self);
-    \\    }
-    \\};
+    \\    }}
+    \\}};
     \\
 ;

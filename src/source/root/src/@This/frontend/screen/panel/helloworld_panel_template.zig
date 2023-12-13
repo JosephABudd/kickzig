@@ -5,7 +5,9 @@ pub const content =
     \\const _panels_ = @import("panels.zig");
     \\const _messenger_ = @import("messenger.zig");
     \\const _lock_ = @import("lock");
-    \\const ModalParams = @import("modal_params").OK;
+    \\const _modal_params_ = @import("modal_params");
+    \\const OKModalParams = _modal_params_.OK;
+    \\const YesNoModalParams = _modal_params_.YesNo;
     \\
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator, // For persistant state data.
@@ -15,10 +17,20 @@ pub const content =
     \\    example_message_from_messenger: ?[]const u8,
     \\    title: []const u8,
     \\    message: []const u8,
-    \\    n: u8,
+    \\    yes_no: ?bool,
     \\
     \\    pub fn deinit(self: *Panel) void {
     \\        self.allocator.destroy(self);
+    \\    }
+    \\
+    \\    fn modalNo(implementor: *anyopaque) void {
+    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
+    \\        self.yes_no = false;
+    \\    }
+    \\
+    \\    fn modalYes(implementor: *anyopaque) void {
+    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
+    \\        self.yes_no = true;
     \\    }
     \\
     \\    // frame this panel for rendering.
@@ -26,15 +38,18 @@ pub const content =
     \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {
     \\        _ = arena;
     \\
-    \\        var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
-    \\        defer scroll.deinit();
+    \\        var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
+    \\        defer scroller.deinit();
     \\
-    \\        // Example 1: A title displaying the panel name.
+    \\        var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
+    \\        defer layout.deinit();
+    \\
+    \\        // Row 1:.
     \\        var example_title = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
     \\        try example_title.addText("Hello...", .{});
     \\        example_title.deinit();
     \\
-    \\        // Example 2: A pretend message from the messenger.
+    \\        // Row 2:.
     \\        var example_message = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
     \\        if (self.example_message_from_messenger) |message| {
     \\            try example_message.addText(message, .{});
@@ -43,12 +58,44 @@ pub const content =
     \\        }
     \\        example_message.deinit();
     \\
-    \\        // Example 3: A button which opens the OK modal screen.
+    \\        // Row 3: A button which opens the OK modal screen.
     \\        if (try dvui.button(@src(), "OK Modal Screen.", .{}, .{})) {
     \\            var ok_modal = try self.all_screens.get("OK");
-    \\            var ok_args = try ModalParams.init(self.allocator, "Hello World!", "This is the OK modal popped from the HelloWorld screen.");
+    \\            var ok_args = try OKModalParams.init(self.allocator, "Hello World!", "This is the OK modal popped from the HelloWorld screen.");
     \\            defer ok_args.deinit();
     \\            var result = ok_modal.goModalFn.?(ok_modal.implementor, ok_args);
+    \\            if (result != error.Null) {
+    \\                return result;
+    \\            }
+    \\        }
+    \\
+    \\        // Row 4: A button which opens the YesNo modal screen.
+    \\        if (try dvui.button(@src(), "YesNo Modal Screen.", .{}, .{})) {
+    \\            var yesno_modal = try self.all_screens.get("YesNo");
+    \\            var heading: []const u8 = undefined;
+    \\            var yes_label: []const u8 = "Yes.";
+    \\            var no_label: []const u8 = "No.";
+    \\            if (self.yes_no) |yes_no| {
+    \\                if (yes_no) {
+    \\                    heading = "You clicked Yes last time.";
+    \\                } else {
+    \\                    heading = "You cliced No last time.";
+    \\                }
+    \\            } else {
+    \\                heading = "You haven't click any buttons yet so click one!";
+    \\            }
+    \\            const yesno_args = try YesNoModalParams.init(
+    \\                self.allocator,
+    \\                heading,
+    \\                "Click any button.",
+    \\                yes_label,
+    \\                no_label,
+    \\                self,
+    \\                Panel.modalYes,
+    \\                Panel.modalNo,
+    \\            );
+    \\            defer yesno_args.deinit();
+    \\            var result = yesno_modal.goModalFn.?(yesno_modal.implementor, yesno_args);
     \\            if (result != error.Null) {
     \\                return result;
     \\            }
@@ -65,7 +112,8 @@ pub const content =
     \\    panel.example_message_from_messenger = null;
     \\    panel.title = "This is the \"HelloWorld\" screen's \"HelloWorld\" Panel.";
     \\    panel.message = "World!";
-    \\    panel.n = 77;
+    \\    panel.yes_no = null;
     \\    return panel;
     \\}
+    \\
 ;

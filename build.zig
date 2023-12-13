@@ -54,7 +54,17 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    // Internal source/ module.
+    // src/source/root/src/@This/deps/.
+    const source_deps_mod = b.addModule("source_deps", .{
+        .source_file = .{ .path = "src/source/root/src/@This/deps/framework.zig" },
+        .dependencies = &.{
+            .{ .name = "filenames", .module = filenames_mod },
+            .{ .name = "paths", .module = paths_mod },
+            .{ .name = "strings", .module = strings_mod },
+        },
+    });
+
+    // source/ module.
     const source_mod = b.addModule("source", .{
         .source_file = .{ .path = "src/source/api.zig" },
         .dependencies = &.{
@@ -63,6 +73,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "filenames", .module = filenames_mod },
             .{ .name = "slices", .module = slices_mod },
             .{ .name = "strings", .module = strings_mod },
+            .{ .name = "source_deps", .module = source_deps_mod },
         },
     });
 
@@ -75,15 +86,17 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // Local src/libs/ modules.
+    // src/libs/ modules.
     exe.addModule("stdout", stdout_mod);
-    // Local src/commands/libs/ modules.
+    // src/deps/ modules.
     exe.addModule("usage", usage_mod);
     exe.addModule("warning", warning_mod);
     exe.addModule("verify", verify_mod);
-    // Local src/source/ module.
+    // src/source/ module.
     exe.addModule("source", source_mod);
-    // Local src/source/libs/ modules.
+    // src/source/root/src/@This/deps/.
+    exe.addModule("source_deps", source_deps_mod);
+    // src/source/libs/ modules.
     exe.addModule("paths", paths_mod);
     exe.addModule("filenames", filenames_mod);
     exe.addModule("slices", slices_mod);
