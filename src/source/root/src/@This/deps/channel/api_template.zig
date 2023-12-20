@@ -51,9 +51,6 @@ pub const Template = struct {
         defer lines.deinit();
         try lines.appendSlice(line1);
         var names: [][]const u8 = self.channel_names[0..self.channel_names_index];
-        if (names.len > 0) {
-            try lines.appendSlice("\n");
-        }
         for (names) |name| {
             line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"{0s}.zig\");\n", .{name});
             defer self.allocator.free(line);
@@ -61,7 +58,7 @@ pub const Template = struct {
         }
         try lines.appendSlice(line2);
         for (names) |name| {
-            line = try fmt.allocPrint(self.allocator, "    {0s}: *_{0s}_.Group,\n", .{name});
+            line = try fmt.allocPrint(self.allocator, "        {0s}: *_{0s}_.Group,\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -74,15 +71,17 @@ pub const Template = struct {
             }
         }
         try lines.appendSlice(line3b);
+        if (names.len > 0) {
+            try lines.appendSlice("    // Custom channels.\n");
+        }
         for (names, 0..) |name, i| {
             {
-                line = try fmt.allocPrint(self.allocator, "channels.{0s} = _{0s}_.init(allocator) catch |err| {{\n", .{name});
+                line = try fmt.allocPrint(self.allocator, "    channels.{0s} = _{0s}_.init(allocator) catch |err| {{\n", .{name});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
             try lines.appendSlice("    channels.Fatal.deinit();\n");
             try lines.appendSlice("    channels.Initialize.deinit();\n");
-            try lines.appendSlice("\n");
             var deinit_names: [][]const u8 = names[0..i];
             for (deinit_names) |deinit_name| {
                 line = try fmt.allocPrint(self.allocator, "    channels.{0s}.deinit();\n", .{deinit_name});
@@ -91,8 +90,7 @@ pub const Template = struct {
             }
             try lines.appendSlice("    allocator.destroy(channels);\n");
             try lines.appendSlice("    return err;\n");
-            try lines.appendSlice("}}\n");
-            try lines.appendSlice("\n");
+            try lines.appendSlice("};\n");
         }
         try lines.appendSlice(line4);
         return try lines.toOwnedSlice();
@@ -136,6 +134,7 @@ const line3a =
     \\    pub fn deinit(self: *Channels) void {
     \\        self.Initialize.deinit();
     \\        self.Fatal.deinit();
+    \\
 ;
 // self.Add.deinit();
 // self.Edit.deinit();

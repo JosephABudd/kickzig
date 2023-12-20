@@ -78,12 +78,14 @@ pub const Template = struct {
                 try lines.appendSlice(line);
             }
             try lines.appendSlice("    errdefer {\n");
+            try lines.appendSlice("        messenger.allocator.destroy(messenger);\n");
             var deinit_names: [][]const u8 = names[0..i];
             for (deinit_names) |deinit_name| {
                 line = try fmt.allocPrint(self.allocator, "        messenger.{0s}.deinit();\n", .{deinit_name});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
+            try lines.appendSlice("    }\n");
         }
         try lines.appendSlice(line5);
         var temp: []const u8 = try lines.toOwnedSlice();
@@ -147,9 +149,6 @@ const line4: []const u8 =
 // \\{{/deinits}}
 
 const line5: []const u8 =
-    \\        messenger.Initialize.deinit();
-    \\        messenger.allocator.destroy(messenger);
-    \\    }
     \\    return messenger;
     \\}
     \\

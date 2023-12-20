@@ -58,8 +58,8 @@ const template =
     \\    // // receiveInitialize is provided as an example.
     \\    // // It receives the Initialize message.
     \\    // // It implements a behavior required by receive_channels.Initialize.
-    \\    // pub fn receiveInitialize(self_ptr: *anyopaque, message: *_message_.Initialize.Message) void {
-    \\    //     var self: *Messenger = @alignCast(@ptrCast(self_ptr));
+    \\    // pub fn receiveInitialize(implementor: *anyopaque, message: *_message_.Initialize.Message) void {
+    \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\    //     _ = self;
     \\    //     _ = message;
     \\    // }
@@ -89,7 +89,6 @@ const template =
     \\    // // * Subscribe in order to receive the Initialize messages.
     \\    // try receive_channels.Initialize.subscribe(initializeBehavior);
     \\    // errdefer {
-    \\    //     allocator.destroy(initializeBehavior);
     \\    //     allocator.destroy(messenger);
     \\    // }
     \\

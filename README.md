@@ -8,16 +8,19 @@ As I started learning zig, I found and started using [Dave Vanderson's dvui proj
 
 As I continue to learn and appreciate zig and dvui, I am recreating my kick code generator to work with zig and dvui.
 
-## Dec 13, 2023
+## Dec 20, 2023
 
-1. Added another example modal screen, the **YesNo** modal screen which also uses call-backs, one for each button. It can be accessed from the hello world screen.
-1. Modal screens management has been added.
-1. The app's window sizes to a 16 x 9 dimension.
+1. Message management has been added.
+1. Kickzig does everything I want it to.
 
 ### To do
 
-1. Instructions that follow each command. Instructions often include links to new or important files.
-1. Message management. The message commands for adding, removing and listing messages.
+I'm going to build a CRUD and
+
+* do a step by step in the WIKI,
+* add clearer CLI responses and followup instructions,
+* add the missing source code documentation,
+* fix the bad source code documentation.
 
 ### kickzig is a code generator
 
@@ -76,7 +79,7 @@ A Panel screen is the simplest type of screen. It only displays one of it's pane
 
 `kickzig screen add-panel Edit Select Edit` creates a panel screen named **Edit** with a default panel named **Select** and another panel named **Edit**. By default the Select and Edit panels each display their screen and panel name.
 
-`kickzig screen add-panel Remove Select Confirm` creates a panel screen named **Remove** with a default panel named **Select** and another panel named **Confirm**. By default the Select and Edit panels each display their screen and panel name.
+`kickzig screen add-panel Remove Select Confirm` creates a panel screen named **Remove** with a default panel named **Select** and another panel named **Confirm**. By default the Select and Confirm panels each display their screen and panel name.
 
 ##### Vertical tab-bar screens
 

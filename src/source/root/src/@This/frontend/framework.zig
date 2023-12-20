@@ -9,13 +9,13 @@ const _filenames_ = @import("filenames");
 const _api_template_ = @import("api_template.zig");
 const _main_menu_template_ = @import("main_menu_template.zig");
 const _stdout_ = @import("stdout");
-const _screen_ = @import("screen/framework.zig");
-const _panel_screen_ = @import("screen/panel/framework.zig");
-const _vtab_screen_ = @import("screen/vtab/framework.zig");
-const _htab_screen_ = @import("screen/htab/framework.zig");
-const _book_screen_ = @import("screen/book/framework.zig");
-const _modal_screen_ = @import("screen/modal/framework.zig");
-const _modal_params_ = @import("source_deps").modal_params;
+const _src_this_frontend_screen_ = @import("screen/framework.zig");
+const _src_this_frontend_panel_screen_ = @import("screen/panel/framework.zig");
+const _src_this_frontend_vtab_screen_ = @import("screen/vtab/framework.zig");
+const _src_this_frontend_htab_screen_ = @import("screen/htab/framework.zig");
+const _src_this_frontend_book_screen_ = @import("screen/book/framework.zig");
+const _src_this_frontend_modal_screen_ = @import("screen/modal/framework.zig");
+const _src_this_deps_modal_params_ = @import("source_deps").modal_params;
 
 pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
     // Add the main menu file which is a data file.
@@ -23,9 +23,9 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
     try rebuildMainMenu(allocator);
     // Add the default landing screen.
     // It contains lots of example code.
-    try _panel_screen_.createHelloWorldPackage(allocator);
+    try _src_this_frontend_panel_screen_.createHelloWorldPackage(allocator);
     // Add the OK modal screen.
-    try _modal_screen_.create(allocator);
+    try _src_this_frontend_modal_screen_.create(allocator);
     // Build api.zig with the initialize channel.
     try rebuildApiZig(allocator, app_name);
 }
@@ -33,7 +33,7 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
 // List screens.
 
 pub fn listScreens(allocator: std.mem.Allocator) !void {
-    return _screen_.listScreens(allocator);
+    return _src_this_frontend_screen_.listScreens(allocator);
 }
 
 // rebuildMainMenu builds frontend/main_menu.zig
@@ -136,7 +136,7 @@ fn rebuildApiZig(allocator: std.mem.Allocator, app_name: []const u8) !void {
 
 /// addPanelScreen creates a panel screen and adds rebuilds api.zig.
 pub fn addPanelScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, panel_names: [][]const u8) !void {
-    try _panel_screen_.createAnyPackage(allocator, screen_name, panel_names);
+    try _src_this_frontend_panel_screen_.createAnyPackage(allocator, screen_name, panel_names);
     try rebuildApiZig(allocator, app_name);
 }
 
@@ -146,7 +146,7 @@ pub fn removePanelScreen(allocator: std.mem.Allocator, app_name: []const u8, scr
     defer {
         if (removed) {}
     }
-    removed = try _panel_screen_.remove(screen_name);
+    removed = try _src_this_frontend_panel_screen_.remove(screen_name);
     if (removed) {
         // Removed a panel screen.
         try rebuildApiZig(allocator, app_name);
@@ -157,12 +157,12 @@ pub fn removePanelScreen(allocator: std.mem.Allocator, app_name: []const u8, scr
 // Add or remove vtab screens.
 
 pub fn addVTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, tab_names: [][]const u8) !void {
-    try _vtab_screen_.add(allocator, screen_name, tab_names);
+    try _src_this_frontend_vtab_screen_.add(allocator, screen_name, tab_names);
     try rebuildApiZig(allocator, app_name);
 }
 
 pub fn removeVTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
-    var removed: bool = try _vtab_screen_.remove(screen_name);
+    var removed: bool = try _src_this_frontend_vtab_screen_.remove(screen_name);
     if (removed) {
         try rebuildApiZig(allocator, app_name);
     }
@@ -172,12 +172,12 @@ pub fn removeVTabScreen(allocator: std.mem.Allocator, app_name: []const u8, scre
 // Add or remove htab screens.
 
 pub fn addHTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, tab_names: [][]const u8) !void {
-    try _htab_screen_.add(allocator, screen_name, tab_names);
+    try _src_this_frontend_htab_screen_.add(allocator, screen_name, tab_names);
     try rebuildApiZig(allocator, app_name);
 }
 
 pub fn removeHTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
-    var removed: bool = try _htab_screen_.remove(screen_name);
+    var removed: bool = try _src_this_frontend_htab_screen_.remove(screen_name);
     if (removed) {
         try rebuildApiZig(allocator, app_name);
     }
@@ -186,15 +186,16 @@ pub fn removeHTabScreen(allocator: std.mem.Allocator, app_name: []const u8, scre
 
 // Add or remove modal screens.
 pub fn addModalScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, panel_names: [][]const u8) !void {
-    // Add the modal package.
-    try _modal_screen_.createAnyPackage(allocator, screen_name, panel_names);
+    // Add the modal screen package.
+    try _src_this_frontend_modal_screen_.createAnyPackage(allocator, screen_name, panel_names);
     // Build api.zig with the initialize channel.
     try rebuildApiZig(allocator, app_name);
-    try _modal_params_.add(allocator, screen_name);
+    // Add the modal params package.
+    try _src_this_deps_modal_params_.add(allocator, screen_name);
 }
 
 pub fn removeModalScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
-    var removed: bool = try _modal_screen_.remove(screen_name);
+    var removed: bool = try _src_this_frontend_modal_screen_.remove(screen_name);
     if (removed) {
         try rebuildApiZig(allocator, app_name);
     }
@@ -204,12 +205,12 @@ pub fn removeModalScreen(allocator: std.mem.Allocator, app_name: []const u8, scr
 // Add or remove book screens.
 
 pub fn addBookScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, tab_names: [][]const u8) !void {
-    try _book_screen_.add(allocator, screen_name, tab_names);
+    try _src_this_frontend_book_screen_.add(allocator, screen_name, tab_names);
     try rebuildApiZig(allocator, app_name);
 }
 
 pub fn removeBookScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
-    var removed: bool = try _book_screen_.remove(screen_name);
+    var removed: bool = try _src_this_frontend_book_screen_.remove(screen_name);
     if (removed) {
         try rebuildApiZig(allocator, app_name);
     }

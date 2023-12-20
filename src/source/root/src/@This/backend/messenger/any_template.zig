@@ -5,16 +5,6 @@ pub const Template = struct {
     allocator: std.mem.Allocator,
     message_name: []const u8,
 
-    // The caller owns the returned value.
-    pub fn init(allocator: std.mem.Allocator, name: []const u8) !*Template {
-        var data: *Template = try allocator.create(Template);
-        data.message_name = try allocator.alloc(u8, name.len);
-        errdefer allocator.destroy(data);
-        @memcpy(data.message_name, name);
-        data.allocator = allocator;
-        return data;
-    }
-
     pub fn deinit(self: *Template) void {
         self.allocator.free(self.message_name);
         self.allocator.destroy(self);
@@ -23,12 +13,22 @@ pub const Template = struct {
     // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
         // Replace {{ message_name }} with the message name.
-        var replacement_size: usize = try std.mem.replacementSize(u8, self.allocator, template, "{{ message_name }}", self.message_name);
-        var with_message_name: []u8 = try self.allocator.alloc(replacement_size);
-        try std.mem.replace(u8, template, "{{ message_name }}", self.message_name, with_message_name);
+        var replacement_size: usize = std.mem.replacementSize(u8, template, "{{ message_name }}", self.message_name);
+        var with_message_name: []u8 = try self.allocator.alloc(u8, replacement_size);
+        _ = std.mem.replace(u8, template, "{{ message_name }}", self.message_name, with_message_name);
         return with_message_name;
     }
 };
+
+// The caller owns the returned value.
+pub fn init(allocator: std.mem.Allocator, name: []const u8) !*Template {
+    var data: *Template = try allocator.create(Template);
+    data.message_name = try allocator.alloc(u8, name.len);
+    errdefer allocator.destroy(data);
+    @memcpy(@constCast(data.message_name), name);
+    data.allocator = allocator;
+    return data;
+}
 
 const template =
     \\/// This is the back-end's "{{ message_name }}" message handler.
@@ -54,13 +54,18 @@ const template =
     \\    /// It implements _channel_.Channels.{{ message_name }}.Behavior.receiveFn found in deps/channel/src/{{ message_name }}.zig.
     \\    /// receiveFn does not control the received {{ message_name }} message because only message dispatchers control messages.
     \\    /// For that reason:
-    \\    /// * data from param add_message must be copied to be preserved.
-    \\    /// * param add_message can safely be sent back to the front-end.
-    \\    pub fn receiveFn(self_ptr: *anyopaque, add_message: *_message_.{{ message_name }}.Message) void {
-    \\        var self: *Messenger = @alignCast(@ptrCast(self_ptr));
-    \\        _ = self;
-    \\        _ = add_message;
+    \\    /// * data from param message must be copied to be preserved.
+    \\    /// * param message can be safely sent back to the front-end.
+    \\    pub fn receiveFn(implementor: *anyopaque, message: *_message_.{{ message_name }}.Message) void {
+    \\        var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\
+    \\        // KICKZIG TODO: Add the required functionality.
+    \\
+    \\        // Example: Bounce the message back to the front-end.
+    \\        self.send_channels.{{ message_name }}.send(message) catch |err| {
+    \\            // There was an error so inform the front-end so the app can quit.
+    \\            self.send_channels.Fatal.sendError(err);
+    \\        };
     \\    }
     \\};
     \\

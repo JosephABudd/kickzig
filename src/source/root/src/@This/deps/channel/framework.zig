@@ -93,7 +93,7 @@ fn addInitialize() !void {
 
 fn addChannel(allocator: std.mem.Allocator, message_name: []const u8) !void {
     // Build the data for the template.
-    var template: *_any_template_.Template = try _any_template_.Data.init(allocator, message_name);
+    var template: *_any_template_.Template = try _any_template_.init(allocator, message_name);
     defer template.deinit();
     var content: []const u8 = try template.content();
     defer allocator.free(content);

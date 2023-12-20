@@ -1,12 +1,12 @@
 const std = @import("std");
 const _paths_ = @import("paths");
 const _stdout_ = @import("stdout");
-const _source_ = @import("source").frontend;
 const _warning_ = @import("warning");
 const _usage_ = @import("usage");
 const _strings_ = @import("strings");
 const _filenames_ = @import("filenames");
 const _verify_ = @import("verify");
+const _src_this_frontend_ = @import("source").frontend;
 
 pub const command: []const u8 = "screen";
 pub const verb_help: []const u8 = "help";
@@ -40,7 +40,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
             }
             if (std.mem.eql(u8, verb, verb_list)) {
                 // The user input is "screen list".
-                break :blk try _source_.listScreens(allocator);
+                break :blk try _src_this_frontend_.listScreens(allocator);
             }
             // "screen 💩"
             // The user input is invalid so show the help.
@@ -72,15 +72,15 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                         break :blk;
                     }
                     var removed: bool = false;
-                    removed = try _source_.removeVTabScreen(allocator, app_name, screen_name);
+                    removed = try _src_this_frontend_.removeVTabScreen(allocator, app_name, screen_name);
                     if (!removed) {
-                        removed = try _source_.removeHTabScreen(allocator, app_name, screen_name);
+                        removed = try _src_this_frontend_.removeHTabScreen(allocator, app_name, screen_name);
                     }
                     if (!removed) {
-                        removed = try _source_.removePanelScreen(allocator, app_name, screen_name);
+                        removed = try _src_this_frontend_.removePanelScreen(allocator, app_name, screen_name);
                     }
                     if (!removed) {
-                        removed = try _source_.removeBookScreen(allocator, app_name, screen_name);
+                        removed = try _src_this_frontend_.removeBookScreen(allocator, app_name, screen_name);
                     }
                     var msg: []const u8 = undefined;
                     if (removed) {
@@ -141,7 +141,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the panel screen.
-                break :blk try _source_.addPanelScreen(allocator, app_name, screen_name, panel_names);
+                break :blk try _src_this_frontend_.addPanelScreen(allocator, app_name, screen_name, panel_names);
             }
             if (std.mem.eql(u8, verb, verb_add_vtab)) {
                 // User input is "screen add-vtab Contacts +Add Edit Remove".
@@ -176,7 +176,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the vtab screen.
-                break :blk try _source_.addVTabScreen(allocator, app_name, screen_name, tab_names);
+                break :blk try _src_this_frontend_.addVTabScreen(allocator, app_name, screen_name, tab_names);
             }
             if (std.mem.eql(u8, verb, verb_add_book)) {
                 // User input is "screen add-book Story +Cover +Chapter1 +Chapter2 +Chapter3 +Chapter4 +Appendix".
@@ -211,7 +211,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the book screen.
-                break :blk try _source_.addBookScreen(allocator, app_name, screen_name, menu_item_names);
+                break :blk try _src_this_frontend_.addBookScreen(allocator, app_name, screen_name, menu_item_names);
             }
             if (std.mem.eql(u8, verb, verb_add_htab)) {
                 // User input is "screen add-htab Contacts +Add Edit Remove".
@@ -246,7 +246,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the htab screen.
-                break :blk try _source_.addHTabScreen(allocator, app_name, screen_name, tab_names);
+                break :blk try _src_this_frontend_.addHTabScreen(allocator, app_name, screen_name, tab_names);
             }
             if (std.mem.eql(u8, verb, verb_add_modal)) {
                 // User input is "screen add-modal YesNo YesNo".
@@ -281,7 +281,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the modal screen.
-                break :blk try _source_.addModalScreen(allocator, app_name, screen_name, panel_names);
+                break :blk try _src_this_frontend_.addModalScreen(allocator, app_name, screen_name, panel_names);
                 // Add the modal screen params.
 
             }

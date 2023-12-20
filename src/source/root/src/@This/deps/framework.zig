@@ -23,3 +23,13 @@ pub fn create(allocator: std.mem.Allocator) !void {
     try _modal_params_.create(allocator);
     try _widget_.create(allocator);
 }
+
+pub fn addMessage(allocator: std.mem.Allocator, message_name: []const u8) !void {
+    try _message_.add(allocator, message_name);
+    try _channel_.add(allocator, message_name);
+}
+
+pub fn removeMessage(allocator: std.mem.Allocator, message_name: []const u8) !void {
+    try _message_.remove(allocator, message_name);
+    try _channel_.remove(allocator, message_name);
+}

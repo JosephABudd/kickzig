@@ -4,6 +4,8 @@ const _filenames_ = @import("filenames");
 const _api_template_ = @import("api_template.zig");
 const _messenger_ = @import("messenger/framework.zig");
 
+pub const messenger = _messenger_;
+
 pub fn create(allocator: std.mem.Allocator) !void {
     // Open the folder.
     var folders = try paths.folders();

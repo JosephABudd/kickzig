@@ -10,6 +10,7 @@ const _filenames_ = @import("filenames");
 const _api_template_ = @import("api_template.zig");
 const _any_template_ = @import("any_template.zig");
 const _initialize_template_ = @import("initialize_template.zig");
+const _stdout_ = @import("stdout");
 const initialize_message_name: []const u8 = "Initialize";
 
 pub fn create(allocator: std.mem.Allocator) !void {
@@ -79,7 +80,7 @@ pub fn addInitialize(allocator: std.mem.Allocator) !void {
 
 fn addMessenger(allocator: std.mem.Allocator, message_name: []const u8) !void {
     // Build the data for the template.
-    var template: *_any_template_.Template = try _any_template_.Data.init(allocator, message_name);
+    var template: *_any_template_.Template = try _any_template_.init(allocator, message_name);
     defer template.deinit();
     var content: []const u8 = try template.content();
     defer allocator.free(content);
@@ -108,4 +109,47 @@ fn removeMessenger(allocator: std.mem.Allocator, message_name: []const u8) !void
     // Remove the file.
     var file_name: []const u8 = try _filenames_.backendMessageHandlerFileName(allocator, message_name);
     try messenger_dir.deleteFile(file_name);
+}
+
+pub fn listMessages(allocator: std.mem.Allocator) !void {
+    {
+        // Panel messages.
+        var message_names: [][]const u8 = try _filenames_.allBackendMessageHandlerNames(allocator);
+        defer allocator.free(message_names);
+        // Heading
+        try printMessageNamesHeading(allocator, message_names.len);
+        // List
+        try printMessageNames(allocator, message_names);
+    }
+}
+
+fn printMessageNamesHeading(allocator: std.mem.Allocator, count_messages: usize) !void {
+    return switch (count_messages) {
+        0 => blk: {
+            var heading: []const u8 = try std.fmt.allocPrint(allocator, "There are no messages.\n", .{});
+            defer allocator.free(heading);
+            break :blk try _stdout_.print(heading);
+        },
+        1 => blk: {
+            var heading: []const u8 = try std.fmt.allocPrint(allocator, "There is 1 message.\n", .{});
+            defer allocator.free(heading);
+            break :blk try _stdout_.print(heading);
+        },
+        else => blk: {
+            var heading: []const u8 = try std.fmt.allocPrint(allocator, "There are {d} messages.\n", .{count_messages});
+            defer allocator.free(heading);
+            break :blk try _stdout_.print(heading);
+        },
+    };
+}
+
+fn printMessageNames(allocator: std.mem.Allocator, messages: [][]const u8) !void {
+    if (messages.len > 0) {
+        // List
+        var line: []u8 = try std.mem.join(allocator, "\n", messages);
+        defer allocator.free(line);
+        try _stdout_.print(line);
+    }
+    // Margin.
+    try _stdout_.print("\n\n");
 }

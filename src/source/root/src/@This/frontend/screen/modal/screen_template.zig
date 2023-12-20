@@ -119,8 +119,8 @@ const line1 =
     \\    // The caller owns the returned value.
     \\    // If the len of returned value is 0 then do not free.
     \\    // 0 len == error.
-    \\    fn nameFn(self_ptr: *anyopaque) []const u8 {
-    \\        var self: *Screen = @alignCast(@ptrCast(self_ptr));
+    \\    fn nameFn(implementor: *anyopaque) []const u8 {
+    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
     \\        var name: []const u8 = self.allocator.alloc(u8, self.name.len) catch {
     \\            return "";
     \\        };
@@ -129,23 +129,23 @@ const line1 =
     \\    }
     \\
     \\    /// deinitFn is an implementation of _framers_.Behavior.
-    \\    fn deinitFn(self_ptr: *anyopaque) void {
-    \\        var self: *Screen = @alignCast(@ptrCast(self_ptr));
+    \\    fn deinitFn(implementor: *anyopaque) void {
+    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
     \\        self.all_panels.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    /// frameFn is an implementation of _framers_.Behavior.
-    \\    fn frameFn(self_ptr: *anyopaque, arena: std.mem.Allocator) anyerror {
-    \\        var self: *Screen = @alignCast(@ptrCast(self_ptr));
+    \\    fn frameFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror {
+    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
     \\        try self.all_panels.frameCurrent(arena);
     \\        return error.Null;
     \\    }
     \\
     \\    /// goModalFn is an implementation of _framers_.Behavior.
-    \\    fn goModalFn(self_ptr: *anyopaque, args_ptr: *anyopaque) anyerror {
-    \\        var self: *Screen = @alignCast(@ptrCast(self_ptr));
-    \\        var name = nameFn(self_ptr);
+    \\    fn goModalFn(implementor: *anyopaque, args_ptr: *anyopaque) anyerror {
+    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
+    \\        var name = nameFn(implementor);
     \\        defer self.allocator.free(name);
     \\
     \\        var setup_args: *ModalParams = @alignCast(@ptrCast(args_ptr));

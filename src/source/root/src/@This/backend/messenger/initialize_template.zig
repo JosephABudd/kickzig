@@ -23,8 +23,8 @@ pub const content =
     \\    /// For that reason:
     \\    /// * data from param initialize_message must be copied to be preserved.
     \\    /// * param initialize_message can safely be sent back to the front-end.
-    \\    pub fn receiveFn(self_ptr: *anyopaque, initialize_message: *_message_.Initialize.Message) void {
-    \\        var self: *Messenger = @alignCast(@ptrCast(self_ptr));
+    \\    pub fn receiveFn(implementor: *anyopaque, initialize_message: *_message_.Initialize.Message) void {
+    \\        var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\        _ = self;
     \\        _ = initialize_message;
     \\

@@ -10,11 +10,11 @@ pub const content =
     \\pub const _message_ = @import("message").Fatal;
     \\
     \\/// Behavior is call-backs and state.
-    \\/// .receiveFn is a call-back, a function that receives the message.
     \\/// .implementor implements the recieveFn.
+    \\/// .receiveFn is a call-back, a function that receives the message.
     \\pub const Behavior = struct {
-    \\    receiveFn: *const fn (implementor: *anyopaque, message: *_message_.Message) void,
     \\    implementor: *anyopaque,
+    \\    receiveFn: *const fn (implementor: *anyopaque, message: *_message_.Message) void,
     \\};
     \\
     \\pub const Group = struct {
@@ -28,24 +28,39 @@ pub const content =
     \\    }
     \\
     \\    pub fn deinit(self: *Group) void {
+    \\        // deint each Behavior.
+    \\        var iterator = self.members.iterator();
+    \\        while (iterator.next()) |entry| {
+    \\            var behavior: *Behavior = @ptrCast(entry.value_ptr.*);
+    \\            self.allocator.destroy(behavior);
+    \\        }
     \\        self.members.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    pub fn subscribe(self: *Group, cb: *Behavior) !void {
-    \\        try self.members.put(cb.implementor, cb);
+    \\    /// subscribe adds a Behavior that will receiver the message to the Group.
+    \\    /// Group owns the Behavior not the caller.
+    \\    /// So if there is an error the Behavior is destroyed.
+    \\    pub fn subscribe(self: *Group, behavior: *Behavior) !void {
+    \\        self.members.put(behavior.implementor, behavior) catch |err| {
+    \\            self.allocator.destroy(behavior);
+    \\            return err;
+    \\        };
     \\    }
     \\
+    \\    /// unsubscribe removes a Behavior from the Group.
+    \\    /// It also destroys the Behavior.
+    \\    /// Returns true if anything was removed.
     \\    pub fn unsubscribe(self: *Group, caller: *anyopaque) bool {
     \\        if (self.members.getEntry(caller)) |entry| {
-    \\            var cb: *Behavior = @ptrCast(entry.value_ptr.*);
-    \\            self.allocator.destroy(cb);
+    \\            var behavior: *Behavior = @ptrCast(entry.value_ptr.*);
+    \\            self.allocator.destroy(behavior);
     \\            return self.members.remove(caller);
     \\        }
     \\    }
     \\
     \\    /// sendError dispatches the error in a message to the subscribers in Group.
-    \\    /// It takes control of the message and deinits it.
+    \\    /// It takes control of the message and deinits it after the last receive fn returns.
     \\    /// It does not take control of err which is allocated on the stack.
     \\    pub fn sendError(self: *Group, err: anyerror) void {
     \\        if (self._sent) {

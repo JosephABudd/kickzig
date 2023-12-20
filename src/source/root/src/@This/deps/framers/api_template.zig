@@ -8,7 +8,7 @@ pub const content =
     \\    implementor: *anyopaque,
     \\
     \\    // deinitFn deinits the implementor.
-    \\    deinitFn: *const fn (self_ptr: *anyopaque) void,
+    \\    deinitFn: *const fn (implementor: *anyopaque) void,
     \\
     \\    // nameFn returns a framer's unique name.
     \\    nameFn: *const fn (self: *anyopaque) []const u8,
@@ -50,7 +50,7 @@ pub const content =
     \\    pub fn initBehavior(
     \\        self: *Group,
     \\        implementor: *anyopaque,
-    \\        deinitFn: *const fn (self_ptr: *anyopaque) void,
+    \\        deinitFn: *const fn (implementor: *anyopaque) void,
     \\        nameFn: *const fn (self: *anyopaque) []const u8,
     \\        frameFn: *const fn (self: *anyopaque, allocator: std.mem.Allocator) anyerror,
     \\        goModalFn: ?*const fn (self: *anyopaque, args: *anyopaque) anyerror,

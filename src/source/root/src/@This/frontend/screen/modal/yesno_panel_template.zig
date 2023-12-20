@@ -22,8 +22,8 @@ pub const content =
     \\    yes_no: ?bool,
     \\
     \\    implementor: *anyopaque,
-    \\    yes_fn: *const fn (self_ptr: *anyopaque) void,
-    \\    no_fn: *const fn (self_ptr: *anyopaque) void,
+    \\    yes_fn: *const fn (implementor: *anyopaque) void,
+    \\    no_fn: *const fn (implementor: *anyopaque) void,
     \\
     \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
     \\        self.heading = try self.allocator.alloc(u8, setup_args.heading.?.len);

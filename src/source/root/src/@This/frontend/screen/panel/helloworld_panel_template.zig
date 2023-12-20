@@ -23,12 +23,12 @@ pub const content =
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    fn modalNo(implementor: *anyopaque) void {
+    \\    fn modalNoCB(implementor: *anyopaque) void {
     \\        var self: *Panel = @alignCast(@ptrCast(implementor));
     \\        self.yes_no = false;
     \\    }
     \\
-    \\    fn modalYes(implementor: *anyopaque) void {
+    \\    fn modalYesCB(implementor: *anyopaque) void {
     \\        var self: *Panel = @alignCast(@ptrCast(implementor));
     \\        self.yes_no = true;
     \\    }
@@ -82,7 +82,7 @@ pub const content =
     \\                    heading = "You cliced No last time.";
     \\                }
     \\            } else {
-    \\                heading = "You haven't click any buttons yet so click one!";
+    \\                heading = "You haven't clicked any buttons yet so click one!";
     \\            }
     \\            const yesno_args = try YesNoModalParams.init(
     \\                self.allocator,
@@ -91,8 +91,8 @@ pub const content =
     \\                yes_label,
     \\                no_label,
     \\                self,
-    \\                Panel.modalYes,
-    \\                Panel.modalNo,
+    \\                Panel.modalYesCB,
+    \\                Panel.modalNoCB,
     \\            );
     \\            defer yesno_args.deinit();
     \\            var result = yesno_modal.goModalFn.?(yesno_modal.implementor, yesno_args);

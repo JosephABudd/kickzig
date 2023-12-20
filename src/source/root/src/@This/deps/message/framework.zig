@@ -25,14 +25,14 @@ pub fn create(allocator: std.mem.Allocator) !void {
 
 pub fn add(allocator: std.mem.Allocator, message_name: []const u8) !void {
     // Add the new message handler.
-    try addMessenger(allocator, message_name);
+    try addMessage(allocator, message_name);
     // Build api.zig with all of the message handlers.
     try buildApiZig(allocator);
 }
 
 pub fn remove(allocator: std.mem.Allocator, message_name: []const u8) !void {
     // Remove the message handler.
-    try removeMessenger(allocator, message_name);
+    try removeMessage(allocator, message_name);
     // Build api.zig with all of the remaining message handlers.
     try buildApiZig(allocator);
 }
@@ -95,14 +95,14 @@ fn addInitialize(allocator: std.mem.Allocator) !void {
     try ofile.writeAll(_initialize_template_.content);
 }
 
-fn addMessenger(allocator: std.mem.Allocator, message_name: []const u8) !void {
+fn addMessage(allocator: std.mem.Allocator, message_name: []const u8) !void {
     // Build the data for the template.
-    var template: *_any_template_.Template = try _any_template_.Data.init(allocator, message_name);
+    var template: *_any_template_.Template = try _any_template_.init(allocator, message_name);
     defer template.deinit();
     var content: []const u8 = try template.content();
     defer allocator.free(content);
 
-    // Open the folder.
+    // Open the deps/message folder.
     var folders = try _paths_.folders();
     defer folders.deinit();
     var messenger_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_message.?, .{});
@@ -115,9 +115,9 @@ fn addMessenger(allocator: std.mem.Allocator, message_name: []const u8) !void {
     try ofile.writeAll(content);
 }
 
-fn removeMessenger(allocator: std.mem.Allocator, message_name: []const u8) !void {
+fn removeMessage(allocator: std.mem.Allocator, message_name: []const u8) !void {
 
-    // Open the folder.
+    // Open the deps/message folder.
     var folders = try _paths_.folders();
     defer folders.deinit();
     var messenger_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_message.?, .{});

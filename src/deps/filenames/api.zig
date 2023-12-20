@@ -66,20 +66,9 @@ pub fn allBackendMessageHandlerNames(allocator: std.mem.Allocator) ![][]const u8
             }
         }
     }
-    var owned: [][]const u8 = try handler_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
-    for (owned, 0..) |name, i| {
-        names[i] = try allocator.alloc(u8, name.len);
-        errdefer {
-            for (names, 0..) |deinit_name, j| {
-                if (j == i) break;
-                allocator.free(deinit_name);
-            }
-            allocator.free(names);
-        }
-        @memcpy(@constCast(names[i]), name);
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try handler_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 // frontend.
@@ -120,20 +109,9 @@ pub fn allFrontendPanelScreenPanelNames(allocator: std.mem.Allocator, screen_nam
             try panel_file_names.append(panel_file_name);
         }
     }
-    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
-    for (owned, 0..) |name, i| {
-        names[i] = try allocator.alloc(u8, name.len);
-        errdefer {
-            for (names, 0..) |deinit_name, j| {
-                if (j == i) break;
-                allocator.free(deinit_name);
-            }
-            allocator.free(names);
-        }
-        @memcpy(@constCast(names[i]), name);
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try panel_file_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 /// allFrontendModalScreenPanelNames returns the names of each panel-file in a modal-screen.
@@ -148,20 +126,9 @@ pub fn allFrontendModalScreenPanelNames(allocator: std.mem.Allocator, screen_nam
             try panel_file_names.append(panel_file_name);
         }
     }
-    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
-    for (owned, 0..) |name, i| {
-        names[i] = try allocator.alloc(u8, name.len);
-        errdefer {
-            for (names, 0..) |deinit_name, j| {
-                if (j == i) break;
-                allocator.free(deinit_name);
-            }
-            allocator.free(names);
-        }
-        @memcpy(@constCast(names[i]), name);
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try panel_file_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 /// allFrontendVTabScreenPanelNames returns the names of each panel-file in a vtab-screen.
@@ -176,20 +143,9 @@ pub fn allFrontendVTabScreenPanelNames(allocator: std.mem.Allocator, screen_name
             try panel_file_names.append(panel_file_name);
         }
     }
-    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
-    for (owned, 0..) |name, i| {
-        names[i] = try allocator.alloc(u8, name.len);
-        errdefer {
-            for (names, 0..) |deinit_name, j| {
-                if (j == i) break;
-                allocator.free(deinit_name);
-            }
-            allocator.free(names);
-        }
-        @memcpy(@constCast(names[i]), name);
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try panel_file_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 /// allFrontendHTabScreenPanelNames returns the names of each panel-file in a htab-screen.
@@ -204,20 +160,9 @@ pub fn allFrontendHTabScreenPanelNames(allocator: std.mem.Allocator, screen_name
             try panel_file_names.append(panel_file_name);
         }
     }
-    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
-    for (owned, 0..) |name, i| {
-        names[i] = try allocator.alloc(u8, name.len);
-        errdefer {
-            for (names, 0..) |deinit_name, j| {
-                if (j == i) break;
-                allocator.free(deinit_name);
-            }
-            allocator.free(names);
-        }
-        @memcpy(@constCast(names[i]), name);
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try panel_file_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 /// allFrontendBookScreenPanelNames returns the names of each panel-file in a book-screen.
@@ -232,20 +177,9 @@ pub fn allFrontendBookScreenPanelNames(allocator: std.mem.Allocator, screen_name
             try panel_file_names.append(panel_file_name);
         }
     }
-    var owned: [][]const u8 = try panel_file_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
-    for (owned, 0..) |name, i| {
-        names[i] = try allocator.alloc(u8, name.len);
-        errdefer {
-            for (names, 0..) |deinit_name, j| {
-                if (j == i) break;
-                allocator.free(deinit_name);
-            }
-            allocator.free(names);
-        }
-        @memcpy(@constCast(names[i]), name);
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try panel_file_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 /// allFrontendScreenNames returns screen names taken from the screen folders.
@@ -303,20 +237,9 @@ pub fn allFrontendScreenNames(allocator: std.mem.Allocator) ![][]const u8 {
         allocator.free(modal_folders);
     }
     try all_folders.appendSlice(modal_folders);
-    var owned: [][]const u8 = try all_folders.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, owned.len);
-    for (owned, 0..) |name, i| {
-        names[i] = try allocator.alloc(u8, name.len);
-        errdefer {
-            for (names, 0..) |deinit_name, j| {
-                if (j == i) break;
-                allocator.free(deinit_name);
-            }
-            allocator.free(names);
-        }
-        @memcpy(@constCast(names[i]), name);
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try all_folders.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 // deps/.
@@ -357,9 +280,9 @@ pub fn depsMessageFileName(allocator: std.mem.Allocator, message_name: []const u
     return try file_name.toOwnedSlice();
 }
 
-// messageNameFromSharedMessageFileName returns the message name taken from a deps message file name.
+// messageNameFromMessageFileName returns the message name taken from a deps message file name.
 // The message name is a slice of file_name.
-pub fn messageNameFromSharedMessageFileName(file_name: []const u8) ?[]const u8 {
+pub fn messageNameFromMessageFileName(file_name: []const u8) ?[]const u8 {
     if (std.mem.eql(u8, file_name, api_file_name)) {
         // "api.zig" is not a message file name.
         return null;
@@ -371,6 +294,26 @@ pub fn messageNameFromSharedMessageFileName(file_name: []const u8) ?[]const u8 {
         }
     }
     return null;
+}
+
+// The caller owns the returned value;
+fn allDepsMessageFileNames(allocator: std.mem.Allocator) ![][]const u8 {
+    var folders = try paths.folders();
+    var file_names = std.ArrayList([]const u8).init(allocator);
+    defer file_names.deinit();
+
+    var dir = try std.fs.openIterableDirAbsolute(folders.root_src_this_deps_message.?, .{});
+    defer dir.close();
+
+    var iterator = dir.iterate();
+    while (try iterator.next()) |file| {
+        if (file.kind == .file) {
+            try file_names.append(file.name);
+        }
+    }
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try file_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 // depsChannelFileName returns the file name for a channel.
@@ -402,30 +345,17 @@ fn channelNameFromDepsChannelFileName(file_name: []const u8) ?[]const u8 {
 /// allDepsMessageNames returns the names of each message in deps.
 /// The caller owns the return value;
 pub fn allDepsMessageNames(allocator: std.mem.Allocator) ![][]const u8 {
+    var file_names: [][]const u8 = try allDepsMessageFileNames(allocator);
+    defer allocator.free(file_names);
     var message_names = std.ArrayList([]const u8).init(allocator);
-    defer message_names.deinit();
-    var folders = try paths.folders();
-    defer folders.deinit();
-
-    var dir = try std.fs.openIterableDirAbsolute(folders.root_src_this_deps_message.?, .{});
-    defer dir.close();
-
-    var iterator = dir.iterate();
-    while (try iterator.next()) |file| {
-        if (file.kind == .file) {
-            if (messageNameFromSharedMessageFileName(file.name)) |message_name| {
-                try message_names.append(message_name);
-            }
+    for (file_names) |file_name| {
+        if (messageNameFromMessageFileName(file_name)) |message_name| {
+            try message_names.append(message_name);
         }
     }
-    var slice = try message_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try message_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 /// allDepsChannelNames returns the names of each channel.
@@ -447,14 +377,9 @@ pub fn allDepsChannelNames(allocator: std.mem.Allocator) ![][]const u8 {
             }
         }
     }
-    var slice = try channel_names.toOwnedSlice();
-    var names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        var new_name: []const u8 = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(new_name), name);
-        names[i] = new_name;
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try channel_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 /// allCustomDepsChannelNames returns the names of each custom channel.
@@ -472,29 +397,20 @@ pub fn allCustomDepsChannelNames(allocator: std.mem.Allocator) ![][]const u8 {
     var iterator = dir.iterate();
     while (try iterator.next()) |file| {
         if (file.kind == .file) {
+            if (std.mem.eql(u8, file.name, initialize_file_name)) {
+                continue;
+            }
+            if (std.mem.eql(u8, file.name, fatal_file_name)) {
+                continue;
+            }
             if (channelNameFromDepsChannelFileName(file.name)) |channel_name| {
                 try channel_names.append(channel_name);
             }
         }
     }
-    var slice = try channel_names.toOwnedSlice();
-    var size: usize = 0;
-    if (slice.len > 2) {
-        size = slice.len - 2;
-    }
-    var names: [][]const u8 = try allocator.alloc([]const u8, size);
-    if (size > 0) {
-        var i: usize = 0;
-        for (slice) |name| {
-            if (std.mem.eql(u8, name, initialize_file_name) or std.mem.eql(u8, name, fatal_file_name)) {
-                continue;
-            }
-            names[i] = try allocator.alloc(u8, name.len);
-            @memcpy(@constCast(names[i]), name);
-            i += 1;
-        }
-    }
-    return names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try channel_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 /// allDepsModalParamsNames returns the names of each modal params.
@@ -516,13 +432,9 @@ pub fn allDepsModalParamsNames(allocator: std.mem.Allocator) ![][]const u8 {
             }
         }
     }
-    var slice: [][]const u8 = try modal_params_names.toOwnedSlice();
-    var all_names: [][]const u8 = try allocator.alloc([]const u8, slice.len);
-    for (slice, 0..) |name, i| {
-        all_names[i] = try allocator.alloc(u8, name.len);
-        @memcpy(@constCast(all_names[i]), name);
-    }
-    return all_names;
+    // Return a slice that the caller owns.
+    var unowned_slice: [][]const u8 = try modal_params_names.toOwnedSlice();
+    return ownedSlice(allocator, unowned_slice);
 }
 
 /// allCustomDepsModalParamsNames returns the names of each custom modal_params.
@@ -537,7 +449,6 @@ pub fn allCustomDepsModalParamsNames(allocator: std.mem.Allocator) ![][]const u8
     }
     var i: usize = 0;
     for (all_names) |name| {
-        std.debug.print("name:{s}, i:{d}\n", .{ name, i });
         if (std.mem.eql(u8, name, "OK")) {
             continue;
         }
@@ -558,4 +469,19 @@ pub fn allCustomDepsModalParamsNames(allocator: std.mem.Allocator) ![][]const u8
         i += 1;
     }
     return names;
+}
+
+fn ownedSlice(allocator: std.mem.Allocator, slices: [][]const u8) ![][]const u8 {
+    var owned: [][]const u8 = try allocator.alloc([]const u8, slices.len);
+    for (slices, 0..) |slice, i| {
+        owned[i] = try allocator.alloc(u8, slice.len);
+        errdefer {
+            for (owned[0..i]) |deinit_owned| {
+                allocator.free(deinit_owned);
+            }
+            allocator.free(owned);
+        }
+        @memcpy(@constCast(owned[i]), slice);
+    }
+    return owned;
 }

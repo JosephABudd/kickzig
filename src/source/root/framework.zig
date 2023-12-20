@@ -10,6 +10,8 @@ const _src_this_frontend_ = @import("src/@This/frontend/framework.zig");
 const _src_this_deps_ = @import("source_deps");
 
 pub const frontend = _src_this_frontend_;
+pub const backend = _src_this_backend_;
+pub const deps = _src_this_deps_;
 
 /// recreate rebuilds root/src/@This/ entirely.
 pub fn recreate(allocator: std.mem.Allocator, app_name: []const u8) !void {

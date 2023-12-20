@@ -2,8 +2,9 @@ const std = @import("std");
 const _stdout_ = @import("stdout");
 const _paths_ = @import("paths");
 const _usage_ = @import("usage");
-const _framework_ = @import("commands/framework/api.zig");
-const _screen_ = @import("commands/screen/api.zig");
+const _framework_commands_ = @import("commands/framework/api.zig");
+const _screen_commands_ = @import("commands/screen/api.zig");
+const _message_commands_ = @import("commands/message/api.zig");
 
 pub fn main() !void {
     // Memory allocator.
@@ -43,14 +44,20 @@ fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, cwd_app_nam
     // Process the command.
 
     // framework command.
-    if (std.mem.eql(u8, command, _framework_.command)) {
-        try _framework_.handleCommand(allocator, cli_name, app_name, remaining_args);
+    if (std.mem.eql(u8, command, _framework_commands_.command)) {
+        try _framework_commands_.handleCommand(allocator, cli_name, app_name, remaining_args);
         return;
     }
 
     // screen command.
-    if (std.mem.eql(u8, command, _screen_.command)) {
-        try _screen_.handleCommand(allocator, cli_name, app_name, remaining_args);
+    if (std.mem.eql(u8, command, _screen_commands_.command)) {
+        try _screen_commands_.handleCommand(allocator, cli_name, app_name, remaining_args);
+        return;
+    }
+
+    // message command.
+    if (std.mem.eql(u8, command, _message_commands_.command)) {
+        try _message_commands_.handleCommand(allocator, cli_name, app_name, remaining_args);
         return;
     }
 
