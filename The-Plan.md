@@ -3,10 +3,10 @@ A simple, easy to understand, CRUD application.
 
 1. I'll open with
    * a verbose list of contacts if there are any,
-   * or the add a new contact screen if there are no contacts.
+   * or a form to add a new contact if there are none.
 1. In the list of contacts, if the user clicks on a contact then a modal lets the user view the contact information and select what to do.
    * Edit, Remove, Cancel.
-1. Records can be stored in a sqlite file.
+1. Contact information can be stored in a sqlite file.
 
 ## The front-end
 
@@ -23,7 +23,7 @@ The **Contacts** screen's **messenger** will be passing the contact information 
 
 ### The Choice modal screen
 
-The **Choice** modal screen is used when a user selects a contact in the **Contacts** screen's **Select** panel. The panel presents the user choices using buttons. Each button triggers a call back and then closes the screen.
+The **Choice** modal screen is used when a user selects a contact in the **Contacts** screen's **Select** panel. The panel presents the contact information along with button offering the user some choices. Each button triggers a call back and then closes the screen.
 
 1. The **Choice** panel will allow the user to
    * **Edit** a contact record,
