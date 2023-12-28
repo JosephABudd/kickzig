@@ -12,7 +12,7 @@ My sqlite store package will be in the **src/@This/deps/store/**. The package's 
 1. In standalone-sdl.zig, **The store is created**.
 1. In standalone-sdl.zig, **The back-end is initialized with the store** allowing it to initialize it's back-end message handlers with the store. Those back-end message handlers are the ones that use the store.
 
-See [[standalone-sdl.zig|appendix/standalone--sdl.zig]] in the appendix.
+See [[standalone-sdl.zig|standalone--sdl.zig]] in the appendix.
 
 ## The store package's api.zig and contact.zig are shown below.
 

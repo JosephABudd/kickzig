@@ -20,4 +20,4 @@
 
 ## Next
 
-[[Create the data store.|stepbystep/Create-The-Data-Store]]
+[[Create the data store.|Create-The-Data-Store]]
