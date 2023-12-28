@@ -20,4 +20,4 @@
 ## Appendix
 
 * [[build.zig|build.zig]]
-* [[standalone-sdl.zig|standalone--sdl]]
+* [[standalone-sdl.zig|standalone--sdl.zig]]
