@@ -1,7 +1,5 @@
 [[Home|Home]]
 
-## Step by step. Building a CRUD with kickzig
-
 ### Getting started
 
 * [[The Plan.|The-Plan]]
