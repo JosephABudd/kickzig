@@ -21,7 +21,7 @@
 
 When I vendor a package I need to copy the important parts of it's build.zig file into this application's build.zig file.
 
-You can see those additions to the application's [[build.zig|build.zig]].
+You can see those additions to the application's [[build.zig|build.zig]] in the appendix.
 
 ## Next
 
