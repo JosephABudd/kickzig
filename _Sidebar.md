@@ -4,7 +4,7 @@
 
 ### Getting started
 
-* [[The Plan.|stepbystep\/The-Plan]]
+* [[The Plan.|{stepbystep}The-Plan]]
 * [[Create the Git Repo.|stepbystep/Create-The-Git-Repo]]
 
 ### Additional vendored remote packages
