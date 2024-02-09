@@ -12,8 +12,8 @@ pub const Template = struct {
 
     // The caller owns the returned value;
     pub fn content(self: *Template) ![]const u8 {
-        var replacement_size: usize = std.mem.replacementSize(u8, template, "{{startup_screen_name}}", default_landing_screen_name);
-        var with_startup_screen_name: []u8 = try self.allocator.alloc(u8, replacement_size);
+        const replacement_size: usize = std.mem.replacementSize(u8, template, "{{startup_screen_name}}", default_landing_screen_name);
+        const with_startup_screen_name: []u8 = try self.allocator.alloc(u8, replacement_size);
         _ = std.mem.replace(u8, template, "{{startup_screen_name}}", default_landing_screen_name, with_startup_screen_name);
         return with_startup_screen_name;
     }

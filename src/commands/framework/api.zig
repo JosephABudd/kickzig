@@ -29,7 +29,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 };
                 defer allocator.free(user_input);
                 // Have input so make the error message.
-                var msg: []const u8 = _warning_.fatal(allocator, restart_err, user_input) catch {
+                const msg: []const u8 = _warning_.fatal(allocator, restart_err, user_input) catch {
                     return restart_err;
                 };
                 try _stdout_.print(msg);
@@ -38,7 +38,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
             // Create the framework.
             _source_.recreate(allocator, app_name) catch |create_err| {
                 // Have input so make the error message.
-                var user_command: []const u8 = try std.fmt.allocPrint(allocator, "{s} {s}", .{ command, verb_restart });
+                const user_command: []const u8 = try std.fmt.allocPrint(allocator, "{s} {s}", .{ command, verb_restart });
                 defer allocator.free(user_command);
                 const msg: []const u8 = _warning_.fatal(allocator, create_err, user_command) catch {
                     return create_err;
@@ -49,7 +49,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
             };
         } else {
             // User input is "framework ????".
-            var framework_usage: []u8 = try _usage_.framework(allocator, cli_name);
+            const framework_usage: []u8 = try _usage_.framework(allocator, cli_name);
             defer allocator.free(framework_usage);
             try _stdout_.print(framework_usage);
         }
@@ -78,7 +78,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
 }
 
 fn help(allocator: std.mem.Allocator, cli_name: []const u8) !void {
-    var framework_usage: []u8 = try _usage_.screen(allocator, cli_name);
+    const framework_usage: []u8 = try _usage_.screen(allocator, cli_name);
     defer allocator.free(framework_usage);
     try _stdout_.print(framework_usage);
 }

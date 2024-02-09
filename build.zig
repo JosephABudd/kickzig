@@ -17,38 +17,44 @@ pub fn build(b: *std.Build) void {
 
     // Internal src/deps/ modules.
     const stdout_mod = b.addModule("stdout", .{
-        .source_file = .{ .path = "src/deps/stdout/api.zig" },
-        .dependencies = &.{},
+        .root_source_file = .{ .path = "src/deps/stdout/api.zig" },
+        .imports = &.{},
     });
     const usage_mod = b.addModule("usage", .{
-        .source_file = .{ .path = "src/deps/usage.zig" },
-        .dependencies = &.{},
+        .root_source_file = .{ .path = "src/deps/usage.zig" },
+        .imports = &.{},
     });
     const warning_mod = b.addModule("warning", .{
-        .source_file = .{ .path = "src/deps/warning.zig" },
-        .dependencies = &.{},
+        .root_source_file = .{ .path = "src/deps/warning.zig" },
+        .imports = &.{},
     });
     const paths_mod = b.addModule("paths", .{
-        .source_file = .{ .path = "src/deps/paths/api.zig" },
-        .dependencies = &.{},
+        .root_source_file = .{ .path = "src/deps/paths/api.zig" },
+        .imports = &.{},
+    });
+    const success_mod = b.addModule("success", .{
+        .root_source_file = .{ .path = "src/deps/success.zig" },
+        .imports = &.{
+            .{ .name = "paths", .module = paths_mod },
+        },
     });
     const filenames_mod = b.addModule("filenames", .{
-        .source_file = .{ .path = "src/deps/filenames/api.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .path = "src/deps/filenames/api.zig" },
+        .imports = &.{
             .{ .name = "paths", .module = paths_mod },
         },
     });
     const slices_mod = b.addModule("slices", .{
-        .source_file = .{ .path = "src/deps/slices.zig" },
-        .dependencies = &.{},
+        .root_source_file = .{ .path = "src/deps/slices.zig" },
+        .imports = &.{},
     });
     const strings_mod = b.addModule("strings", .{
-        .source_file = .{ .path = "src/deps/strings.zig" },
-        .dependencies = &.{},
+        .root_source_file = .{ .path = "src/deps/strings.zig" },
+        .imports = &.{},
     });
     const verify_mod = b.addModule("verify", .{
-        .source_file = .{ .path = "src/deps/verify.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .path = "src/deps/verify.zig" },
+        .imports = &.{
             .{ .name = "filenames", .module = filenames_mod },
             .{ .name = "strings", .module = strings_mod },
         },
@@ -56,8 +62,8 @@ pub fn build(b: *std.Build) void {
 
     // src/source/root/src/@This/deps/.
     const source_deps_mod = b.addModule("source_deps", .{
-        .source_file = .{ .path = "src/source/root/src/@This/deps/framework.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .path = "src/source/root/src/@This/deps/framework.zig" },
+        .imports = &.{
             .{ .name = "filenames", .module = filenames_mod },
             .{ .name = "paths", .module = paths_mod },
             .{ .name = "strings", .module = strings_mod },
@@ -66,8 +72,8 @@ pub fn build(b: *std.Build) void {
 
     // source/ module.
     const source_mod = b.addModule("source", .{
-        .source_file = .{ .path = "src/source/api.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .path = "src/source/api.zig" },
+        .imports = &.{
             .{ .name = "stdout", .module = stdout_mod },
             .{ .name = "paths", .module = paths_mod },
             .{ .name = "filenames", .module = filenames_mod },
@@ -87,20 +93,21 @@ pub fn build(b: *std.Build) void {
     });
 
     // src/libs/ modules.
-    exe.addModule("stdout", stdout_mod);
+    exe.root_module.addImport("stdout", stdout_mod);
     // src/deps/ modules.
-    exe.addModule("usage", usage_mod);
-    exe.addModule("warning", warning_mod);
-    exe.addModule("verify", verify_mod);
+    exe.root_module.addImport("usage", usage_mod);
+    exe.root_module.addImport("warning", warning_mod);
+    exe.root_module.addImport("success", success_mod);
+    exe.root_module.addImport("verify", verify_mod);
     // src/source/ module.
-    exe.addModule("source", source_mod);
+    exe.root_module.addImport("source", source_mod);
     // src/source/root/src/@This/deps/.
-    exe.addModule("source_deps", source_deps_mod);
+    exe.root_module.addImport("source_deps", source_deps_mod);
     // src/source/libs/ modules.
-    exe.addModule("paths", paths_mod);
-    exe.addModule("filenames", filenames_mod);
-    exe.addModule("slices", slices_mod);
-    exe.addModule("strings", strings_mod);
+    exe.root_module.addImport("paths", paths_mod);
+    exe.root_module.addImport("filenames", filenames_mod);
+    exe.root_module.addImport("slices", slices_mod);
+    exe.root_module.addImport("strings", strings_mod);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

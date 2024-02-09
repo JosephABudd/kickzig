@@ -72,7 +72,7 @@ pub fn removePanel(allocator: std.mem.Allocator, screen_name: []const u8, panel_
     // Open the folder.
     var screen_dir: std.fs.Dir = try directory(screen_name);
     defer screen_dir.close();
-    var fname: []const u8 = try _filenames_.frontendScreenPanelFileName(allocator, panel_name);
+    const fname: []const u8 = try _filenames_.frontendScreenPanelFileName(allocator, panel_name);
     defer allocator.free(fname);
     try screen_dir.deleteFile(fname);
 }
@@ -85,10 +85,10 @@ pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, s
     const template: *_panels_template_.Template = try _panels_template_.init(allocator);
     defer template.deinit();
     // Get the names of each panel and use them in the template.
-    var current_panel_names: [][]const u8 = try _filenames_.allFrontendVTabScreenPanelNames(allocator, screen_name);
+    const current_panel_names: [][]const u8 = try _filenames_.allFrontendVTabScreenPanelNames(allocator, screen_name);
     defer {
         for (current_panel_names, 0..) |name, i| {
-            std.debug.print("  * {s}:{d} - {d}\n", .{ name, i, current_panel_names.len });
+            _ = i;
             allocator.free(name);
         }
         allocator.free(current_panel_names);
@@ -96,7 +96,7 @@ pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, s
     for (current_panel_names) |name| {
         try template.addName(name);
     }
-    var content: []const u8 = try template.content();
+    const content: []const u8 = try template.content();
     defer allocator.free(content);
 
     // Open, write and close the file.
@@ -130,7 +130,7 @@ fn addScreenFile(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_n
 // directory returns the screen's file system directory.
 // The caller must close the returned directory.
 fn directory(screen_name: ?[]const u8) !std.fs.Dir {
-    var folders: *_paths_.FolderPaths = try _paths_.folders();
+    const folders: *_paths_.FolderPaths = try _paths_.folders();
     defer folders.deinit();
     var panel_folder: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_vtab.?, .{});
     if (screen_name == null) {

@@ -8,7 +8,7 @@ pub const messenger = _messenger_;
 
 pub fn create(allocator: std.mem.Allocator) !void {
     // Open the folder.
-    var folders = try paths.folders();
+    const folders = try paths.folders();
     defer folders.deinit();
     var backend_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_backend.?, .{});
     defer backend_dir.close();

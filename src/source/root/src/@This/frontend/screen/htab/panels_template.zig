@@ -38,7 +38,7 @@ pub const Template = struct {
         var line: []u8 = undefined;
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
-        var names: [][]const u8 = self.panel_names[0..self.panel_names_index];
+        const names: [][]const u8 = self.panel_names[0..self.panel_names_index];
 
         try lines.appendSlice(line1a);
         for (names) |name| {
@@ -114,7 +114,7 @@ pub const Template = struct {
                 try lines.appendSlice("\n");
 
                 {
-                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, messenger);\n", .{name});
+                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, messenger, exit);\n", .{name});
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }
@@ -218,7 +218,7 @@ const line5 =
 const line6 =
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, messenger: *_messenger_.Messenger) !*Panels {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void) !*Panels {
     \\    var panels: *Panels = try allocator.create(Panels);
     \\    panels.allocator = allocator;
     \\

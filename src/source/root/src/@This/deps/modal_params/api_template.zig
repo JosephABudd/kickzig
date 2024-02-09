@@ -50,7 +50,7 @@ pub const Template = struct {
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
         try lines.appendSlice(line1);
-        var names: [][]const u8 = self.modal_param_names[0..self.modal_param_names_index];
+        const names: [][]const u8 = self.modal_param_names[0..self.modal_param_names_index];
         for (names) |name| {
             line = try fmt.allocPrint(self.allocator, "pub const {0s} = @import(\"{0s}.zig\").Params;\n", .{name});
             defer self.allocator.free(line);
@@ -63,5 +63,6 @@ pub const Template = struct {
 const line1 =
     \\pub const OK = @import("OK.zig").Params;
     \\pub const YesNo = @import("YesNo.zig").Params;
+    \\pub const EOJ = @import("EOJ.zig").Params;
     \\
 ;

@@ -18,6 +18,7 @@ pub const content =
     \\    title: []const u8,
     \\    message: []const u8,
     \\    yes_no: ?bool,
+    \\    exit: *const fn (user_message: []const u8) void,
     \\
     \\    pub fn deinit(self: *Panel) void {
     \\        self.allocator.destroy(self);
@@ -63,9 +64,8 @@ pub const content =
     \\            var ok_modal = try self.all_screens.get("OK");
     \\            var ok_args = try OKModalParams.init(self.allocator, "Hello World!", "This is the OK modal popped from the HelloWorld screen.");
     \\            defer ok_args.deinit();
-    \\            var result = ok_modal.goModalFn.?(ok_modal.implementor, ok_args);
-    \\            if (result != error.Null) {
-    \\                return result;
+    \\            if(ok_modal.goModalFn.?(ok_modal.implementor, ok_args)) |err| {
+    \\                return err;
     \\            }
     \\        }
     \\
@@ -95,15 +95,14 @@ pub const content =
     \\                Panel.modalNoCB,
     \\            );
     \\            defer yesno_args.deinit();
-    \\            var result = yesno_modal.goModalFn.?(yesno_modal.implementor, yesno_args);
-    \\            if (result != error.Null) {
-    \\                return result;
+    \\            if(yesno_modal.goModalFn.?(yesno_modal.implementor, yesno_args)) |err| {
+    \\                return err;
     \\            }
     \\        }
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
     \\    panel.allocator = allocator;
     \\    panel.all_screens = all_screens;
@@ -113,6 +112,7 @@ pub const content =
     \\    panel.title = "This is the \"HelloWorld\" screen's \"HelloWorld\" Panel.";
     \\    panel.message = "World!";
     \\    panel.yes_no = null;
+    \\    panel.exit = exit;
     \\    return panel;
     \\}
     \\

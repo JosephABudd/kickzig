@@ -5,13 +5,14 @@ pub const content =
     \\const _framers_ = @import("framers");
     \\const _panels_ = @import("panels.zig");
     \\const _messenger_ = @import("messenger.zig");
+    \\const _startup_ = @import("startup");
     \\
     \\pub const Screen = struct {
     \\    allocator: std.mem.Allocator,
     \\    all_screens: *_framers_.Group,
     \\    all_panels: *_panels_.Panels,
-    \\    send_channels: *_channel_.Channels,
-    \\    receive_channels: *_channel_.Channels,
+    \\    send_channels: *_channel_.FrontendToBackend,
+    \\    receive_channels: *_channel_.BackendToFrontend,
     \\    name: []const u8,
     \\
     \\    pub fn deinit(self: *Screen) void {
@@ -39,39 +40,39 @@ pub const content =
     \\    }
     \\
     \\    /// frameFn is an implementation of _framers_.Behavior.
-    \\    fn frameFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror {
+    \\    fn frameFn(implementor: *anyopaque, arena: std.mem.Allocator) ?anyerror {
     \\        var self: *Screen = @alignCast(@ptrCast(implementor));
     \\        try self.all_panels.frameCurrent(arena);
-    \\        return error.Null;
+    \\        return null;
     \\    }
     \\};
     \\
     \\/// init constructs this screen, subscribes it to all_screens and returns the error.
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, send_channels: *_channel_.Channels, receive_channels: *_channel_.Channels) !void {
-    \\    var screen: *Screen = try allocator.create(Screen);
-    \\    screen.allocator = allocator;
-    \\    screen.all_screens = all_screens;
-    \\    screen.receive_channels = receive_channels;
-    \\    screen.send_channels = send_channels;
+    \\pub fn init(startup: _startup_.Frontend) !void {
+    \\    var screen: *Screen = try startup.allocator.create(Screen);
+    \\    screen.allocator = startup.allocator;
+    \\    screen.all_screens = startup.all_screens;
+    \\    screen.receive_channels = startup.receive_channels;
+    \\    screen.send_channels = startup.send_channels;
     \\    screen.name = "HelloWorld";
     \\
     \\    // The messenger.
-    \\    var messenger: *_messenger_.Messenger = try _messenger_.init(allocator, all_screens, screen.all_panels, send_channels, receive_channels);
+    \\    var messenger: *_messenger_.Messenger = try _messenger_.init(startup.allocator, startup.all_screens, screen.all_panels, startup.send_channels, startup.receive_channels, startup.exit);
     \\    errdefer {
     \\        screen.deinit();
     \\    }
     \\
     \\    // All of the panels.
-    \\    screen.all_panels = try _panels_.init(allocator, all_screens, messenger);
+    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, messenger, startup.exit);
     \\    errdefer {
     \\        messenger.deinit();
     \\        screen.deinit();
     \\    }
-    \\    // The Example panel is the default.
+    \\    // The HelloWorld panel is the default.
     \\    screen.all_panels.setCurrentToHelloWorld();
     \\
     \\    // Subscribe to all screens.
-    \\    var behavior: *_framers_.Behavior = try all_screens.initBehavior(
+    \\    var behavior: *_framers_.Behavior = try startup.all_screens.initBehavior(
     \\        screen,
     \\        Screen.deinitFn,
     \\        Screen.nameFn,
@@ -83,13 +84,13 @@ pub const content =
     \\        messenger.deinit();
     \\        screen.deinit();
     \\    }
-    \\    try all_screens.subscribe(behavior);
+    \\    try startup.all_screens.subscribe(behavior);
     \\    errdefer {
     \\        behavior.deinit();
     \\        screen.all_panels.deinit();
     \\        messenger.deinit();
     \\        screen.deinit();
     \\    }
-    \\    // screen is now controlled by all_screens.
+    \\    // screen is now controlled by startup.all_screens.
     \\}
 ;

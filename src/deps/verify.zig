@@ -2,9 +2,6 @@ const std = @import("std");
 const strings = @import("strings");
 const filenames = @import("filenames");
 
-const initMessageName: []const u8 = "Initialize";
-const fatalMessageName: []const u8 = "Fatal";
-
 // Screen name.
 
 /// isValidScreenName returns if the screen name is valid.
@@ -14,7 +11,7 @@ pub fn isValidScreenName(name: []const u8) bool {
 
 /// isNewScreenName returns if the screen name is unique.
 pub fn isNewScreenName(allocator: std.mem.Allocator, new_name: []const u8) bool {
-    var names: [][]const u8 = try filenames.allFrontendScreenNames(allocator) catch {
+    const names: [][]const u8 = try filenames.allFrontendScreenNames(allocator) catch {
         return false;
     };
     defer {
@@ -35,8 +32,7 @@ pub fn isNewScreenName(allocator: std.mem.Allocator, new_name: []const u8) bool 
 
 /// isNewScreenName returns if the screen name is unique.
 pub fn isNewScreenPanelName(allocator: std.mem.Allocator, screen_name: []const u8, panel_name: []const u8) bool {
-    _ = screen_name;
-    var names: [][]const u8 = try filenames.allFrontendScreenNames(allocator) catch {
+    const names: [][]const u8 = try filenames.allPanelScreenFileNames(allocator, screen_name) catch {
         return false;
     };
     defer {
@@ -62,7 +58,9 @@ pub fn isValidChannelName(name: []const u8) bool {
 
 /// isNewChannelName returns if the channel name is unique.
 pub fn isNewChannelName(allocator: std.mem.Allocator, new_name: []const u8) bool {
-    var names: [][]const u8 = try filenames.allDepsChannelNames(allocator) catch {
+    // Each message has 1 or more channels by the same name in different folders.
+    // So just use the message names to be quicker.
+    const names: [][]const u8 = try filenames.allMessageNames(allocator) catch {
         return false;
     };
     defer {
@@ -83,17 +81,11 @@ pub fn isNewChannelName(allocator: std.mem.Allocator, new_name: []const u8) bool
 
 /// isValidMessageName returns if the message name is valid.
 pub fn isValidMessageName(name: []const u8) bool {
-    if (!strings.isValid(name)) {
-        return false;
-    }
-    if (std.mem.eql(u8, name, fatalMessageName)) {
-        return false;
-    }
-    return !std.mem.eql(u8, name, initMessageName);
+    return strings.isValid(name);
 }
 
 fn isNewMesssageName(allocator: std.mem.Allocator, new_name: []const u8) bool {
-    var names: [][]const u8 = try filenames.allDepsMessageNames(allocator) catch {
+    const names: [][]const u8 = try filenames.allMessageNames(allocator) catch {
         return false;
     };
     defer {
@@ -111,7 +103,7 @@ fn isNewMesssageName(allocator: std.mem.Allocator, new_name: []const u8) bool {
 }
 
 pub fn isNewBackendMesssageHandlerName(allocator: std.mem.Allocator, new_name: []const u8) !bool {
-    var names: [][]const u8 = try filenames.allBackendMessageHandlerNames(allocator);
+    const names: [][]const u8 = try filenames.allBackendMessageHandlerNames(allocator);
     defer {
         for (names) |name| {
             allocator.free(name);

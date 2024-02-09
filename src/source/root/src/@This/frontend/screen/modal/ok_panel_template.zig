@@ -3,17 +3,17 @@ pub const content =
     \\const dvui = @import("dvui");
     \\const _framers_ = @import("framers");
     \\const _panels_ = @import("panels.zig");
-    \\const _messenger_ = @import("messenger.zig");
     \\const _lock_ = @import("lock");
     \\const ModalParams = @import("modal_params").OK;
     \\
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator,
+    \\    window: *dvui.Window,
     \\    all_screens: *_framers_.Group,
     \\    all_panels: *_panels_.Panels,
-    \\    messenger: *_messenger_.Messenger,
     \\    heading: ?[]u8,
     \\    message: ?[]u8,
+    \\    exit: *const fn (user_message: []const u8) void,
     \\
     \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
     \\        // heading.
@@ -94,14 +94,15 @@ pub const content =
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
     \\    panel.allocator = allocator;
+    \\    panel.window = window;
     \\    panel.all_screens = all_screens;
     \\    panel.all_panels = all_panels;
-    \\    panel.messenger = messenger;
     \\    panel.heading = null;
     \\    panel.message = null;
+    \\    panel.exit = exit;
     \\    return panel;
     \\}
 ;

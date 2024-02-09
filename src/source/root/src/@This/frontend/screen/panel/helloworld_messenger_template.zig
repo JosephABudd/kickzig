@@ -15,8 +15,9 @@ pub const content =
     \\
     \\    all_screens: *_framers_.Group,
     \\    all_panels: *_panels_.Panels,
-    \\    send_channels: *_channel_.Channels,
-    \\    receive_channels: *_channel_.Channels,
+    \\    send_channels: *_channel_.FrontendToBackend,
+    \\    receive_channels: *_channel_.BackendToFrontend,
+    \\    exit: *const fn (user_message: []const u8) void,
     \\
     \\    pub fn deinit(self: *Messenger) void {
     \\        self.allocator.destroy(self);
@@ -35,7 +36,7 @@ pub const content =
     \\    // receiveFubar is provided as an example.
     \\    // It receives the Fubar message.
     \\    // It implements a behavior required by receive_channels.Fubar.
-    \\    // pub fn receiveFubar(implementor: *anyopaque, message: *_message_.Fubar.Message) void {
+    \\    // pub fn receiveFubar(implementor: *anyopaque, message: *_message_.Fubar.Message) ?anyerror {
     \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\    //     _ = self;
     \\    //     _ = message;
@@ -43,10 +44,21 @@ pub const content =
     \\    //     if (message.backend_payload.error_message) |error_message| {
     \\    //         // There was an error so inform the user.
     \\    //         self.informError(error_message);
-    \\    //         return;
-    \\    //    
+    \\    //         return error.receiveFubar;
     \\    //     }
-    \\    //     No error reported by the backend.
+    \\    //     // No error reported by the backend so process the message.
+    \\    //     if (self.doSomething(message.something)) catch |err| {
+    \\    //         self.exit(@errorName(err));
+    \\    //         return error;
+    \\    //     }
+    \\    //     // No error so process the message.
+    \\    //     self.panels.HelloWorld.setHeading(message.BackendPayload.something) catch |err| {
+    \\    //         // An error while processing the message so exit.
+    \\    //         self.exit(@errorName(err));
+    \\    //         return err;
+    \\    //     };
+    \\    //     // No error so return null;
+    \\    //     return null;
     \\    // }
     \\
     \\    fn informError(self: *Messenger, message: []const u8) void {
@@ -73,21 +85,20 @@ pub const content =
     \\            return;
     \\        };
     \\        // Open the OK modal screen.
-    \\        var go_modal_err = ok_modal.goModalFn.?(ok_modal.implementor, ok_args);
-    \\        if (go_modal_err != error.Null) {
-    \\            std.debug.print("error ok_modal.goModalFn {s}", .{@errorName(go_modal_err)});
-    \\            return;
+    \\        if(ok_modal.goModalFn.?(ok_modal.implementor, ok_args)) |err| {
+    \\            self.exit(@errorName(err));
     \\        }
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, send_channels: *_channel_.Channels, receive_channels: *_channel_.Channels) !*Messenger {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: *const fn (user_message: []const u8) void) !*Messenger {
     \\    var messenger: *Messenger = try allocator.create(Messenger);
     \\    messenger.allocator = allocator;
     \\    messenger.all_screens = all_screens;
     \\    messenger.all_panels = all_panels;
     \\    messenger.send_channels = send_channels;
     \\    messenger.receive_channels = receive_channels;
+    \\    messenger.exit = exit;
     \\
     \\    // For a messenger to receive a message, the messenger must:
     \\    //

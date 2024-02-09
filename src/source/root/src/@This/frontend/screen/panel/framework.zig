@@ -54,21 +54,18 @@ pub fn createHelloWorldPackage(allocator: std.mem.Allocator) !void {
 /// Returns if the screen is a panel screen and was removed.
 pub fn remove(screen_name: []const u8) !bool {
     var dir: std.fs.Dir = directory(null) catch {
-        std.debug.print("remove: directory(null)", .{});
         return false;
     };
     defer dir.close();
     // Does the screen's folder exist?
     var sub_dir: std.fs.Dir = dir.openDir(screen_name, .{}) catch {
         // No  the screen's folder does not exist.
-        std.debug.print("remove: var sub_dir", .{});
         return false;
     };
     // Yes the screen's folder exists so close it.
     sub_dir.close();
     // Delete the screen's folder.
     dir.deleteTree(screen_name) catch {
-        std.debug.print("remove: dir.deleteTree(screen_name)", .{});
         return false;
     };
     return true;
@@ -108,7 +105,7 @@ pub fn removePanel(allocator: std.mem.Allocator, screen_name: []const u8, panel_
     // Open the folder.
     var screen_dir: std.fs.Dir = try directory(screen_name);
     defer screen_dir.close();
-    var fname: []const u8 = try _filenames_.frontendScreenPanelFileName(allocator, panel_name);
+    const fname: []const u8 = try _filenames_.frontendScreenPanelFileName(allocator, panel_name);
     defer allocator.free(fname);
     try screen_dir.deleteFile(fname);
 }
@@ -121,7 +118,7 @@ pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, s
     const template: *_panels_template_.Template = try _panels_template_.init(allocator);
     defer template.deinit();
     // Get the names of each panel and use them in the template.
-    var current_panel_names: [][]const u8 = try _filenames_.allFrontendPanelScreenPanelNames(allocator, screen_name);
+    const current_panel_names: [][]const u8 = try _filenames_.allFrontendPanelScreenPanelNames(allocator, screen_name);
     defer {
         for (current_panel_names) |name| {
             allocator.free(name);
@@ -131,7 +128,7 @@ pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, s
     for (current_panel_names) |name| {
         try template.addName(name);
     }
-    var content: []const u8 = try template.content();
+    const content: []const u8 = try template.content();
     defer allocator.free(content);
 
     // Open, write and close the file.
@@ -144,7 +141,7 @@ pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, s
 fn addMessengerFile(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8) !void {
     var template: *_messenger_template_.Template = try _messenger_template_.init(allocator, screen_name);
     defer template.deinit();
-    var content: []const u8 = try template.content();
+    const content: []const u8 = try template.content();
     defer allocator.free(content);
 
     // Open, write and close the file.
@@ -185,7 +182,7 @@ fn addHelloWorldScreenFile(package_dir: std.fs.Dir) !void {
 // directory returns the screen's file system directory.
 // The caller must close the returned directory.
 fn directory(screen_name: ?[]const u8) !std.fs.Dir {
-    var folders: *_paths_.FolderPaths = try _paths_.folders();
+    const folders: *_paths_.FolderPaths = try _paths_.folders();
     defer folders.deinit();
     var panel_folder: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_panel.?, .{});
     if (screen_name == null) {

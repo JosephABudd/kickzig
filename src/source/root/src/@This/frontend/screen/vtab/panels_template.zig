@@ -38,7 +38,7 @@ pub const Template = struct {
         var line: []u8 = undefined;
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
-        var names: [][]const u8 = self.panel_names[0..self.panel_names_index];
+        const names: [][]const u8 = self.panel_names[0..self.panel_names_index];
 
         try lines.appendSlice(line1a);
         for (names) |name| {

@@ -35,19 +35,35 @@ pub const Template = struct {
         self.panel_names_index += 1;
     }
 
-    pub fn content(self: *Template) ![]const u8 {
+    pub fn content(self: *Template, using_messenger: bool) ![]const u8 {
         var line: []u8 = undefined;
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
-        var names: [][]const u8 = self.panel_names[0..self.panel_names_index];
+        const names: [][]const u8 = self.panel_names[0..self.panel_names_index];
         var size: usize = 0;
 
-        // line1a-c
+        // line1a1-c
         {
-            size = std.mem.replacementSize(u8, line1a, "{{ screen_name }}", self.screen_name);
-            var with_screen_name: []u8 = try self.allocator.alloc(u8, size);
+            size = std.mem.replacementSize(u8, line1a1, "{{ screen_name }}", self.screen_name);
+            const with_screen_name: []u8 = try self.allocator.alloc(u8, size);
             defer self.allocator.free(with_screen_name);
-            _ = std.mem.replace(u8, line1a, "{{ screen_name }}", self.screen_name, with_screen_name);
+            _ = std.mem.replace(u8, line1a1, "{{ screen_name }}", self.screen_name, with_screen_name);
+            try lines.appendSlice(with_screen_name);
+        }
+        if (using_messenger) {
+            {
+                size = std.mem.replacementSize(u8, line1a2, "{{ screen_name }}", self.screen_name);
+                const with_screen_name: []u8 = try self.allocator.alloc(u8, size);
+                defer self.allocator.free(with_screen_name);
+                _ = std.mem.replace(u8, line1a2, "{{ screen_name }}", self.screen_name, with_screen_name);
+                try lines.appendSlice(with_screen_name);
+            }
+        }
+        {
+            size = std.mem.replacementSize(u8, line1a3, "{{ screen_name }}", self.screen_name);
+            const with_screen_name: []u8 = try self.allocator.alloc(u8, size);
+            defer self.allocator.free(with_screen_name);
+            _ = std.mem.replace(u8, line1a3, "{{ screen_name }}", self.screen_name, with_screen_name);
             try lines.appendSlice(with_screen_name);
         }
         for (names) |name| {
@@ -122,7 +138,7 @@ pub const Template = struct {
         // line5a-b
         {
             size = std.mem.replacementSize(u8, line5a, "{{ screen_name }}", self.screen_name);
-            var with_screen_name: []u8 = try self.allocator.alloc(u8, size);
+            const with_screen_name: []u8 = try self.allocator.alloc(u8, size);
             defer self.allocator.free(with_screen_name);
             _ = std.mem.replace(u8, line5a, "{{ screen_name }}", self.screen_name, with_screen_name);
             try lines.appendSlice(with_screen_name);
@@ -134,12 +150,20 @@ pub const Template = struct {
         }
         try lines.appendSlice(line5b);
 
-        try lines.appendSlice(line6);
+        if (using_messenger) {
+            try lines.appendSlice(line6a);
+        } else {
+            try lines.appendSlice(line6b);
+        }
         if (names.len > 0) {
             for (names) |name| {
                 try lines.appendSlice("\n");
                 {
-                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, messenger);\n", .{name});
+                    if (using_messenger) {
+                        line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, messenger, exit, window);\n", .{name});
+                    } else {
+                        line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, exit, window);\n", .{name});
+                    }
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }
@@ -149,11 +173,13 @@ pub const Template = struct {
             }
         } else {
             try lines.appendSlice("    _ = all_screens;\n");
-            try lines.appendSlice("    _ = messenger;\n");
+            if (using_messenger) {
+                try lines.appendSlice("    _ = messenger;\n");
+            }
         }
 
         try lines.appendSlice(line7);
-        var temp: []const u8 = try lines.toOwnedSlice();
+        const temp: []const u8 = try lines.toOwnedSlice();
         line = try self.allocator.alloc(u8, temp.len);
         @memcpy(line, temp);
         return line;
@@ -181,10 +207,17 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8) !*Template {
     return data;
 }
 
-const line1a =
+const line1a1 =
     \\const std = @import("std");
+    \\const dvui = @import("dvui");
     \\const _framers_ = @import("framers");
+    \\
+;
+const line1a2 =
     \\const _messenger_ = @import("messenger.zig");
+    \\
+;
+const line1a3 =
     \\const {{ screen_name }}ModalParams = @import("modal_params").{{ screen_name }};
     \\
 ;
@@ -241,7 +274,7 @@ const line3b =
 const line4a =
     \\
     \\    pub fn frameCurrent(self: *Panels, allocator: std.mem.Allocator) !void {
-    \\        var result = switch (self.current_panel_tag) {
+    \\        const result = switch (self.current_panel_tag) {
     \\
 ;
 // \\            .home => self.home.?.frame(allocator),
@@ -274,20 +307,29 @@ const line5b =
     \\
 ;
 
-const line6 =
+const line6a =
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, messenger: *_messenger_.Messenger) !*Panels {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panels {
+    \\    var panels: *Panels = try allocator.create(Panels);
+    \\    panels.allocator = allocator;
+    \\
+;
+
+const line6b =
+    \\};
+    \\
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panels {
     \\    var panels: *Panels = try allocator.create(Panels);
     \\    panels.allocator = allocator;
     \\
 ;
 // \\
-// \\    panels.home = try home_panel.init(allocator, all_screens, panels, messenger);
+// \\    panels.home = try home_panel.init(allocator, all_screens, panels, messenger, exit);
 // \\    errdefer {
 // \\        panels.deinit();
 // \\    }
-// \\    panels.other = try other_panel.init(allocator, all_screens, panels, messenger);
+// \\    panels.other = try other_panel.init(allocator, all_screens, panels, messenger, exit);
 // \\    errdefer {
 // \\        panels.deinit();
 // \\    }

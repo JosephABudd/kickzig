@@ -1,5 +1,6 @@
 pub const content =
     \\const std = @import("std");
+    \\const _startup_ = @import("startup");
     \\
     \\/// Behavior defines a behavior that must be implemented by members of Group.
     \\pub const Behavior = struct {
@@ -16,11 +17,11 @@ pub const content =
     \\    // goModalFn opens this screen as a modal view.
     \\    // It is called after the modal behavior is returned by fn Group.get(...).
     \\    // It is called before the modal Behavior is made current by fn Group.setCurrentBehavior(...).
-    \\    goModalFn: ?*const fn (self: *anyopaque, args: *anyopaque) anyerror,
+    \\    goModalFn: ?*const fn (self: *anyopaque, args: *anyopaque) ?anyerror,
     \\
     \\    // frameFn implements a gui frame.
     \\    // It is called during the gui's framing event.
-    \\    frameFn: *const fn (self: *anyopaque, allocator: std.mem.Allocator) anyerror,
+    \\    frameFn: *const fn (self: *anyopaque, allocator: std.mem.Allocator) ?anyerror,
     \\
     \\    // deinit the implementor and self.
     \\    pub fn deinit(self: *Behavior) void {
@@ -44,6 +45,7 @@ pub const content =
     \\    members: std.StringHashMap(*Behavior),
     \\    behavior_stack: *BehaviorStack,
     \\    behavior_stack_index: usize,
+    \\    exit: *const fn (user_message: []const u8) void,
     \\
     \\    /// initBehavior constructs a Behavior.
     \\    /// The Group has control over the Bahavior after subscribed.
@@ -52,8 +54,8 @@ pub const content =
     \\        implementor: *anyopaque,
     \\        deinitFn: *const fn (implementor: *anyopaque) void,
     \\        nameFn: *const fn (self: *anyopaque) []const u8,
-    \\        frameFn: *const fn (self: *anyopaque, allocator: std.mem.Allocator) anyerror,
-    \\        goModalFn: ?*const fn (self: *anyopaque, args: *anyopaque) anyerror,
+    \\        frameFn: *const fn (self: *anyopaque, allocator: std.mem.Allocator) ?anyerror,
+    \\        goModalFn: ?*const fn (self: *anyopaque, args: *anyopaque) ?anyerror,
     \\    ) !*Behavior {
     \\        var behavior: *Behavior = try self.allocator.create(Behavior);
     \\        behavior.allocator = self.allocator;
@@ -76,14 +78,9 @@ pub const content =
     \\
     \\    pub fn frame(self: *Group, arena: std.mem.Allocator) !void {
     \\        if (self.current) |current| {
-    \\            var err = current.frameFn(current.implementor, arena);
-    \\            if (err == error.Null) {
-    \\                return;
+    \\            if (current.frameFn(current.implementor, arena)) |err| {
+    \\                return err;
     \\            }
-    \\            if (err == error.NoCurrentBehavior) {
-    \\                return;
-    \\            }
-    \\            return err;
     \\        }
     \\    }
     \\
@@ -110,6 +107,7 @@ pub const content =
     \\        if (self.members.get(name)) |behavior| {
     \\            return behavior;
     \\        } else {
+    \\            std.log.debug("BehaviorNameNotFound get: {s}", .{name});
     \\            return error.BehaviorNameNotFound;
     \\        }
     \\    }
@@ -121,6 +119,7 @@ pub const content =
     \\        if (self.members.get(name)) |behavior| {
     \\            try self.setCurrentBehavior(behavior);
     \\        } else {
+    \\            std.log.debug("BehaviorNameNotFound set: {s}", .{name});
     \\            return error.BehaviorNameNotFound;
     \\        }
     \\    }
@@ -177,7 +176,7 @@ pub const content =
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator) !*Group {
+    \\pub fn init(allocator: std.mem.Allocator, exit: *const fn (user_message: []const u8) void) !*Group {
     \\    var group: *Group = try allocator.create(Group);
     \\    group.behavior_stack = try BehaviorStack.init(allocator);
     \\    errdefer allocator.destroy(group);
@@ -185,6 +184,7 @@ pub const content =
     \\    group.members = std.StringHashMap(*Behavior).init(allocator);
     \\    group.behavior_stack_index = 0;
     \\    group.current = null;
+    \\    group.exit = exit;
     \\    return group;
     \\}
     \\

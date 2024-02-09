@@ -151,35 +151,35 @@ pub const Template = struct {
         var line: []u8 = undefined;
 
         // vtab screens.
-        var vtab_screen_names: [][]const u8 = self._vtab_screen_names[0..self._vtab_screen_names_index];
+        const vtab_screen_names: [][]const u8 = self._vtab_screen_names[0..self._vtab_screen_names_index];
         for (vtab_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"screen/vtab/{0s}/screen.zig\");\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
         // htab screens.
-        var htab_screen_names: [][]const u8 = self._htab_screen_names[0..self._htab_screen_names_index];
+        const htab_screen_names: [][]const u8 = self._htab_screen_names[0..self._htab_screen_names_index];
         for (htab_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"screen/htab/{0s}/screen.zig\");\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
         // panel screens.
-        var panel_screen_names: [][]const u8 = self._panel_screen_names[0..self._panel_screen_names_index];
+        const panel_screen_names: [][]const u8 = self._panel_screen_names[0..self._panel_screen_names_index];
         for (panel_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"screen/panel/{0s}/screen.zig\");\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
         // book screens.
-        var book_screen_names: [][]const u8 = self._book_screen_names[0..self._book_screen_names_index];
+        const book_screen_names: [][]const u8 = self._book_screen_names[0..self._book_screen_names_index];
         for (book_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"screen/book/{0s}/screen.zig\");\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
         // modal screens.
-        var modal_screen_names: [][]const u8 = self._modal_screen_names[0..self._modal_screen_names_index];
+        const modal_screen_names: [][]const u8 = self._modal_screen_names[0..self._modal_screen_names_index];
         for (modal_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, "const _{0s}_ = @import(\"screen/modal/{0s}/screen.zig\");\n", .{name});
             defer self.allocator.free(line);
@@ -193,7 +193,7 @@ pub const Template = struct {
             if (i == 0) {
                 try lines.appendSlice("    // Modal screens.\n");
             }
-            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(allocator, all_screens, send_channel, receive_channel);\n", .{name});
+            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(startup);\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -202,7 +202,7 @@ pub const Template = struct {
             if (i == 0) {
                 try lines.appendSlice("    // VTab screens.\n");
             }
-            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(allocator, all_screens, send_channel, receive_channel);\n", .{name});
+            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(startup);\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -211,7 +211,7 @@ pub const Template = struct {
             if (i == 0) {
                 try lines.appendSlice("    // HTab screens.\n");
             }
-            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(allocator, all_screens, send_channel, receive_channel);\n", .{name});
+            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(startup);\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -220,7 +220,7 @@ pub const Template = struct {
             if (i == 0) {
                 try lines.appendSlice("    // Panel screens.\n");
             }
-            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(allocator, all_screens, send_channel, receive_channel);\n", .{name});
+            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(startup);\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -229,14 +229,14 @@ pub const Template = struct {
             if (i == 0) {
                 try lines.appendSlice("    // Book screens.\n");
             }
-            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(allocator, all_screens, send_channel, receive_channel);\n", .{name});
+            line = try fmt.allocPrint(self.allocator, "    try _{0s}_.init(startup);\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
         // end.
         try lines.appendSlice(line3);
 
-        var temp: []const u8 = try lines.toOwnedSlice();
+        const temp: []const u8 = try lines.toOwnedSlice();
         line = try self.allocator.alloc(u8, temp.len);
         @memcpy(line, temp);
         return line;
@@ -269,8 +269,8 @@ const line1 =
     \\const dvui = @import("dvui");
     \\
     \\const _main_menu_ = @import("main_menu.zig");
-    \\const _channel_ = @import("channel");
     \\const _framers_ = @import("framers");
+    \\const _startup_ = @import("startup");
     \\
 ;
 // \\const _simple_screen_ = @import("screen/panel/simple/screen.zig");
@@ -282,10 +282,7 @@ const line1 =
 
 const line2 =
     \\
-    \\pub fn init(allocator: std.mem.Allocator, send_channel: *_channel_.Channels, receive_channel: *_channel_.Channels) !*_framers_.Group {
-    \\    // Screens.
-    \\    var all_screens: *_framers_.Group = try _framers_.init(allocator);
-    \\
+    \\pub fn init(startup: _startup_.Frontend) !void {
     \\    // Set up each screen.
     \\
 ;
@@ -305,8 +302,7 @@ const line3 =
     \\    dvui.Examples.show_demo_window = false;
     \\
     \\    // Set the default screen.
-    \\    try all_screens.setCurrent(_main_menu_.startup_screen_name);
-    \\    return all_screens;
+    \\    try startup.all_screens.setCurrent(_main_menu_.startup_screen_name);
     \\}
     \\
     \\pub fn frame(arena: std.mem.Allocator, all_screens: *_framers_.Group) !void {

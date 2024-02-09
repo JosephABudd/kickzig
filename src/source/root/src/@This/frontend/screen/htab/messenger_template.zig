@@ -13,47 +13,51 @@ pub const content =
     \\
     \\    all_screens: *_framers_.Group,
     \\    all_panels: *_panels_.Panels,
-    \\    send_channels: *_channel_.Channels,
-    \\    receive_channels: *_channel_.Channels,
+    \\    send_channels: *_channel_.FrontendToBackend,
+    \\    receive_channels: *_channel_.BackendToFrontend,
+    \\    exit: *const fn (user_message: []const u8) void,
     \\
     \\    pub fn deinit(self: *Messenger) void {
     \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    // Below is an example of a receive function.
-    \\    // // receiveInitialize is provided as an example.
-    \\    // // It receives the Initialize message.
-    \\    // // It implements a behavior required by receive_channels.Initialize.
-    \\    // pub fn receiveInitialize(implementor: *anyopaque, message: *_message_.Initialize.Message) void {
+    \\    // // receiveAddContact is provided as an example.
+    \\    // // It receives the AddContact message.
+    \\    // // It implements a behavior required by receive_channels.AddContact.
+    \\    // pub fn receiveAddContact(implementor: *anyopaque, message: *_message_.AddContact.Message) ?anyerror {
     \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\    //     _ = self;
     \\    //     _ = message;
+    \\    //     // No error so return null;
+    \\    //     return null;
     \\    // }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, send_channels: *_channel_.Channels, receive_channels: *_channel_.Channels) !*Messenger {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: *const fn (user_message: []const u8) void) !*Messenger {
     \\    var messenger: *Messenger = try allocator.create(Messenger);
     \\    messenger.allocator = allocator;
     \\    messenger.all_screens = all_screens;
     \\    messenger.all_panels = all_panels;
     \\    messenger.send_channels = send_channels;
     \\    messenger.receive_channels = receive_channels;
+    \\    messenger.exit = exit;
     \\
     \\    // For a messenger to receive a message, the messenger must:
     \\    // 1. implement the behavior of the message's channel.
     \\    // 2. subscribe to the message's channel.
     \\
-    \\    // Below is an example of the messenger adding the behavior requried to receive the Initialize message.
-    \\    // // The Initialize message.
+    \\    // Below is an example of the messenger adding the behavior requried to receive the AddContact message.
+    \\    // // The AddContact message.
     \\    // // * Define the required behavior.
-    \\    // var initializeBehavior = try receive_channels.Initialize.initBehavior();
+    \\    // var addContactBehavior = try receive_channels.AddContact.initBehavior();
     \\    // errdefer {
     \\    //     allocator.destroy(messenger);
     \\    // }
-    \\    // initializeBehavior.implementor = messenger;
-    \\    // initializeBehavior.receiveFn = Messenger.receiveInitialize;
-    \\    // // * Subscribe in order to receive the Initialize messages.
-    \\    // try receive_channels.Initialize.subscribe(initializeBehavior);
+    \\    // addContactBehavior.implementor = messenger;
+    \\    // addContactBehavior.receiveFn = Messenger.receiveAddContact;
+    \\    // // * Subscribe in order to receive the AddContact messages.
+    \\    // try receive_channels.AddContact.subscribe(addContactBehavior);
     \\    // errdefer {
     \\    //     allocator.destroy(messenger);
     \\    // }

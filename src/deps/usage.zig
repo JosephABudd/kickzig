@@ -15,11 +15,6 @@ pub fn application(allocator: std.mem.Allocator, cli_name: []const u8) ![]const 
     try lines.appendSlice(line);
     allocator.free(line);
 
-    // panel usage.
-    line = try panel(allocator, cli_name);
-    try lines.appendSlice(line);
-    allocator.free(line);
-
     // message usage.
     line = try message(allocator, cli_name);
     try lines.appendSlice(line);
@@ -30,8 +25,8 @@ pub fn application(allocator: std.mem.Allocator, cli_name: []const u8) ![]const 
 
 pub fn framework(allocator: std.mem.Allocator, cli_name: []const u8) ![]u8 {
     // cli_name
-    var size: usize = std.mem.replacementSize(u8, framework_template, "{{cli_name}}", cli_name);
-    var usage_cli_name: []u8 = try allocator.alloc(u8, size);
+    const size: usize = std.mem.replacementSize(u8, framework_template, "{{cli_name}}", cli_name);
+    const usage_cli_name: []u8 = try allocator.alloc(u8, size);
     _ = std.mem.replace(u8, framework_template, "{{cli_name}}", cli_name, usage_cli_name);
     return usage_cli_name;
 }
@@ -62,8 +57,8 @@ const framework_template: []const u8 =
 
 pub fn screen(allocator: std.mem.Allocator, cli_name: []const u8) ![]u8 {
     // cli_name
-    var size: usize = std.mem.replacementSize(u8, screen_template, "{{cli_name}}", cli_name);
-    var usage_cli_name: []u8 = try allocator.alloc(u8, size);
+    const size: usize = std.mem.replacementSize(u8, screen_template, "{{cli_name}}", cli_name);
+    const usage_cli_name: []u8 = try allocator.alloc(u8, size);
     _ = std.mem.replace(u8, screen_template, "{{cli_name}}", cli_name, usage_cli_name);
     return usage_cli_name;
 }
@@ -93,35 +88,10 @@ const screen_template: []const u8 =
     \\
 ;
 
-pub fn panel(allocator: std.mem.Allocator, cli_name: []const u8) ![]u8 {
-    // cli_name
-    var size: usize = std.mem.replacementSize(u8, panel_template, "{{cli_name}}", cli_name);
-    var usage_cli_name: []u8 = try allocator.alloc(u8, size);
-    _ = std.mem.replace(u8, panel_template, "{{cli_name}}", cli_name, usage_cli_name);
-    return usage_cli_name;
-}
-
-const panel_template: []const u8 =
-    \\
-    \\📄 MANAGING SCREEN PANELS WITH {{cli_name}}.
-    \\Panel names must be in PascalCase.
-    \\
-    \\＄ cd myapp
-    \\＄ {{cli_name}} panel help
-    \\＄ {{cli_name}} panel list «screen-name»
-    \\＄ {{cli_name}} panel add «screen-name» «name-of-panel»
-    \\＄ {{cli_name}} panel remove «screen-name» «name-of-panel»
-    \\
-    \\After a panel is added:
-    \\1. A search for KICKZIG TODO will reveal instructions for proper developement and management of the panel operation.
-    \\
-    \\
-;
-
 pub fn message(allocator: std.mem.Allocator, cli_name: []const u8) ![]u8 {
     // cli_name
-    var size: usize = std.mem.replacementSize(u8, message_template, "{{cli_name}}", cli_name);
-    var usage_cli_name: []u8 = try allocator.alloc(u8, size);
+    const size: usize = std.mem.replacementSize(u8, message_template, "{{cli_name}}", cli_name);
+    const usage_cli_name: []u8 = try allocator.alloc(u8, size);
     _ = std.mem.replace(u8, message_template, "{{cli_name}}", cli_name, usage_cli_name);
     return usage_cli_name;
 }
@@ -135,6 +105,9 @@ const message_template: []const u8 =
     \\＄ {{cli_name}} message help
     \\＄ {{cli_name}} message list
     \\＄ {{cli_name}} message add «name-of-message»
+    \\＄ {{cli_name}} message add-fbf «name-of-message» // front-end to back-end to front-end
+    \\＄ {{cli_name}} message add-bf «name-of-message» // back-end to front-end
+    \\＄ {{cli_name}} message add-bf-fbf «name-of-message» // back-end to front-end & front-end to back-end to front-end
     \\＄ {{cli_name}} message remove «name-of-message»
     \\
     \\After a message is added:

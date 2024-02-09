@@ -82,7 +82,7 @@ pub const Template = struct {
             try lines.appendSlice(line);
         }
 
-        var temp: []const u8 = try lines.toOwnedSlice();
+        const temp: []const u8 = try lines.toOwnedSlice();
         line = try self.allocator.alloc(u8, temp.len);
         @memcpy(line, temp);
         return line;
@@ -120,7 +120,7 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, menu_item_nam
         errdefer {
             allocator.free(self.screen_name);
             allocator.destroy(self);
-            var deinit_names: [][]const u8 = self.menu_item_names[0..i];
+            const deinit_names: [][]const u8 = self.menu_item_names[0..i];
             for (deinit_names) |deinit_name| {
                 self.allocator.free(deinit_name);
             }
@@ -140,6 +140,7 @@ const line1 =
     \\const _framers_ = @import("framers");
     \\const _panels_ = @import("panels.zig");
     \\const _messenger_ = @import("messenger.zig");
+    \\const _startup_ = @import("startup");
     \\
     \\/// Define each tab's enum.
     \\/// Always include none.
@@ -167,8 +168,8 @@ const line3 =
     \\    allocator: std.mem.Allocator,
     \\    all_screens: *_framers_.Group,
     \\    all_panels: *_panels_.Panels,
-    \\    send_channels: *_channel_.Channels,
-    \\    receive_channels: *_channel_.Channels,
+    \\    send_channels: *_channel_.FrontendToBackend,
+    \\    receive_channels: *_channel_.BackendToFrontend,
     \\    name: []const u8,
     \\
     \\    selected_menu_item: menu_items,
@@ -197,7 +198,7 @@ const line3 =
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    fn frameFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror {
+    \\    fn frameFn(implementor: *anyopaque, arena: std.mem.Allocator) ?anyerror {
     \\        var self: *Screen = @alignCast(@ptrCast(implementor));
     \\        var layout = try dvui.box(@src(), .horizontal, .{ .expand = .both });
     \\        defer layout.deinit();
@@ -273,8 +274,7 @@ const line6local =
 const line6separate =
     \\                .{0s} => {{
     \\                    var behavior: *_framers_.Behavior = try self.all_screens.get("{0s}");
-    \\                    var err = behavior.frameFn(behavior.implementor, arena);
-    \\                    if (err != error.Null) {{
+    \\                    if(behavior.frameFn(behavior.implementor, arena) |err| {{
     \\                        return err;
     \\                    }}
     \\                }},
@@ -285,17 +285,17 @@ const line7 =
     \\                .none => {{}},
     \\            }}
     \\        }}
-    \\        return error.Null;
+    \\        return null;
     \\    }}
     \\}};
     \\
     \\/// init constructs this screen, subscribes it to all_screens and returns the error.
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, send_channels: *_channel_.Channels, receive_channels: *_channel_.Channels) !void {{
-    \\    var screen: *Screen = try allocator.create(Screen);
-    \\    screen.allocator = allocator;
-    \\    screen.all_screens = all_screens;
-    \\    screen.receive_channels = receive_channels;
-    \\    screen.send_channels = send_channels;
+    \\pub fn init(startup: _startup_.Frontend) !void {{
+    \\    var screen: *Screen = try startup.allocator.create(Screen);
+    \\    screen.allocator = startup.allocator;
+    \\    screen.all_screens = startup.all_screens;
+    \\    screen.receive_channels = startup.receive_channels;
+    \\    screen.send_channels = startup.send_channels;
     \\    screen.name = "{s}";
     \\
     \\
@@ -305,20 +305,21 @@ const line8 =
     \\    screen.selected_menu_item = menu_items.{0s};
     \\
     \\    // The messenger.
-    \\    var messenger: *_messenger_.Messenger = try _messenger_.init(allocator, all_screens, screen.all_panels, send_channels, receive_channels);
+    \\    var messenger: *_messenger_.Messenger = try _messenger_.init(startup.allocator, startup.all_screens, startup.send_channels, startup.receive_channels, startup.exit);
     \\    errdefer {{
     \\        screen.deinit();
     \\    }}
     \\
     \\    // All of the panels.
-    \\    screen.all_panels = try _panels_.init(allocator, all_screens, messenger);
+    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, messenger, startup.exit);
     \\    errdefer {{
     \\        messenger.deinit();
     \\        screen.deinit();
     \\    }}
+    \\    messenger.all_panels = screen.all_panels;
     \\
     \\    // Subscribe to all screens.
-    \\    var behavior: *_framers_.Behavior = try all_screens.initBehavior(
+    \\    var behavior: *_framers_.Behavior = try startup.all_screens.initBehavior(
     \\        screen,
     \\        Screen.deinitFn,
     \\        Screen.nameFn,
@@ -330,14 +331,14 @@ const line8 =
     \\        messenger.deinit();
     \\        screen.deinit();
     \\    }}
-    \\    try all_screens.subscribe(behavior);
+    \\    try startup.all_screens.subscribe(behavior);
     \\    errdefer {{
     \\        behavior.deinit();
     \\        screen.all_panels.deinit();
     \\        messenger.deinit();
     \\        screen.deinit();
     \\    }}
-    \\    // screen is now controlled by all_screens.
+    \\    // screen is now controlled by startup.all_screens.
     \\}}
     \\
 ;

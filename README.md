@@ -8,23 +8,36 @@ As I started learning zig, I found and started using [Dave Vanderson's dvui proj
 
 As I continue to learn and appreciate zig and dvui, I am recreating my kick code generator to work with zig and dvui.
 
-## Dec 20, 2023
+## Feb 9, 2024
 
-1. Message management has been added.
-1. Kickzig does everything I want it to.
+I thought I had kickzig and the framework it generates working the way I wanted, so I began building a CRUD. It wasn't long before I wanted some changes.
+
+### zig release
+
+Upated to work with zig released on 2024-01-25.
+
+### Startup params
+
+1. Added back-end startup params that are passed through the back-end at startup as every part of it is initialized. The developer can add to the back-end startup params if needed. I needed to when I added my sqlite module because I needed to pass my sqlite Store to the backend message handlers.
+1. I did the same with the front-end just to be safe. I added front-end startup params that are passed through the front-end at startup as every part of it is initialized. The developer can add to the front-end startup params if needed.
+
+### Messages
+
+The old command for adding a message is gone. There are 3 more new commands for adding messages.
+
+### Added a closing down process
+
+The closing down process runs any call backs set to run right before the window closes.
 
 ### To do
 
-I'm going to build a CRUD and
-
-* do a step by step in the WIKI,
 * add clearer CLI responses and followup instructions,
 * add the missing source code documentation,
 * fix the bad source code documentation.
 
 ### kickzig is a code generator
 
-Kickzig generates my version of an application framework, written in zig, using dvui, that is ready to build and run right away. The application has a front-end which is the gui logic and it has the back-end which is the business logic. The front-end and back-end are separate threads which asynchronously communicate using messages. Kickzig also adds and removes those messages.
+Kickzig generates my version of an application framework, written in zig, using dvui, that is ready to build and run right away. The application has a front-end which is the gui logic and it has the back-end which is the business logic. The front-end and back-end communicate asynchronously using messages. Kickzig also adds and removes those messages.
 
 1. The framework puts the application code at
    * «app-folder»/ (build.zig, build.zig.zon, standalone.zig, etc)
@@ -111,17 +124,15 @@ Modal screens are the framework's dialogs. They are the same as panel screens wh
 
 When a modal screen is to be displayed, the framwork pushes the current screen onto a screen stack before displaying the modal screen. When a modal screen is finally closed, the framework pulls that previous screen off the stack and displays it.
 
-An **OK** modal screen and a **YesNo** modal screen are provided as examples for writing other types of dialogs. The **YesNo** modal screen is interesting because it demostrates how to use call backs.
+The **OK** modal screen and **YesNo** modal screen are part of the framework. They also work as examples for writing other types of dialogs although they do not have a messenger. The **YesNo** modal screen is interesting because it demostrates how to use call backs.
+
+The **EOJ** modal screen is also part of the framework. It is only used in the shutdown process.
 
 `kickzig screen add-modal YesNoMaybe YesNoMaybe` creates a modal screen named **YesNoMaybe** with a panel named **YesNoMaybe**. It also creates a **YesNoMaybe** modal parameter for passing information to the screen's goModalFn().
 
 ##### Removing an unwanted screen
 
 `kickzig screen remove YesNo` removes the screen named **YesNO**.
-
-#### Screen panels
-
-I haven't added the commands for adding panels to and removing panels from screens.
 
 ### DVUI tools for the developer
 
@@ -134,22 +145,65 @@ I haven't added the commands for adding panels to and removing panels from scree
 
 ### kickzig for messages
 
-The front-end and back-end are separate threads that communicate using messages. Messages are sent and messages are received. There is no waiting for a message response. Responses happend when they happen.
-
-I haven't added the commands for adding and removing messages but they are shown below.
+The front-end and back-end communicate asynchronously using messages. Messages are sent and messages are received. There is no waiting for a message response. Responses happend when they happen.
 
 #### Adding a message
 
-Adding a message also adds the back-end's message handler at src/@This/backend/messenger/.
+* The command `kickzig message add-bf «message_name»` will add a 1 way message which the back-end «message_name» messenger sends to the front-end when triggered from anywhere in the back-end.
+* The command `kickzig message add-fbf «message_name»` will add a 2 way message, that begins with amy front-end screen's messenger sending the message and expecting a response from the back-end «message_name» messenger.
+* The command `kickzig message add-bf-fbf «message_name»` will add a message that is both 1 way and 2 way:
 
-`kickzig message add AddContact` will add the **AddContact** message to the framework and the **AddContact** message handler at **src/@This/backend/messenger/AddContact.zig**. The message handler functions but has no functionality till you give it some.
+When you add a message you also add with it:
+
+1. The message struct in deb/message/«message_name».zig.
+1. The back-end messenger at backend/messenger/«message_name».zig.
+1. The message channels in:
+   * startup.receive_channels,
+   * startup.send_channels,
+   * startup.triggers.
 
 #### Removing a message
 
-Removing a message also removes the back-end's message handler at src/@This/backend/messenger/.
+Removing a message also removes the back-end's messenger at src/@This/backend/messenger/.
 
-`kickzig message remove AddContact` will remove the **AddContact** message from the framework and the **AddContact** message handler at **src/@This/backend/messenger/AddContact.zig**.
+`kickzig message remove AddContact` will remove the **AddContact** message from the framework and the **AddContact** messenger at **src/@This/backend/messenger/AddContact.zig**.
 
 #### Listing all messages
 
 `kickzig message list` will display each message.
+
+### Closing down the application
+
+![The app's closing screen.](images/close.png)
+
+#### Startup parameters
+
+1. The startup parameter `finish_up_jobs: *_closedownjobs_.Jobs` allows modules to add their shut down call back to be executed during the closing down process.
+1. The startup parameter `exit: *const fn (user_message: []const u8) void` is the function called only when there is a fatal error. It starts the shut down process with an error message.
+
+#### 2 Ways to start the shut down process
+
+1. The user clicks the window's ❎ button. The `main_loop:` in **standalone-sdl.zig** calls the closer module's `fn close(user_message: []const u8) void` which starts the closing process.
+1. A software fatal error occurs. That module calls the startup parameter `exit` which starts the closing process.
+
+#### The shut down process
+
+The closer module has 2 important functions that do the same thing. The only difference is the modal screen heading that they use.
+
+1. **fn exit(user_message: []const u8) void** uses the heading "Closing. Fatal Error.". The exit function is a startup parameter which is only called when there is a fatal error.
+1. **fn close(user_message: []const u8) void** uses the heading "Closing". The close function is called by the `main_loop:` in **standalone-sdl.zig** when the user clicks the window's ❎ button.
+
+##### Part 1: The front-end and back-end working together
+
+The heading, message and close down jobs are passed to the **EOJ** modal screen. It displays it's panel with the heading and message. It does not display a button to actually stop the application because the shut down process has only begun.
+
+The **EOJ** screen's messenger passes the list of close down jobs to the backend using the `CloseDownJobs` message.
+
+As the back-end `CloseDownJobs` messenger runs each job it reports it's progress back to the front-end using the `CloseDownJobs` message.
+
+At the front-end the **EOJ** modal screen's messenger receives each message from the back-end. The messenger passes each update to the **EOJ** panel to be displayed.
+
+When the back-end finally reports that the all of the jobs are completed:
+
+1. If a fatal error causes the close then the **EOJ** panel displays the close button. That way the user can see the closing screen and understand that an error has occured. The user can then click the close button to close the application once and for all.
+1. If the user closed the app by clicking on the window's ❎ button, then the app closes for the user.

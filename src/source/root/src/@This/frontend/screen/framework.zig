@@ -7,7 +7,7 @@ const _stdout_ = @import("stdout");
 pub fn listScreens(allocator: std.mem.Allocator) !void {
     {
         // Panel screens.
-        var screens: [][]const u8 = try _filenames_.frontend.allPanelFolders(allocator);
+        const screens: [][]const u8 = try _filenames_.frontend.allPanelFolders(allocator);
         defer allocator.free(screens);
         // Heading
         try printScreenNamesHeading(allocator, "Panel", screens.len);
@@ -17,7 +17,7 @@ pub fn listScreens(allocator: std.mem.Allocator) !void {
 
     {
         // HTab screens.
-        var screens: [][]const u8 = try _filenames_.frontend.allHTabFolders(allocator);
+        const screens: [][]const u8 = try _filenames_.frontend.allHTabFolders(allocator);
         defer allocator.free(screens);
         // Heading
         try printScreenNamesHeading(allocator, "HTab", screens.len);
@@ -27,7 +27,7 @@ pub fn listScreens(allocator: std.mem.Allocator) !void {
 
     {
         // VTab screens.
-        var screens: [][]const u8 = try _filenames_.frontend.allVTabFolders(allocator);
+        const screens: [][]const u8 = try _filenames_.frontend.allVTabFolders(allocator);
         defer allocator.free(screens);
         // Heading
         try printScreenNamesHeading(allocator, "VTab", screens.len);
@@ -47,7 +47,7 @@ pub fn listScreens(allocator: std.mem.Allocator) !void {
 
     {
         // Modal screens.
-        var screens: [][]const u8 = try _filenames_.frontend.allModalFolders(allocator);
+        const screens: [][]const u8 = try _filenames_.frontend.allModalFolders(allocator);
         defer allocator.free(screens);
         // Heading
         try printScreenNamesHeading(allocator, "Modal", screens.len);
@@ -59,17 +59,17 @@ pub fn listScreens(allocator: std.mem.Allocator) !void {
 fn printScreenNamesHeading(allocator: std.mem.Allocator, screen_kind: []const u8, count_screens: usize) !void {
     return switch (count_screens) {
         0 => blk: {
-            var heading: []const u8 = try std.fmt.allocPrint(allocator, "There are no {s} screens.\n", .{screen_kind});
+            const heading: []const u8 = try std.fmt.allocPrint(allocator, "There are no {s} screens.\n", .{screen_kind});
             defer allocator.free(heading);
             break :blk try _stdout_.print(heading);
         },
         1 => blk: {
-            var heading: []const u8 = try std.fmt.allocPrint(allocator, "There is 1 {s} screen.\n", .{screen_kind});
+            const heading: []const u8 = try std.fmt.allocPrint(allocator, "There is 1 {s} screen.\n", .{screen_kind});
             defer allocator.free(heading);
             break :blk try _stdout_.print(heading);
         },
         else => blk: {
-            var heading: []const u8 = try std.fmt.allocPrint(allocator, "There are {d} {s} screens.\n", .{ count_screens, screen_kind });
+            const heading: []const u8 = try std.fmt.allocPrint(allocator, "There are {d} {s} screens.\n", .{ count_screens, screen_kind });
             defer allocator.free(heading);
             break :blk try _stdout_.print(heading);
         },
@@ -79,7 +79,7 @@ fn printScreenNamesHeading(allocator: std.mem.Allocator, screen_kind: []const u8
 fn printScreenNames(allocator: std.mem.Allocator, screens: []const []const u8) !void {
     if (screens.len > 0) {
         // List
-        var line: []u8 = try std.mem.join(allocator, "\n", screens);
+        const line: []u8 = try std.mem.join(allocator, "\n", screens);
         defer allocator.free(line);
         try _stdout_.print(line);
     }

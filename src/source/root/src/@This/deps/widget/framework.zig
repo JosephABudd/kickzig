@@ -7,7 +7,7 @@ const _tabbar_template_ = @import("tabbar_template.zig");
 
 pub fn create(allocator: std.mem.Allocator) !void {
     // Open the write folder.
-    var folders = try paths.folders();
+    const folders = try paths.folders();
     defer folders.deinit();
     var dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_widget.?, .{});
     defer dir.close();
@@ -16,7 +16,7 @@ pub fn create(allocator: std.mem.Allocator) !void {
         // api.zig
         var template: *_api_template_.Template = try _api_template_.init(allocator);
         defer template.deinit();
-        var content: []const u8 = try template.content();
+        const content: []const u8 = try template.content();
         defer allocator.free(content);
         var ofile: std.fs.File = try dir.createFile(_filenames_.api_file_name, .{});
         defer ofile.close();

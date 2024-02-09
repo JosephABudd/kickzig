@@ -17,12 +17,12 @@ pub const Template = struct {
     pub fn content(self: *Template) ![]const u8 {
         // screen_name
         var size: usize = std.mem.replacementSize(u8, template, "{{ screen_name }}", self.screen_name);
-        var with_screen_name: []u8 = try self.allocator.alloc(u8, size);
+        const with_screen_name: []u8 = try self.allocator.alloc(u8, size);
         defer self.allocator.free(with_screen_name);
         _ = std.mem.replace(u8, template, "{{ screen_name }}", self.screen_name, with_screen_name);
         // panel_name
         size = std.mem.replacementSize(u8, with_screen_name, "{{ panel_name }}", self.panel_name);
-        var with_panel_name: []u8 = try self.allocator.alloc(u8, size);
+        const with_panel_name: []u8 = try self.allocator.alloc(u8, size);
         _ = std.mem.replace(u8, with_screen_name, "{{ panel_name }}", self.panel_name, with_panel_name);
         return with_panel_name;
     }
@@ -55,9 +55,11 @@ const template =
     \\
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator,
+    \\    window: *dvui.Window,
     \\    all_screens: *_framers_.Group,
     \\    all_panels: *_panels_.Panels,
     \\    messenger: *_messenger_.Messenger,
+    \\    exit: *const fn (user_message: []const u8) void,
     \\
     \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
     \\        // KICKFYNE TODO: Set any members that need set using the setup_args.
@@ -80,7 +82,7 @@ const template =
     \\        _ = arena;
     \\        var theme: *dvui.Theme = dvui.themeGet();
     \\
-    \\        var padding_options = .{
+    \\        const padding_options = .{
     \\            .expand = .both,
     \\            .margin = dvui.Rect.all(0),
     \\            .border = dvui.Rect.all(10),
@@ -114,12 +116,14 @@ const template =
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
     \\    panel.allocator = allocator;
+    \\    panel.window = window;
     \\    panel.all_screens = all_screens;
     \\    panel.all_panels = all_panels;
     \\    panel.messenger = messenger;
+    \\    panel.exit = exit;
     \\    return panel;
     \\}
 ;

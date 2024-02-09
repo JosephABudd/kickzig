@@ -36,9 +36,22 @@ pub const content =
     \\    });
     \\
     \\    // deps/ modules.
+    \\    const counter_mod = b.addModule("counter", .{
+    \\        .source_file = .{ .path = "src/@This/deps/counter/api.zig" },
+    \\        .dependencies = &.{},
+    \\    });
+    \\    const closedownjobs_mod = b.addModule("closedownjobs", .{
+    \\        .source_file = .{ .path = "src/@This/deps/closedownjobs/api.zig" },
+    \\        .dependencies = &.{
+    \\            .{ .name = "counter", .module = counter_mod },
+    \\        },
+    \\    });
     \\    const message_mod = b.addModule("message", .{
     \\        .source_file = .{ .path = "src/@This/deps/message/api.zig" },
-    \\        .dependencies = &.{},
+    \\        .dependencies = &.{
+    \\            .{ .name = "counter", .module = counter_mod },
+    \\            .{ .name = "closedownjobs", .module = closedownjobs_mod },
+    \\        },
     \\    });
     \\    const channel_mod = b.addModule("channel", .{
     \\        .source_file = .{ .path = "src/@This/deps/channel/api.zig" },
@@ -56,11 +69,32 @@ pub const content =
     \\    });
     \\    const modal_params_mod = b.addModule("modal_params", .{
     \\        .source_file = .{ .path = "src/@This/deps/modal_params/api.zig" },
-    \\        .dependencies = &.{},
+    \\        .dependencies = &.{
+    \\            .{ .name = "closedownjobs", .module = closedownjobs_mod },
+    \\        },
+    \\    });
+    \\    const closer_mod = b.addModule("closer", .{
+    \\        .source_file = .{ .path = "src/@This/deps/closer/api.zig" },
+    \\        .dependencies = &.{
+    \\            .{ .name = "lock", .module = lock_mod },
+    \\            .{ .name = "framers", .module = framers_mod },
+    \\            .{ .name = "closedownjobs", .module = closedownjobs_mod },
+    \\            .{ .name = "modal_params", .module = modal_params_mod },
+    \\        },
     \\    });
     \\    const widget_mod = b.addModule("widget", .{
     \\        .source_file = .{ .path = "src/@This/deps/widget/api.zig" },
     \\        .dependencies = &.{
+    \\            .{ .name = "dvui", .module = dvui_mod },
+    \\        },
+    \\    });
+    \\    const startup_mod = b.addModule("startup", .{
+    \\        .source_file = .{ .path = "src/@This/deps/startup/api.zig" },
+    \\        .dependencies = &.{
+    \\            .{ .name = "channel", .module = channel_mod },
+    \\            .{ .name = "closedownjobs", .module = closedownjobs_mod },
+    \\            .{ .name = "framers", .module = framers_mod },
+    \\            .{ .name = "modal_params", .module = modal_params_mod },
     \\            .{ .name = "dvui", .module = dvui_mod },
     \\        },
     \\    });
@@ -82,11 +116,14 @@ pub const content =
     \\        exe.addModule("SDLBackend", sdl_mod);
     \\
     \\        // deps modules.
-    \\        exe.addModule("framers", framers_mod);
-    \\        exe.addModule("message", message_mod);
+    \\        exe.addModule("closer", closer_mod);
+    \\        exe.addModule("closedownjobs", closedownjobs_mod);
     \\        exe.addModule("channel", channel_mod);
     \\        exe.addModule("lock", lock_mod);
+    \\        exe.addModule("framers", framers_mod);
+    \\        exe.addModule("message", message_mod);
     \\        exe.addModule("modal_params", modal_params_mod);
+    \\        exe.addModule("startup", startup_mod);
     \\        exe.addModule("widget", widget_mod);
     \\
     \\        exe.linkLibrary(lib_bundle);
@@ -105,36 +142,36 @@ pub const content =
     \\
     \\    // sdl test
     \\    //{
-    \\        //const exe = b.addExecutable(.{
-    \\            //.name = "sdl-test",
-    \\            //.root_source_file = .{ .path = "sdl-test.zig" },
-    \\            //.target = target,
-    \\            //.optimize = optimize,
-    \\        //});
+    \\    //const exe = b.addExecutable(.{
+    \\    //.name = "sdl-test",
+    \\    //.root_source_file = .{ .path = "sdl-test.zig" },
+    \\    //.target = target,
+    \\    //.optimize = optimize,
+    \\    //});
     \\
-    \\        //exe.addModule("dvui", dvui_mod);
-    \\        //exe.addModule("SDLBackend", sdl_mod);
+    \\    //exe.addModule("dvui", dvui_mod);
+    \\    //exe.addModule("SDLBackend", sdl_mod);
     \\
-    \\        // deps modules.
-    \\        //exe.addModule("framers", framers_mod);
-    \\        //exe.addModule("message", message_mod);
-    \\        //exe.addModule("channel", channel_mod);
-    \\        //exe.addModule("lock", lock_mod);
-    \\        //exe.addModule("modal_params", modal_params_mod);
-    \\        //exe.addModule("widget", widget_mod);
+    \\    // deps modules.
+    \\    //exe.addModule("framers", framers_mod);
+    \\    //exe.addModule("message", message_mod);
+    \\    //exe.addModule("channel", channel_mod);
+    \\    //exe.addModule("lock", lock_mod);
+    \\    //exe.addModule("modal_params", modal_params_mod);
+    \\    //exe.addModule("widget", widget_mod);
     \\
-    \\        //exe.linkLibrary(lib_bundle);
-    \\        //add_include_paths(b, exe);
+    \\    //exe.linkLibrary(lib_bundle);
+    \\    //add_include_paths(b, exe);
     \\
-    \\        //const compile_step = b.step("compile-sdl-test", "Compile the SDL test");
-    \\        //compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
-    \\        //b.getInstallStep().dependOn(compile_step);
+    \\    //const compile_step = b.step("compile-sdl-test", "Compile the SDL test");
+    \\    //compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
+    \\    //b.getInstallStep().dependOn(compile_step);
     \\
-    \\        //const run_cmd = b.addRunArtifact(exe);
-    \\        //run_cmd.step.dependOn(compile_step);
+    \\    //const run_cmd = b.addRunArtifact(exe);
+    \\    //run_cmd.step.dependOn(compile_step);
     \\
-    \\        //const run_step = b.step("sdl-test", "Run the SDL test");
-    \\        //run_step.dependOn(&run_cmd.step);
+    \\    //const run_step = b.step("sdl-test", "Run the SDL test");
+    \\    //run_step.dependOn(&run_cmd.step);
     \\    //}
     \\}
     \\

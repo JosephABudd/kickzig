@@ -22,7 +22,7 @@ pub fn recreate(allocator: std.mem.Allocator, app_name: []const u8) !void {
 
 pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
     // Open the write folder.
-    var folders = try paths.folders();
+    const folders = try paths.folders();
     defer folders.deinit();
     var root_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root.?, .{});
     defer root_dir.close();
@@ -47,7 +47,7 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
         // Build the data for the template.
         var template: *_standalone_template_.Template = try _standalone_template_.Template.init(allocator, app_name);
         defer template.deinit();
-        var content: []const u8 = try template.content();
+        const content: []const u8 = try template.content();
         defer allocator.free(content);
 
         // Open, write and close the file.

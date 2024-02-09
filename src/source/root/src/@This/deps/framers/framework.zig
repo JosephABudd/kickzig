@@ -7,7 +7,7 @@ const _filenames_ = @import("filenames");
 const _api_template_ = @import("api_template.zig");
 
 pub fn create() !void {
-    // Build api.zig with the initialize channel.
+    // Build api.zig.
     try buildApiZig();
 }
 
