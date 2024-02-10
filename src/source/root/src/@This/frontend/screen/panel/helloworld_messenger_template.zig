@@ -91,11 +91,10 @@ pub const content =
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: *const fn (user_message: []const u8) void) !*Messenger {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: *const fn (user_message: []const u8) void) !*Messenger {
     \\    var messenger: *Messenger = try allocator.create(Messenger);
     \\    messenger.allocator = allocator;
     \\    messenger.all_screens = all_screens;
-    \\    messenger.all_panels = all_panels;
     \\    messenger.send_channels = send_channels;
     \\    messenger.receive_channels = receive_channels;
     \\    messenger.exit = exit;

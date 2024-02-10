@@ -8,6 +8,10 @@ As I started learning zig, I found and started using [Dave Vanderson's dvui proj
 
 As I continue to learn and appreciate zig and dvui, I am recreating my kick code generator to work with zig and dvui.
 
+## Feb 10, 2024
+
+Put changes made to modal EOJ into all the other screens.
+
 ## Feb 9, 2024
 
 I thought I had kickzig and the framework it generates working the way I wanted, so I began building a CRUD. It wasn't long before I wanted some changes.

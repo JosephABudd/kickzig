@@ -115,7 +115,7 @@ pub const Template = struct {
                 try lines.appendSlice("\n");
 
                 {
-                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, messenger, exit);\n", .{name});
+                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, messenger, exit, window);\n", .{name});
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }

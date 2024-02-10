@@ -311,7 +311,7 @@ const line8 =
     \\    }}
     \\
     \\    // All of the panels.
-    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, messenger, startup.exit);
+    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, messenger, startup.exit, startup.window);
     \\    errdefer {{
     \\        messenger.deinit();
     \\        screen.deinit();

@@ -254,7 +254,7 @@ const line6FirstNoneLocal =
 const line6FirstNoneSeparate =
     \\                .{0s}, .none => {{
     \\                    var behavior: *_framers_.Behavior = try self.all_screens.get("{0s}");
-    \\                    if(behavior.frameFn(behavior.implementor, arena) |err| {{
+    \\                    if(behavior.frameFn(behavior.implementor, arena)) |err| {{
     \\                        return err;
     \\                    }}
     \\                }},
@@ -271,7 +271,7 @@ const line6local =
 const line6separate =
     \\                .{0s} => {{
     \\                    var behavior: *_framers_.Behavior = try self.all_screens.get("{0s}");
-    \\                    if (behavior.frameFn(behavior.implementor, arena) |err| {{
+    \\                    if (behavior.frameFn(behavior.implementor, arena)) |err| {{
     \\                        return err;
     \\                    }}
     \\                }},
@@ -307,7 +307,7 @@ const line8 =
     \\    }}
     \\
     \\    // All of the panels.
-    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, messenger, startup.exit);
+    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, messenger, startup.exit, startup.window);
     \\    errdefer {{
     \\        messenger.deinit();
     \\        screen.deinit();

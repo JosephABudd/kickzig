@@ -11,6 +11,7 @@ pub const content =
     \\
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator, // For persistant state data.
+    \\    window: *dvui.Window,
     \\    all_screens: *_framers_.Group,
     \\    all_panels: *_panels_.Panels,
     \\    messenger: *_messenger_.Messenger,
@@ -102,7 +103,7 @@ pub const content =
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
     \\    panel.allocator = allocator;
     \\    panel.all_screens = all_screens;
@@ -113,6 +114,7 @@ pub const content =
     \\    panel.message = "World!";
     \\    panel.yes_no = null;
     \\    panel.exit = exit;
+    \\    panel.window = window;
     \\    return panel;
     \\}
     \\

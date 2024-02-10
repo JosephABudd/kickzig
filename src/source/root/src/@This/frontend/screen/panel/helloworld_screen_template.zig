@@ -57,17 +57,18 @@ pub const content =
     \\    screen.name = "HelloWorld";
     \\
     \\    // The messenger.
-    \\    var messenger: *_messenger_.Messenger = try _messenger_.init(startup.allocator, startup.all_screens, screen.all_panels, startup.send_channels, startup.receive_channels, startup.exit);
+    \\    var messenger: *_messenger_.Messenger = try _messenger_.init(startup.allocator, startup.all_screens, startup.send_channels, startup.receive_channels, startup.exit);
     \\    errdefer {
     \\        screen.deinit();
     \\    }
     \\
     \\    // All of the panels.
-    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, messenger, startup.exit);
+    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, messenger, startup.exit, startup.window);
     \\    errdefer {
     \\        messenger.deinit();
     \\        screen.deinit();
     \\    }
+    \\    messenger.all_panels = screen.all_panels;
     \\    // The HelloWorld panel is the default.
     \\    screen.all_panels.setCurrentToHelloWorld();
     \\

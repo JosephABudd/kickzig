@@ -72,7 +72,6 @@ const template =
     \\    var messenger: *Messenger = try allocator.create(Messenger);
     \\    messenger.allocator = allocator;
     \\    messenger.all_screens = all_screens;
-    \\    messenger.all_panels = all_panels;
     \\    messenger.send_channels = send_channels;
     \\    messenger.receive_channels = receive_channels;
     \\    messenger.exit = exit;

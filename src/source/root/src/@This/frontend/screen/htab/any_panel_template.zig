@@ -54,6 +54,7 @@ const template =
     \\/// This panel is the content for the {{ panel_name }} tab.
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator, // For persistant state data.
+    \\    window: *dvui.Window,
     \\    all_screens: *_framers_.Group,
     \\    all_panels: *_panels_.Panels,
     \\    messenger: *_messenger_.Messenger,
@@ -85,13 +86,14 @@ const template =
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
     \\    panel.allocator = allocator;
     \\    panel.all_screens = all_screens;
     \\    panel.all_panels = all_panels;
     \\    panel.messenger = messenger;
     \\    panel.exit = exit;
+    \\    panel.window = window;
     \\    return panel;
     \\}
 ;

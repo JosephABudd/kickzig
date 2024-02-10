@@ -68,10 +68,10 @@ const template =
     \\    is_set: bool,
     \\
     \\    // The member foobar is presented as an example.
-    \\    foobar: ?int64,
+    \\    foobar: ?i64,
     \\
     \\    pub const Settings = struct {
-    \\        foobar: ?int64,
+    \\        foobar: ?i64,
     \\    };
     \\
     \\    fn init(allocator: std.mem.Allocator) !*FrontendPayload {
