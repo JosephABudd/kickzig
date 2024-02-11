@@ -88,7 +88,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                     break :blk;
                 }
                 // The screen was removed.
-                const msg: []const u8 = try std.fmt.allocPrint(allocator, "The screen «{s}» was removed.\n", .{remaining_args[1]});
+                const msg: []const u8 = try _success_.screenRemoved(allocator, screen_name);
                 defer allocator.free(msg);
                 try _stdout_.print(msg);
                 break :blk;
@@ -405,6 +405,7 @@ fn expectNewScreenName(allocator: std.mem.Allocator, screen_name: []const u8) !b
     for (all_names) |name| {
         if (std.mem.eql(u8, name, screen_name)) {
             is_new = false;
+            break;
         }
     }
     if (!is_new) {

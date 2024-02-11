@@ -48,11 +48,11 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
         },
         2 => {
             if (std.mem.eql(u8, remaining_args[0], verb_add_fbf)) {
-                const is_new: bool = false;
-                if (is_new == try expectNewMessageName(allocator, remaining_args[1])) {
-                    if (!is_new) {
-                        return;
-                    }
+                if (!try expectValidMessageName(allocator, remaining_args[1])) {
+                    return;
+                }
+                if (!try expectNewMessageName(allocator, remaining_args[1])) {
+                    return;
                 }
                 // User input is "message add-fbf UpdateList".
                 try _src_this_backend_messenger_.addFBF(allocator, remaining_args[1]);
@@ -71,11 +71,11 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 return;
             } else if (std.mem.eql(u8, remaining_args[0], verb_add_bf)) {
-                const is_new: bool = false;
-                if (is_new == try expectNewMessageName(allocator, remaining_args[1])) {
-                    if (!is_new) {
-                        return;
-                    }
+                if (!try expectValidMessageName(allocator, remaining_args[1])) {
+                    return;
+                }
+                if (!try expectNewMessageName(allocator, remaining_args[1])) {
+                    return;
                 }
                 // User input is "message add-bf UpdateList".
                 try _src_this_backend_messenger_.addBF(allocator, remaining_args[1]);
@@ -94,6 +94,9 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 return;
             } else if (std.mem.eql(u8, remaining_args[0], verb_add_bf_fbf)) {
+                if (!try expectValidMessageName(allocator, remaining_args[1])) {
+                    return;
+                }
                 if (!try expectNewMessageName(allocator, remaining_args[1])) {
                     return;
                 }
@@ -114,11 +117,11 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 return;
             } else if (std.mem.eql(u8, remaining_args[0], verb_remove)) {
-                const is_existing: bool = false;
-                if (is_existing == try expectExistingMessageName(allocator, remaining_args[1])) {
-                    if (!is_existing) {
-                        return;
-                    }
+                if (!try expectValidMessageName(allocator, remaining_args[1])) {
+                    return;
+                }
+                if (!try expectExistingMessageName(allocator, remaining_args[1])) {
+                    return;
                 }
                 // User input is "message remove EditContact".
                 try _src_this_backend_messenger_.remove(allocator, remaining_args[1]);
@@ -183,9 +186,16 @@ fn printMessageNames(allocator: std.mem.Allocator, message_names: [][]const u8) 
 // Expects
 
 fn expectValidMessageName(allocator: std.mem.Allocator, message_name: []const u8) !bool {
-    const is_valid: bool = _strings_.isValid(message_name);
+    var is_valid: bool = _strings_.isValid(message_name);
     if (!is_valid) {
         const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is not a valid message name.\n", .{message_name});
+        defer allocator.free(msg);
+        try _stdout_.print(msg);
+        return is_valid;
+    }
+    is_valid = !_filenames_.isFrameworkMessageName(message_name);
+    if (!is_valid) {
+        const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is a framework message name.\n", .{message_name});
         defer allocator.free(msg);
         try _stdout_.print(msg);
     }

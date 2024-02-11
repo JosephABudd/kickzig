@@ -21,6 +21,20 @@ pub const tabbar_file_name: []const u8 = "tabbar.zig";
 pub const counter_file_name = "counter.zig";
 pub const backend_file_name = "backend.zig";
 
+// framework.
+
+// isFrameworkScreenName returns if the name is a framework screen name.
+pub fn isFrameworkScreenName(name: []const u8) bool {
+    return std.mem.eql(u8, name, paths.modal_folder_name_ok) or
+        std.mem.eql(u8, name, paths.modal_folder_name_yesno) or
+        std.mem.eql(u8, name, paths.modal_folder_name_eoj);
+}
+
+// isFrameworkMessageName returns if the name is a framework message name.
+pub fn isFrameworkMessageName(name: []const u8) bool {
+    return std.mem.eql(u8, name, deps.closedownjobs_message_name);
+}
+
 // backend.
 
 // backendMessageHandlerFileName returns the file name for a back-end message handler file.
@@ -209,13 +223,6 @@ pub fn allFrontendBookScreenPanelNames(allocator: std.mem.Allocator, screen_name
     // Return a slice that the caller owns.
     const unowned_slice: [][]const u8 = try panel_file_names.toOwnedSlice();
     return ownedSlice(allocator, unowned_slice);
-}
-
-// isFrameworkScreenName returns if the name is a framework screen name.
-pub fn isFrameworkScreenName(name: []const u8) bool {
-    return std.mem.eql(u8, name, paths.modal_folder_name_ok) or
-        std.mem.eql(u8, name, paths.modal_folder_name_yesno) or
-        std.mem.eql(u8, name, paths.modal_folder_name_eoj);
 }
 
 /// allFrontendCustomScreenNames returns custom screen names taken from the screen folders.

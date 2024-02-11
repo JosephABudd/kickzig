@@ -4,6 +4,7 @@ const paths = @import("paths");
 pub const counter_file_name = "counter.zig";
 pub const api_file_name = "api.zig";
 pub const closedownjobs_file_name = "CloseDownJobs.zig";
+pub const closedownjobs_message_name = "CloseDownJobs";
 pub const eoj_file_name = "EOJ.zig";
 
 pub fn allMessageNames(allocator: std.mem.Allocator) ![][]const u8 {

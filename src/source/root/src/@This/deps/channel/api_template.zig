@@ -135,9 +135,10 @@ pub const Template = struct {
     pub fn content(self: *Template) ![]const u8 {
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
+
         const frontend_to_backend_channel_names: [][]const u8 = self.frontend_to_backend_channel_names[0..self.frontend_to_backend_channel_names_index];
         const backend_to_frontend_channel_names: [][]const u8 = self.backend_to_frontend_channel_names[0..self.backend_to_frontend_channel_names_index];
-        var backend_trigger_names: [][]const u8 = self.backend_trigger_names[0..self.backend_trigger_names_index];
+        const backend_trigger_names: [][]const u8 = self.backend_trigger_names[0..self.backend_trigger_names_index];
 
         // Imports.
         try lines.appendSlice(line1);
@@ -199,7 +200,7 @@ pub const Template = struct {
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }
-                {
+                if (i > 0) {
                     const deinit_names: [][]const u8 = frontend_to_backend_channel_names[0..i];
                     for (deinit_names) |deinit_name| {
                         const line: []const u8 = try fmt.allocPrint(self.allocator, "            channels.{0s}.deinit();\n", .{deinit_name});
@@ -250,8 +251,8 @@ pub const Template = struct {
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }
-                {
-                    const deinit_names: [][]const u8 = frontend_to_backend_channel_names[0..i];
+                if (i > 0) {
+                    const deinit_names: [][]const u8 = backend_to_frontend_channel_names[0..i];
                     for (deinit_names) |deinit_name| {
                         const line: []const u8 = try fmt.allocPrint(self.allocator, "            channels.{0s}.deinit();\n", .{deinit_name});
                         defer self.allocator.free(line);
@@ -290,7 +291,7 @@ pub const Template = struct {
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }
-                {
+                if (i > 0) {
                     const deinit_names: [][]const u8 = backend_trigger_names[0..i];
                     for (deinit_names) |deinit_name| {
                         const line: []const u8 = try fmt.allocPrint(self.allocator, "            triggers.{0s}.deinit();\n", .{deinit_name});
