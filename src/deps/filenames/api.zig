@@ -213,13 +213,9 @@ pub fn allFrontendBookScreenPanelNames(allocator: std.mem.Allocator, screen_name
 
 // isFrameworkScreenName returns if the name is a framework screen name.
 pub fn isFrameworkScreenName(name: []const u8) bool {
-    if (std.mem.eql(u8, name, paths.modal_folder_name_ok)) {
-        return true;
-    }
-    if (std.mem.eql(u8, name, paths.modal_folder_name_yesno)) {
-        return true;
-    }
-    return false;
+    return std.mem.eql(u8, name, paths.modal_folder_name_ok) or
+        std.mem.eql(u8, name, paths.modal_folder_name_yesno) or
+        std.mem.eql(u8, name, paths.modal_folder_name_eoj);
 }
 
 /// allFrontendCustomScreenNames returns custom screen names taken from the screen folders.
