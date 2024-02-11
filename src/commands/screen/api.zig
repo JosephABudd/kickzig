@@ -52,39 +52,46 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
             if (std.mem.eql(u8, verb, verb_remove)) {
                 // Is the screen name valid for remove?
                 // User input is "screen remove Edit".
-                break :blk {
-                    // The screen name must be valid.
-                    is_valid = expectValidScreenName(allocator, screen_name) catch |err| {
-                        break :blk err;
-                    };
-                    if (!is_valid) {
-                        break :blk;
-                    }
-                    // The named screen must already exist.
-                    is_valid = expectExistingScreenName(allocator, screen_name) catch |err| {
-                        break :blk err;
-                    };
-                    if (!is_valid) {
-                        break :blk;
-                    }
-                    var removed: bool = false;
-                    removed = try _src_this_frontend_.removeVTabScreen(allocator, app_name, screen_name);
-                    if (!removed) {
-                        removed = try _src_this_frontend_.removeHTabScreen(allocator, app_name, screen_name);
-                    }
-                    if (!removed) {
-                        removed = try _src_this_frontend_.removePanelScreen(allocator, app_name, screen_name);
-                    }
-                    if (!removed) {
-                        removed = try _src_this_frontend_.removeModalScreen(allocator, app_name, screen_name);
-                    }
-                    if (!removed) {
-                        removed = try _src_this_frontend_.removeBookScreen(allocator, app_name, screen_name);
-                    }
-                    const msg: []const u8 = try std.fmt.allocPrint(allocator, "The screen «{s}» was not found.\n", .{remaining_args[1]});
+                // break :blk {
+                // The screen name must be valid.
+                is_valid = expectValidScreenName(allocator, screen_name) catch |err| {
+                    break :blk err;
+                };
+                if (!is_valid) {
+                    break :blk;
+                }
+                // The named screen must already exist.
+                is_valid = expectExistingScreenName(allocator, screen_name) catch |err| {
+                    break :blk err;
+                };
+                if (!is_valid) {
+                    break :blk;
+                }
+                var removed: bool = false;
+                removed = try _src_this_frontend_.removeVTabScreen(allocator, app_name, screen_name);
+                if (!removed) {
+                    removed = try _src_this_frontend_.removeHTabScreen(allocator, app_name, screen_name);
+                }
+                if (!removed) {
+                    removed = try _src_this_frontend_.removePanelScreen(allocator, app_name, screen_name);
+                }
+                if (!removed) {
+                    removed = try _src_this_frontend_.removeModalScreen(allocator, app_name, screen_name);
+                }
+                if (!removed) {
+                    removed = try _src_this_frontend_.removeBookScreen(allocator, app_name, screen_name);
+                }
+                if (!removed) {
+                    const msg: []const u8 = try std.fmt.allocPrint(allocator, "Oops! The screen «{s}» was not found.\n", .{remaining_args[1]});
                     defer allocator.free(msg);
                     try _stdout_.print(msg);
-                };
+                    break :blk;
+                }
+                // The screen was removed.
+                const msg: []const u8 = try std.fmt.allocPrint(allocator, "The screen «{s}» was removed.\n", .{remaining_args[1]});
+                defer allocator.free(msg);
+                try _stdout_.print(msg);
+                break :blk;
             }
             // "screen 💩 💩"
             // The user input is invalid so show the help.
