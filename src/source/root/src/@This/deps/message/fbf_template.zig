@@ -78,14 +78,13 @@ const template =
     \\    }
     \\
     \\    // Returns an error if already set.
-    \\    pub fn set(self: *BackendPayload, values: Settings) !void {
+    \\    pub fn set(self: *FrontendPayload, values: Settings) !void {
     \\        if (self.is_set) {
-    \\            return error.{{ message_name }}BackendPayloadAlreadySet;
+    \\            return error.{{ message_name }}FrontendPayloadAlreadySet;
     \\        }
     \\        self.is_set = true;
-    \\        if (values.user_error_message) |user_error_message| {
-    \\            self.user_error_message = try self.allocator.alloc(u8, user_error_message.len);
-    \\            @memcpy(self.user_error_message, user_error_message);
+    \\        if (values.foobar) |foobar| {
+    \\            self.foobar = foobar;
     \\        }
     \\    }
     \\};
