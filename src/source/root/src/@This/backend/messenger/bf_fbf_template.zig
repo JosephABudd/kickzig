@@ -104,7 +104,6 @@ const template =
     \\    /// KICKZIG TODO: Add the required functionality.
     \\    fn triggerJob(self: *Messenger) !*_message_.{{ message_name }}.Message {
     \\        _ = self;
-    \\        _ = message;
     \\        // Create a message for the front-end.
     \\        // Set the message.backend_payload accordingly.
     \\        return error.KICKZIG_TODO_ADD_FUNCTIONALITY;
