@@ -4,6 +4,6 @@
 
 This is a work in progress.
 
-## Dec 28, 23
+## Feb 12, 2024
 
-Finished up to Creating The Data Store.
+After rebuilding a lot of kickzig, I updated this wiki. Its not done yet.

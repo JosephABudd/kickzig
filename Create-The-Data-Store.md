@@ -1,20 +1,23 @@
-## The local sqlite file
+## Data stores are not a part of the kickzig framework
 
-I will use 1 data store which is a local sqlite file. It will be located in the OS's data storage folder as defined by the "known-folders" package. In that data storage folder, I'll add a "crud" folder where I will create my "store.sqlite" file.
+### I will add a local sqlite data-store
+
+I will use 1 data store which is a local sqlite file. It will be located in the OS's data storage folder as defined by the zig's **std.fs** package. In that data storage folder, I'll add a "crud" folder where I will create my "store.sqlite" file.
 
 ## The store package
 
-My sqlite store package will be in the **src/@This/deps/store/**. The package's Store struct has a member called **contact_table**. It is a pointer to the store's Contact table. The store's **contact_table** does all of the contact table work.
+My sqlite store package will be in the **src/@This/deps/store/**. The package's Store struct has a member **contact_table**. It is a pointer to the store's Contact table. The store's **contact_table** does all of the contact table work.
 
 ## Initializing and using the store package
 
 1. In standalone-sdl.zig, **The store's path is created**.
 1. In standalone-sdl.zig, **The store is created**.
-1. In standalone-sdl.zig, **The back-end is initialized with the store** allowing it to initialize it's back-end message handlers with the store. Those back-end message handlers are the ones that use the store.
+1. In standalone-sdl.zig, **The store is added to the back-end startup params**.
+1. In standalone-sdl.zig, **The back-end is initialized with the startup params** allowing it to initialize it's back-end message handlers with the store. Those back-end message handlers are the ones that use the store.
 
 See [[standalone-sdl.zig|standalone--sdl.zig]] in the appendix.
 
-## The store package's api.zig and contact.zig are shown below.
+## The store package's api.zig and contact.zig are shown below
 
 ### api.zig
 
@@ -252,3 +255,7 @@ See [[standalone-sdl.zig|standalone--sdl.zig]] in the appendix.
 186 ⎥ };
 187 ⎥ 
 ```
+
+## Next
+
+[[Create The Records.||Create-The-Records]]

@@ -12,7 +12,7 @@ A simple, easy to understand, CRUD application.
 
 ### The Contacts screen
 
-The **Contacts** screen will be a panel-screen with 4 panels. _A panel-screen can have multiple panels but only renders one panel at a time._ If there are contacts then the **Select** panel will be the default panel. If there are no consact records then the **Add** panel will be the default panel.
+The **Contacts** screen will be a panel-screen with 4 panels. _A panel-screen can have multiple panels but only renders one panel at a time._ If there are contacts then the **Select** panel will be the default panel. If there are no contact records then the **Add** panel will be the default panel.
 
 1. **The Select panel** will display a scrolling list of contacts. Each listing is verbose containing the whole contact record. It should also have an add icon that will allow the user to switch to the **Add** panel and add a new contact.
 1. The **Add** panel will display an editable contact form with an **Add** button to submit the edits. A **Cancel** button will clear the form and if there are any contact records, go back to the **Select** panel.
@@ -94,7 +94,6 @@ I'll initialize the store package in **standalone-sdl.zig** where I'll
 Vendors are the dependencies cloned from repos. The vendor folder is at **src/vendor/**.
 
 1. kickzig's default settings required me to clone dvui into the vendor folder.
-1. I'm going to also clone [Super Auguste et al's known-folders package](https://github.com/ziglibs/known-folders) into the vendor folder.
 1. I'm going to also clone [LeRoyce Pearson's sqlite-zig package](https://github.com/leroycep/sqlite-zig.git) into the vendor folder.
 
 ## Next

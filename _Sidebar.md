@@ -12,7 +12,7 @@
 ### Local dependencies
 
 * [[Create The Data Store.|Create-The-Data-Store]]
-* Create the records.
+* [[Create the records.||Create-The-Data-Records]]
 * Create the messages and the back-end message handlers.
 
 ## Appendix
