@@ -13,7 +13,7 @@
 
 * [[Create The Data Store.|Create-The-Data-Store]]
 * [[Create The Records.|Create-The-Records]]
-* Create the messages and the back-end message handlers.
+* [[Create The Messages.|Create-The-Messages]]
 
 ## Appendix
 
