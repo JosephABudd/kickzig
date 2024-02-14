@@ -2,7 +2,7 @@
 
 ### I will add my own records module
 
-The Contact records are required for the messages. Each type of message requires a specific type of Contact record.
+The Contact records are required for the messages. Each type of message requires a specific type of Contact record. To keep track of record life-time, a record is copied before it is passed to a fn. That receiving fn must deinit the copy it received.
 
 1. The **Add** record type.
    * Is a partial contact record, edited by the user, that contains no contact record id.
@@ -44,206 +44,235 @@ The packages files are shown below.
 
 ```zig
   1 ⎥ const std = @import("std");
-  2 ⎥ const Store = @import("store.zig").Contact;
-  3 ⎥ 
-  4 ⎥ /// Contact is a contact that the user added and submitted.
-  5 ⎥ pub const Contact = struct {
-  6 ⎥     allocator: std.mem.Allocator,
-  7 ⎥     name: ?[]const u8,
-  8 ⎥     address: ?[]const u8,
-  9 ⎥     city: ?[]const u8,
- 10 ⎥     state: ?[]const u8,
- 11 ⎥     zip: ?[]const u8,
- 12 ⎥ 
- 13 ⎥     pub fn init(allocator: std.mem.Allocator, name: ?[]const u8, address: ?[]const u8, city: ?[]const u8, state: ?[]const u8, zip: ?[]const u8) !*Contact {
- 14 ⎥         var self: *Contact = try allocator.create(Contact);
- 15 ⎥         self.allocator = allocator;
- 16 ⎥         // Name.
- 17 ⎥         if (name) |param_name| {
- 18 ⎥             self.name = allocator.alloc(u8, param_name.len);
- 19 ⎥             errdefer self.deinit();
- 20 ⎥             @memcpy(self.name, param_name);
- 21 ⎥         } else {
- 22 ⎥             self.name = null;
- 23 ⎥         }
- 24 ⎥         // Address.
- 25 ⎥         if (address) |param_address| {
- 26 ⎥             self.address = allocator.alloc(u8, param_address.len);
- 27 ⎥             errdefer self.deinit();
- 28 ⎥             @memcpy(self.address, param_address);
- 29 ⎥         } else {
- 30 ⎥             self.address = null;
- 31 ⎥         }
- 32 ⎥ 
- 33 ⎥         // City.
- 34 ⎥         if (city) |param_city| {
- 35 ⎥             self.city = allocator.alloc(u8, param_city.len);
- 36 ⎥             errdefer self.deinit();
- 37 ⎥             @memcpy(self.city, param_city);
- 38 ⎥         } else {
- 39 ⎥             self.city = null;
- 40 ⎥         }
- 41 ⎥ 
- 42 ⎥         // State.
- 43 ⎥         if (state) |param_state| {
- 44 ⎥             self.state = allocator.alloc(u8, param_state.len);
- 45 ⎥             errdefer self.deinit();
- 46 ⎥             @memcpy(self.state, param_state);
- 47 ⎥         } else {
- 48 ⎥             self.state = null;
- 49 ⎥         }
- 50 ⎥ 
- 51 ⎥         // Zip.
- 52 ⎥         if (zip) |param_zip| {
- 53 ⎥             self.zip = allocator.alloc(u8, param_zip.len);
- 54 ⎥             errdefer self.deinit();
- 55 ⎥             @memcpy(self.zip, param_zip);
- 56 ⎥         } else {
- 57 ⎥             self.zip = null;
- 58 ⎥         }
- 59 ⎥ 
- 60 ⎥         return self;
- 61 ⎥     }
- 62 ⎥ 
- 63 ⎥     pub fn deinit(self: *Contact) void {
- 64 ⎥         if (self.name) |name| {
- 65 ⎥             self.allocator.free(name);
- 66 ⎥         }
- 67 ⎥         if (self.address) |address| {
- 68 ⎥             self.allocator.free(address);
- 69 ⎥         }
- 70 ⎥         if (self.city) |city| {
- 71 ⎥             self.allocator.free(city);
- 72 ⎥         }
- 73 ⎥         if (self.state) |state| {
- 74 ⎥             self.allocator.free(state);
- 75 ⎥         }
- 76 ⎥         if (self.zip) |zip| {
- 77 ⎥             self.allocator.free(zip);
- 78 ⎥         }
- 79 ⎥         self.allocator.destroy(self);
- 80 ⎥     }
- 81 ⎥ 
- 82 ⎥     pub fn toRecord(self: *Contact) !*Store {
- 83 ⎥         return Store.init(
- 84 ⎥             self.allocator,
- 85 ⎥             0,
- 86 ⎥             self.name,
- 87 ⎥             self.address,
- 88 ⎥             self.city,
- 89 ⎥             self.state,
- 90 ⎥             self.zip,
- 91 ⎥         );
- 92 ⎥     }
- 93 ⎥ };
+  2 ⎥ const Store = @import("store").Contact;
+  3 ⎥ const List = @import("list.zig");
+  4 ⎥ const Counter = @import("counter").Counter;
+  5 ⎥ 
+  6 ⎥ /// Contact is a contact that the user added and submitted.
+  7 ⎥ pub const Contact = struct {
+  8 ⎥     allocator: std.mem.Allocator,
+  9 ⎥     count_pointers: *Counter,
+ 10 ⎥     name: ?[]const u8,
+ 11 ⎥     address: ?[]const u8,
+ 12 ⎥     city: ?[]const u8,
+ 13 ⎥     state: ?[]const u8,
+ 14 ⎥     zip: ?[]const u8,
+ 15 ⎥ 
+ 16 ⎥     pub fn init(allocator: std.mem.Allocator, name: ?[]const u8, address: ?[]const u8, city: ?[]const u8, state: ?[]const u8, zip: ?[]const u8) !*Contact {
+ 17 ⎥         var self: *Contact = try allocator.create(Contact);
+ 18 ⎥         self.allocator = allocator;
+ 19 ⎥         self.count_pointers = try Counter.init(allocator);
+ 20 ⎥         errdefer allocator.destroy(self);
+ 21 ⎥         _ = self.count_pointers.inc();
+ 22 ⎥         // Name.
+ 23 ⎥         if (name) |param_name| {
+ 24 ⎥             self.name = try allocator.alloc(u8, param_name.len);
+ 25 ⎥             errdefer self.deinit();
+ 26 ⎥             @memcpy(@constCast(self.name), param_name);
+ 27 ⎥         } else {
+ 28 ⎥             self.name = null;
+ 29 ⎥         }
+ 30 ⎥         // Address.
+ 31 ⎥         if (address) |param_address| {
+ 32 ⎥             self.address = try allocator.alloc(u8, param_address.len);
+ 33 ⎥             errdefer self.deinit();
+ 34 ⎥             @memcpy(@constCast(self.address), param_address);
+ 35 ⎥         } else {
+ 36 ⎥             self.address = null;
+ 37 ⎥         }
+ 38 ⎥ 
+ 39 ⎥         // City.
+ 40 ⎥         if (city) |param_city| {
+ 41 ⎥             self.city = try allocator.alloc(u8, param_city.len);
+ 42 ⎥             errdefer self.deinit();
+ 43 ⎥             @memcpy(@constCast(self.city), param_city);
+ 44 ⎥         } else {
+ 45 ⎥             self.city = null;
+ 46 ⎥         }
+ 47 ⎥ 
+ 48 ⎥         // State.
+ 49 ⎥         if (state) |param_state| {
+ 50 ⎥             self.state = try allocator.alloc(u8, param_state.len);
+ 51 ⎥             errdefer self.deinit();
+ 52 ⎥             @memcpy(@constCast(self.state), param_state);
+ 53 ⎥         } else {
+ 54 ⎥             self.state = null;
+ 55 ⎥         }
+ 56 ⎥ 
+ 57 ⎥         // Zip.
+ 58 ⎥         if (zip) |param_zip| {
+ 59 ⎥             self.zip = try allocator.alloc(u8, param_zip.len);
+ 60 ⎥             errdefer self.deinit();
+ 61 ⎥             @memcpy(@constCast(self.zip), param_zip);
+ 62 ⎥         } else {
+ 63 ⎥             self.zip = null;
+ 64 ⎥         }
+ 65 ⎥ 
+ 66 ⎥         return self;
+ 67 ⎥     }
+ 68 ⎥ 
+ 69 ⎥     pub fn deinit(self: *Contact) void {
+ 70 ⎥         if (self.count_pointers.dec() > 0) {
+ 71 ⎥             // There are more pointers.
+ 72 ⎥             // See fn copy.
+ 73 ⎥             return;
+ 74 ⎥         }
+ 75 ⎥         // This is the last existing pointer.
+ 76 ⎥         self.count_pointers.deinit();
+ 77 ⎥         if (self.name) |name| {
+ 78 ⎥             self.allocator.free(name);
+ 79 ⎥         }
+ 80 ⎥         if (self.address) |address| {
+ 81 ⎥             self.allocator.free(address);
+ 82 ⎥         }
+ 83 ⎥         if (self.city) |city| {
+ 84 ⎥             self.allocator.free(city);
+ 85 ⎥         }
+ 86 ⎥         if (self.state) |state| {
+ 87 ⎥             self.allocator.free(state);
+ 88 ⎥         }
+ 89 ⎥         if (self.zip) |zip| {
+ 90 ⎥             self.allocator.free(zip);
+ 91 ⎥         }
+ 92 ⎥         self.allocator.destroy(self);
+ 93 ⎥     }
  94 ⎥ 
+ 95 ⎥     /// KICKZIG TODO:
+ 96 ⎥     /// copy pretends to create and return a copy of the message.
+ 97 ⎥     /// Always pass a copy to a fn. The fn must deinit its copy.
+ 98 ⎥     ///
+ 99 ⎥     /// In this case copy does not return a copy of itself.
+100 ⎥     /// In order to save memory space, it really only
+101 ⎥     /// * increments the count of the number of pointers to this message.
+102 ⎥     /// * returns self.
+103 ⎥     /// See deinit().
+104 ⎥     pub fn copy(self: *Contact) !*Contact {
+105 ⎥         _ = self.count_pointers.inc();
+106 ⎥         return self;
+107 ⎥     }
+108 ⎥ };
+109 ⎥ 
 ```
 
 ### edit.zig
 
 ```zig
   1 ⎥ const std = @import("std");
-  2 ⎥ const Store = @import("store.zig").Contact;
-  3 ⎥ 
-  4 ⎥ /// Contact is a contact that the user edited and submitted.
-  5 ⎥ pub const Contact = struct {
-  6 ⎥     allocator: std.mem.Allocator,
-  7 ⎥     id: i64,
-  8 ⎥     name: []const u8,
-  9 ⎥     address: []const u8,
- 10 ⎥     city: []const u8,
- 11 ⎥     state: []const u8,
- 12 ⎥     zip: []const u8,
- 13 ⎥ 
- 14 ⎥     pub fn init(allocator: std.mem.Allocator, id: ?i64, name: ?[]const u8, address: ?[]const u8, city: ?[]const u8, state: ?[]const u8, zip: ?[]const u8) !*Contact {
- 15 ⎥         var self: *Contact = try allocator.create(Contact);
- 16 ⎥         self.allocator = allocator;
- 17 ⎥         // ID.
- 18 ⎥         if (id) |param_id| {
- 19 ⎥             self.id = param_id;
- 20 ⎥         } else {
- 21 ⎥             allocator.destroy(self);
- 22 ⎥             return error.ContactIsMissingID;
- 23 ⎥         }
- 24 ⎥         // Name.
- 25 ⎥         if (name) |param_name| {
- 26 ⎥             self.name = allocator.alloc(u8, param_name.len);
- 27 ⎥             errdefer self.deinit();
- 28 ⎥             @memcpy(self.name, param_name);
- 29 ⎥         } else {
- 30 ⎥             self.name = null;
- 31 ⎥         }
- 32 ⎥         // Address.
- 33 ⎥         if (address) |param_address| {
- 34 ⎥             self.address = allocator.alloc(u8, param_address.len);
- 35 ⎥             errdefer self.deinit();
- 36 ⎥             @memcpy(self.address, param_address);
- 37 ⎥         } else {
- 38 ⎥             self.address = null;
- 39 ⎥         }
- 40 ⎥ 
- 41 ⎥         // City.
- 42 ⎥         if (city) |param_city| {
- 43 ⎥             self.city = allocator.alloc(u8, param_city.len);
- 44 ⎥             errdefer self.deinit();
- 45 ⎥             @memcpy(self.city, param_city);
- 46 ⎥         } else {
- 47 ⎥             self.city = null;
- 48 ⎥         }
- 49 ⎥ 
- 50 ⎥         // State.
- 51 ⎥         if (state) |param_state| {
- 52 ⎥             self.state = allocator.alloc(u8, param_state.len);
- 53 ⎥             errdefer self.deinit();
- 54 ⎥             @memcpy(self.state, param_state);
- 55 ⎥         } else {
- 56 ⎥             self.state = null;
- 57 ⎥         }
- 58 ⎥ 
- 59 ⎥         // Zip.
- 60 ⎥         if (zip) |param_zip| {
- 61 ⎥             self.zip = allocator.alloc(u8, param_zip.len);
- 62 ⎥             errdefer self.deinit();
- 63 ⎥             @memcpy(self.zip, param_zip);
- 64 ⎥         } else {
- 65 ⎥             self.zip = null;
- 66 ⎥         }
- 67 ⎥ 
- 68 ⎥         return self;
- 69 ⎥     }
- 70 ⎥ 
- 71 ⎥     pub fn deinit(self: *Contact) void {
- 72 ⎥         if (self.name) |name| {
- 73 ⎥             self.allocator.free(name);
- 74 ⎥         }
- 75 ⎥         if (self.address) |address| {
- 76 ⎥             self.allocator.free(address);
- 77 ⎥         }
- 78 ⎥         if (self.city) |city| {
- 79 ⎥             self.allocator.free(city);
- 80 ⎥         }
- 81 ⎥         if (self.state) |state| {
- 82 ⎥             self.allocator.free(state);
- 83 ⎥         }
- 84 ⎥         if (self.zip) |zip| {
- 85 ⎥             self.allocator.free(zip);
+  2 ⎥ const Store = @import("store").Contact;
+  3 ⎥ const Counter = @import("counter").Counter;
+  4 ⎥ 
+  5 ⎥ /// Contact is a contact that the user edited and submitted.
+  6 ⎥ pub const Contact = struct {
+  7 ⎥     allocator: std.mem.Allocator,
+  8 ⎥     count_pointers: *Counter,
+  9 ⎥     id: i64,
+ 10 ⎥     name: ?[]const u8,
+ 11 ⎥     address: ?[]const u8,
+ 12 ⎥     city: ?[]const u8,
+ 13 ⎥     state: ?[]const u8,
+ 14 ⎥     zip: ?[]const u8,
+ 15 ⎥ 
+ 16 ⎥     pub fn init(allocator: std.mem.Allocator, id: ?i64, name: ?[]const u8, address: ?[]const u8, city: ?[]const u8, state: ?[]const u8, zip: ?[]const u8) !*Contact {
+ 17 ⎥         var self: *Contact = try allocator.create(Contact);
+ 18 ⎥         self.allocator = allocator;
+ 19 ⎥         self.count_pointers = try Counter.init(allocator);
+ 20 ⎥         errdefer allocator.destroy(self);
+ 21 ⎥         _ = self.count_pointers.inc();
+ 22 ⎥         // ID.
+ 23 ⎥         if (id) |param_id| {
+ 24 ⎥             self.id = param_id;
+ 25 ⎥         } else {
+ 26 ⎥             allocator.destroy(self);
+ 27 ⎥             return error.ContactIsMissingID;
+ 28 ⎥         }
+ 29 ⎥         // Name.
+ 30 ⎥         if (name) |param_name| {
+ 31 ⎥             self.name = allocator.alloc(u8, param_name.len);
+ 32 ⎥             errdefer self.deinit();
+ 33 ⎥             @memcpy(self.name, param_name);
+ 34 ⎥         } else {
+ 35 ⎥             self.name = null;
+ 36 ⎥         }
+ 37 ⎥         // Address.
+ 38 ⎥         if (address) |param_address| {
+ 39 ⎥             self.address = allocator.alloc(u8, param_address.len);
+ 40 ⎥             errdefer self.deinit();
+ 41 ⎥             @memcpy(self.address, param_address);
+ 42 ⎥         } else {
+ 43 ⎥             self.address = null;
+ 44 ⎥         }
+ 45 ⎥ 
+ 46 ⎥         // City.
+ 47 ⎥         if (city) |param_city| {
+ 48 ⎥             self.city = allocator.alloc(u8, param_city.len);
+ 49 ⎥             errdefer self.deinit();
+ 50 ⎥             @memcpy(self.city, param_city);
+ 51 ⎥         } else {
+ 52 ⎥             self.city = null;
+ 53 ⎥         }
+ 54 ⎥ 
+ 55 ⎥         // State.
+ 56 ⎥         if (state) |param_state| {
+ 57 ⎥             self.state = allocator.alloc(u8, param_state.len);
+ 58 ⎥             errdefer self.deinit();
+ 59 ⎥             @memcpy(self.state, param_state);
+ 60 ⎥         } else {
+ 61 ⎥             self.state = null;
+ 62 ⎥         }
+ 63 ⎥ 
+ 64 ⎥         // Zip.
+ 65 ⎥         if (zip) |param_zip| {
+ 66 ⎥             self.zip = allocator.alloc(u8, param_zip.len);
+ 67 ⎥             errdefer self.deinit();
+ 68 ⎥             @memcpy(self.zip, param_zip);
+ 69 ⎥         } else {
+ 70 ⎥             self.zip = null;
+ 71 ⎥         }
+ 72 ⎥ 
+ 73 ⎥         return self;
+ 74 ⎥     }
+ 75 ⎥ 
+ 76 ⎥     pub fn deinit(self: *Contact) void {
+ 77 ⎥         if (self.count_pointers.dec() > 0) {
+ 78 ⎥             // There are more pointers.
+ 79 ⎥             // See fn copy.
+ 80 ⎥             return;
+ 81 ⎥         }
+ 82 ⎥         // This is the last existing pointer.
+ 83 ⎥         self.count_pointers.deinit();
+ 84 ⎥         if (self.name) |name| {
+ 85 ⎥             self.allocator.free(name);
  86 ⎥         }
- 87 ⎥         self.allocator.destroy(self);
- 88 ⎥     }
- 89 ⎥ 
- 90 ⎥     pub fn toRecord(self: *Contact) !*Store {
- 91 ⎥         return Store.init(
- 92 ⎥             self.allocator,
- 93 ⎥             self.id,
- 94 ⎥             self.name,
- 95 ⎥             self.address,
- 96 ⎥             self.city,
- 97 ⎥             self.state,
- 98 ⎥             self.zip,
- 99 ⎥         );
+ 87 ⎥         if (self.address) |address| {
+ 88 ⎥             self.allocator.free(address);
+ 89 ⎥         }
+ 90 ⎥         if (self.city) |city| {
+ 91 ⎥             self.allocator.free(city);
+ 92 ⎥         }
+ 93 ⎥         if (self.state) |state| {
+ 94 ⎥             self.allocator.free(state);
+ 95 ⎥         }
+ 96 ⎥         if (self.zip) |zip| {
+ 97 ⎥             self.allocator.free(zip);
+ 98 ⎥         }
+ 99 ⎥         self.allocator.destroy(self);
 100 ⎥     }
-101 ⎥ };
-102 ⎥ 
+101 ⎥ 
+102 ⎥     /// KICKZIG TODO:
+103 ⎥     /// copy pretends to create and return a copy of the message.
+104 ⎥     /// Always pass a copy to a fn. The fn must deinit its copy.
+105 ⎥     ///
+106 ⎥     /// In this case copy does not return a copy of itself.
+107 ⎥     /// In order to save memory space, it really only
+108 ⎥     /// * increments the count of the number of pointers to this message.
+109 ⎥     /// * returns self.
+110 ⎥     /// See deinit().
+111 ⎥     pub fn copy(self: *Contact) !*Contact {
+112 ⎥         _ = self.count_pointers.inc();
+113 ⎥         return self;
+114 ⎥     }
+115 ⎥ };
+116 ⎥ 
 ```
 
 ### list.zig
@@ -254,191 +283,266 @@ The List Contact record can be converted to an Edit record and a Remove record. 
   1 ⎥ const std = @import("std");
   2 ⎥ const Edit = @import("edit.zig").Contact;
   3 ⎥ const Remove = @import("remove.zig").Contact;
-  4 ⎥ 
-  5 ⎥ /// Contact is a record that is displayed for selection.
-  6 ⎥ pub const Contact = struct {
-  7 ⎥     allocator: std.mem.Allocator,
-  8 ⎥     id: i64,
-  9 ⎥     name: ?[]const u8,
- 10 ⎥     address: ?[]const u8,
- 11 ⎥     city: ?[]const u8,
- 12 ⎥     state: ?[]const u8,
- 13 ⎥     zip: ?[]const u8,
- 14 ⎥ 
- 15 ⎥     pub fn init(allocator: std.mem.Allocator, id: ?i64, name: ?[]const u8, address: ?[]const u8, city: ?[]const u8, state: ?[]const u8, zip: ?[]const u8) !*Contact {
- 16 ⎥         var self: *Contact = try allocator.create(Contact);
- 17 ⎥         self.allocator = allocator;
- 18 ⎥         // ID.
- 19 ⎥         if (id) |param_id| {
- 20 ⎥             self.id = param_id;
- 21 ⎥         } else {
- 22 ⎥             allocator.destroy(self);
- 23 ⎥             return error.ContactIsMissingID;
- 24 ⎥         }
- 25 ⎥         // Name.
- 26 ⎥         if (name) |param_name| {
- 27 ⎥             self.name = allocator.alloc(u8, param_name.len);
- 28 ⎥             errdefer self.deinit();
- 29 ⎥             @memcpy(self.name, param_name);
- 30 ⎥         } else {
- 31 ⎥             self.name = null;
- 32 ⎥         }
- 33 ⎥         // Address.
- 34 ⎥         if (address) |param_address| {
- 35 ⎥             self.address = allocator.alloc(u8, param_address.len);
- 36 ⎥             errdefer self.deinit();
- 37 ⎥             @memcpy(self.address, param_address);
- 38 ⎥         } else {
- 39 ⎥             self.address = null;
- 40 ⎥         }
- 41 ⎥         // City.
- 42 ⎥         if (city) |param_city| {
- 43 ⎥             self.city = allocator.alloc(u8, param_city.len);
- 44 ⎥             errdefer self.deinit();
- 45 ⎥             @memcpy(self.city, param_city);
- 46 ⎥         } else {
- 47 ⎥             self.city = null;
- 48 ⎥         }
- 49 ⎥         // State.
- 50 ⎥         if (state) |param_state| {
- 51 ⎥             self.state = allocator.alloc(u8, param_state.len);
- 52 ⎥             errdefer self.deinit();
- 53 ⎥             @memcpy(self.state, param_state);
- 54 ⎥         } else {
- 55 ⎥             self.state = null;
- 56 ⎥         }
- 57 ⎥         // Zip.
- 58 ⎥         if (zip) |param_zip| {
- 59 ⎥             self.zip = allocator.alloc(u8, param_zip.len);
- 60 ⎥             errdefer self.deinit();
- 61 ⎥             @memcpy(self.zip, param_zip);
- 62 ⎥         } else {
- 63 ⎥             self.zip = null;
- 64 ⎥         }
- 65 ⎥ 
- 66 ⎥         return self;
- 67 ⎥     }
- 68 ⎥ 
- 69 ⎥     pub fn deinit(self: *Contact) void {
- 70 ⎥         if (self.name) |name| {
- 71 ⎥             self.allocator.free(name);
- 72 ⎥         }
- 73 ⎥         if (self.address) |address| {
- 74 ⎥             self.allocator.free(address);
- 75 ⎥         }
- 76 ⎥         if (self.city) |city| {
- 77 ⎥             self.allocator.free(city);
- 78 ⎥         }
- 79 ⎥         if (self.state) |state| {
- 80 ⎥             self.allocator.free(state);
- 81 ⎥         }
- 82 ⎥         if (self.zip) |zip| {
- 83 ⎥             self.allocator.free(zip);
+  4 ⎥ const Counter = @import("counter").Counter;
+  5 ⎥ 
+  6 ⎥ /// Contact is a record that is displayed for selection.
+  7 ⎥ pub const Contact = struct {
+  8 ⎥     allocator: std.mem.Allocator,
+  9 ⎥     count_pointers: *Counter,
+ 10 ⎥     id: i64,
+ 11 ⎥     name: ?[]const u8,
+ 12 ⎥     address: ?[]const u8,
+ 13 ⎥     city: ?[]const u8,
+ 14 ⎥     state: ?[]const u8,
+ 15 ⎥     zip: ?[]const u8,
+ 16 ⎥ 
+ 17 ⎥     pub fn init(allocator: std.mem.Allocator, id: ?i64, name: ?[]const u8, address: ?[]const u8, city: ?[]const u8, state: ?[]const u8, zip: ?[]const u8) !*Contact {
+ 18 ⎥         var self: *Contact = try allocator.create(Contact);
+ 19 ⎥         self.allocator = allocator;
+ 20 ⎥         self.count_pointers = try Counter.init(allocator);
+ 21 ⎥         errdefer allocator.destroy(self);
+ 22 ⎥         _ = self.count_pointers.inc();
+ 23 ⎥         // ID.
+ 24 ⎥         if (id) |param_id| {
+ 25 ⎥             self.id = param_id;
+ 26 ⎥         } else {
+ 27 ⎥             allocator.destroy(self);
+ 28 ⎥             return error.ContactIsMissingID;
+ 29 ⎥         }
+ 30 ⎥         // Name.
+ 31 ⎥         if (name) |param_name| {
+ 32 ⎥             self.name = try allocator.alloc(u8, param_name.len);
+ 33 ⎥             errdefer self.deinit();
+ 34 ⎥             @memcpy(@constCast(self.name), param_name);
+ 35 ⎥         } else {
+ 36 ⎥             self.name = null;
+ 37 ⎥         }
+ 38 ⎥         // Address.
+ 39 ⎥         if (address) |param_address| {
+ 40 ⎥             self.address = try allocator.alloc(u8, param_address.len);
+ 41 ⎥             errdefer self.deinit();
+ 42 ⎥             @memcpy(@constCast(self.address), param_address);
+ 43 ⎥         } else {
+ 44 ⎥             self.address = null;
+ 45 ⎥         }
+ 46 ⎥         // City.
+ 47 ⎥         if (city) |param_city| {
+ 48 ⎥             self.city = try allocator.alloc(u8, param_city.len);
+ 49 ⎥             errdefer self.deinit();
+ 50 ⎥             @memcpy(@constCast(self.city), param_city);
+ 51 ⎥         } else {
+ 52 ⎥             self.city = null;
+ 53 ⎥         }
+ 54 ⎥         // State.
+ 55 ⎥         if (state) |param_state| {
+ 56 ⎥             self.state = try allocator.alloc(u8, param_state.len);
+ 57 ⎥             errdefer self.deinit();
+ 58 ⎥             @memcpy(@constCast(self.state), param_state);
+ 59 ⎥         } else {
+ 60 ⎥             self.state = null;
+ 61 ⎥         }
+ 62 ⎥         // Zip.
+ 63 ⎥         if (zip) |param_zip| {
+ 64 ⎥             self.zip = try allocator.alloc(u8, param_zip.len);
+ 65 ⎥             errdefer self.deinit();
+ 66 ⎥             @memcpy(@constCast(self.zip), param_zip);
+ 67 ⎥         } else {
+ 68 ⎥             self.zip = null;
+ 69 ⎥         }
+ 70 ⎥ 
+ 71 ⎥         return self;
+ 72 ⎥     }
+ 73 ⎥ 
+ 74 ⎥     pub fn deinit(self: *const Contact) void {
+ 75 ⎥         if (self.count_pointers.dec() > 0) {
+ 76 ⎥             // There are more pointers.
+ 77 ⎥             // See fn copy.
+ 78 ⎥             return;
+ 79 ⎥         }
+ 80 ⎥         // This is the last existing pointer.
+ 81 ⎥         self.count_pointers.deinit();
+ 82 ⎥         if (self.name) |name| {
+ 83 ⎥             self.allocator.free(name);
  84 ⎥         }
- 85 ⎥         self.allocator.destroy(self);
- 86 ⎥     }
- 87 ⎥ 
- 88 ⎥     pub fn toEdit(self: *Contact) !*Edit {
- 89 ⎥         return Edit.init(
- 90 ⎥             self.allocator,
- 91 ⎥             self.id,
- 92 ⎥             self.name,
- 93 ⎥             self.address,
- 94 ⎥             self.city,
- 95 ⎥             self.state,
- 96 ⎥             self.zip,
- 97 ⎥         );
+ 85 ⎥         if (self.address) |address| {
+ 86 ⎥             self.allocator.free(address);
+ 87 ⎥         }
+ 88 ⎥         if (self.city) |city| {
+ 89 ⎥             self.allocator.free(city);
+ 90 ⎥         }
+ 91 ⎥         if (self.state) |state| {
+ 92 ⎥             self.allocator.free(state);
+ 93 ⎥         }
+ 94 ⎥         if (self.zip) |zip| {
+ 95 ⎥             self.allocator.free(zip);
+ 96 ⎥         }
+ 97 ⎥         self.allocator.destroy(self);
  98 ⎥     }
  99 ⎥ 
-100 ⎥     pub fn toRemove(self: *Contact) !*Remove {
-101 ⎥         return Remove.init(self.allocator, self.id);
-102 ⎥     }
-103 ⎥ };
-104 ⎥ 
-105 ⎥ const Slice = struct {
-106 ⎥     allocator: std.mem.Allocator,
-107 ⎥     slice: []*Contact,
-108 ⎥     index: usize,
-109 ⎥     slice_was_given_away: bool,
-110 ⎥ 
-111 ⎥     pub fn init(allocator: std.mem.Allocator) !*Slice {
-112 ⎥         var self: *Slice = try allocator.create(Slice);
-113 ⎥         self.slice = try allocator.alloc(*Contact, 10);
-114 ⎥         errdefer {
-115 ⎥             allocator.destroy(self);
-116 ⎥         }
-117 ⎥         self.index = 0;
-118 ⎥         self.slice_was_given_away = false;
-119 ⎥         return self;
-120 ⎥     }
-121 ⎥ 
-122 ⎥     pub fn deinit(self: *Slice) void {
-123 ⎥         if (self.index > 0) {
-124 ⎥             if (!self.slice_was_given_away) {
-125 ⎥                 // The slice has not been given away so destroy each item.
-126 ⎥                 var deinit_contacts: []*Contact = self.slice[0..self.index];
-127 ⎥                 for (deinit_contacts) |deinit_contact| {
-128 ⎥                     self.allocator.free(deinit_contact);
-129 ⎥                 }
-130 ⎥                 // Free the slice.
-131 ⎥                 self.allocator.free(self.slice);
-132 ⎥             }
-133 ⎥         }
-134 ⎥         self.allocator.destroy(self);
-135 ⎥     }
-136 ⎥ 
-137 ⎥     // The caller owns the slice.
-138 ⎥     pub fn slice(self: *Slice) ![]*Contact {
-139 ⎥         if (self.slice_was_given_away) {
-140 ⎥             return error.SliceAlreadyGivenAway;
-141 ⎥         }
-142 ⎥         // Give the slice away.
-143 ⎥         self.slice_was_given_away = true;
-144 ⎥         return self.slice;
-145 ⎥     }
-146 ⎥ 
-147 ⎥     // append copies contact.
-148 ⎥     pub fn append(self: *Slice, contact: *Contact) !void {
-149 ⎥         if (self.slice_was_given_away) {
-150 ⎥             return error.SliceAlreadyGivenAway;
-151 ⎥         }
-152 ⎥         // Copy the contact record.
-153 ⎥         var contact_copy: *Contact = Contact.init(
-154 ⎥             contact.id,
-155 ⎥             contact.name,
-156 ⎥             contact.address,
-157 ⎥             contact.city,
-158 ⎥             contact.state,
-159 ⎥             contact.zip,
-160 ⎥         );
-161 ⎥         if (self.index == self.slice.len) {
-162 ⎥             // Make a new bigger slice.
-163 ⎥             const temp_contacts: []*Contact = self.slice;
-164 ⎥             self.slice = try self.allocator.alloc(*Contact, (self.slice.len + 5));
-165 ⎥             errdefer {
-166 ⎥                 contact_copy.deint();
-167 ⎥             }
-168 ⎥             for (temp_contacts, 0..) |temp_contact, i| {
-169 ⎥                 self.slice[i] = temp_contact;
-170 ⎥             }
-171 ⎥             self.allocator.free(temp_contacts);
-172 ⎥         }
-173 ⎥         self.slice[self.index] = contact_copy;
-174 ⎥         self.index += 1;
-175 ⎥     }
-176 ⎥ };
-177 ⎥ 
+100 ⎥     /// KICKZIG TODO:
+101 ⎥     /// copy pretends to create and return a copy of the message.
+102 ⎥     /// Always pass a copy to a fn. The fn must deinit its copy.
+103 ⎥     ///
+104 ⎥     /// In this case copy does not return a copy of itself.
+105 ⎥     /// In order to save memory space, it really only
+106 ⎥     /// * increments the count of the number of pointers to this message.
+107 ⎥     /// * returns self.
+108 ⎥     /// See deinit().
+109 ⎥     pub fn copy(self: *Contact) !*Contact {
+110 ⎥         _ = self.count_pointers.inc();
+111 ⎥         return self;
+112 ⎥     }
+113 ⎥ 
+114 ⎥     /// The front-end will use this for a EditContact message.
+115 ⎥     pub fn toEdit(self: *Contact) !*Edit {
+116 ⎥         return Edit.init(
+117 ⎥             self.allocator,
+118 ⎥             self.id,
+119 ⎥             self.name,
+120 ⎥             self.address,
+121 ⎥             self.city,
+122 ⎥             self.state,
+123 ⎥             self.zip,
+124 ⎥         );
+125 ⎥     }
+126 ⎥ 
+127 ⎥     /// The front-end will use this for a RemoveContact message.
+128 ⎥     pub fn toRemove(self: *Contact) !*Remove {
+129 ⎥         return Remove.init(self.allocator, self.id);
+130 ⎥     }
+131 ⎥ };
+132 ⎥ 
+133 ⎥ pub const Slice = struct {
+134 ⎥     allocator: std.mem.Allocator,
+135 ⎥     slice: []*const Contact,
+136 ⎥     index: usize,
+137 ⎥     slice_was_given_away: bool,
+138 ⎥ 
+139 ⎥     pub fn init(allocator: std.mem.Allocator) !*Slice {
+140 ⎥         var self: *Slice = try allocator.create(Slice);
+141 ⎥         self.slice = try allocator.alloc(*Contact, 10);
+142 ⎥         errdefer {
+143 ⎥             allocator.destroy(self);
+144 ⎥         }
+145 ⎥         self.index = 0;
+146 ⎥         self.slice_was_given_away = false;
+147 ⎥         return self;
+148 ⎥     }
+149 ⎥ 
+150 ⎥     pub fn deinit(self: *Slice) void {
+151 ⎥         if (self.index > 0 and !self.slice_was_given_away) {
+152 ⎥             // The slice has not been given away so destroy each item.
+153 ⎥             var deinit_contacts: []const *const Contact = self.slice[0..self.index];
+154 ⎥             for (deinit_contacts) |deinit_contact| {
+155 ⎥                 deinit_contact.deinit();
+156 ⎥             }
+157 ⎥         }
+158 ⎥         // Free the slice.
+159 ⎥         self.allocator.free(self.slice);
+160 ⎥         self.allocator.destroy(self);
+161 ⎥     }
+162 ⎥ 
+163 ⎥     // The caller owns the slice.
+164 ⎥     pub fn sliced(self: *Slice) !?[]const *const Contact {
+165 ⎥         if (self.index == 0) {
+166 ⎥             return null;
+167 ⎥         }
+168 ⎥         if (self.slice_was_given_away) {
+169 ⎥             return error.ContactListSliceAlreadyGivenAway;
+170 ⎥         }
+171 ⎥         self.slice_was_given_away = true;
+172 ⎥         var contacts_copy: []*const Contact = try self.allocator.alloc(*const Contact, self.index);
+173 ⎥         for (self.slice, 0..self.index) |contact, i| {
+174 ⎥             // if (i == self.index) {
+175 ⎥             //     break;
+176 ⎥             // }
+177 ⎥             contacts_copy[i] = contact;
+178 ⎥         }
+179 ⎥         return contacts_copy;
+180 ⎥     }
+181 ⎥ 
+182 ⎥     // append copies contact.
+183 ⎥     pub fn append(self: *Slice, contact: *const Contact) !void {
+184 ⎥         if (self.slice_was_given_away) {
+185 ⎥             return error.SliceAlreadyGivenAway;
+186 ⎥         }
+187 ⎥         // Copy the contact record.
+188 ⎥         var contact_copy: *Contact = try Contact.init(
+189 ⎥             contact.allocator,
+190 ⎥             contact.id,
+191 ⎥             contact.name,
+192 ⎥             contact.address,
+193 ⎥             contact.city,
+194 ⎥             contact.state,
+195 ⎥             contact.zip,
+196 ⎥         );
+197 ⎥         if (self.index == self.slice.len) {
+198 ⎥             // Make a new bigger slice.
+199 ⎥             const temp_contacts: []*const Contact = self.slice;
+200 ⎥             self.slice = try self.allocator.alloc(*const Contact, (self.slice.len + 5));
+201 ⎥             errdefer {
+202 ⎥                 contact_copy.deint();
+203 ⎥             }
+204 ⎥             for (temp_contacts, 0..) |temp_contact, i| {
+205 ⎥                 self.slice[i] = temp_contact;
+206 ⎥             }
+207 ⎥             self.allocator.free(temp_contacts);
+208 ⎥         }
+209 ⎥         self.slice[self.index] = contact_copy;
+210 ⎥         self.index += 1;
+211 ⎥     }
+212 ⎥ };
+213 ⎥ 
 ```
 
 ### remove.zig
 
 ```zig
- 1 ⎥ pub const Add = @import("add.zig").Contact;
- 2 ⎥ pub const Edit = @import("edit.zig").Contact;
- 3 ⎥ pub const List = @import("list.zig").Contact;
- 4 ⎥ pub const Remove = @import("remove.zig").Contact;
- 5 ⎥ pub const Slice = @import("list.zig").Slice;
- 6 ⎥ 
+  1 ⎥ const std = @import("std");
+  2 ⎥ const Counter = @import("counter").Counter;
+  3 ⎥ 
+  4 ⎥ /// Contact is a contact that the user wants to remove.
+  5 ⎥ pub const Contact = struct {
+  6 ⎥     allocator: std.mem.Allocator,
+  7 ⎥     count_pointers: *Counter,
+  8 ⎥     id: i64,
+  9 ⎥ 
+ 10 ⎥     pub fn init(allocator: std.mem.Allocator, id: i64) !Contact {
+ 11 ⎥         var self: *Contact = try allocator.create(Contact);
+ 12 ⎥         self.allocator = allocator;
+ 13 ⎥         self.count_pointers = try Counter.init(allocator);
+ 14 ⎥         errdefer allocator.destroy(self);
+ 15 ⎥         _ = self.count_pointers.inc();
+ 16 ⎥         self.id = id;
+ 17 ⎥         return;
+ 18 ⎥     }
+ 19 ⎥ 
+ 20 ⎥     pub fn deinit(self: *Contact) void {
+ 21 ⎥         if (self.count_pointers.dec() > 0) {
+ 22 ⎥             // There are more pointers.
+ 23 ⎥             // See fn copy.
+ 24 ⎥             return;
+ 25 ⎥         }
+ 26 ⎥         // This is the last existing pointer.
+ 27 ⎥         self.count_pointers.deinit();
+ 28 ⎥         self.allocator.destroy(self);
+ 29 ⎥     }
+ 30 ⎥ 
+ 31 ⎥     /// KICKZIG TODO:
+ 32 ⎥     /// copy pretends to create and return a copy of the message.
+ 33 ⎥     /// Always pass a copy to a fn. The fn must deinit its copy.
+ 34 ⎥     ///
+ 35 ⎥     /// In this case copy does not return a copy of itself.
+ 36 ⎥     /// In order to save memory space, it really only
+ 37 ⎥     /// * increments the count of the number of pointers to this message.
+ 38 ⎥     /// * returns self.
+ 39 ⎥     /// See deinit().
+ 40 ⎥     pub fn copy(self: *Contact) !*Contact {
+ 41 ⎥         _ = self.count_pointers.inc();
+ 42 ⎥         return self;
+ 43 ⎥     }
+ 44 ⎥ };
+ 45 ⎥ 
 ```
 
 ## Next
