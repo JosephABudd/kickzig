@@ -42,8 +42,6 @@ pub const content =
     \\    /// Returns nothing or an error.
     \\    /// KICKZIG TODO: Add the required functionality.
     \\    fn do(self: *Messenger, message: *_message_.CloseDownJobs.Message) !void {
-    \\        defer message.deinit();
-    \\
     \\        if (message.frontend_payload.jobs) |jobs| {
     \\            // Pass the jobs to do.
     \\            const last = jobs.len - 1;
