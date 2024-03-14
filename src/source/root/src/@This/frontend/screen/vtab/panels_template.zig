@@ -68,41 +68,50 @@ pub const Template = struct {
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
+
             {
                 line = try fmt.allocPrint(self.allocator, "            {0s}.deinit();\n", .{name});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
+
             try lines.appendSlice("        }\n");
         }
 
-        try lines.appendSlice(line4);
+        if (self.panel_names_index > 0) {
+            try lines.appendSlice(line4_names);
+        } else {
+            try lines.appendSlice(line4_no_names);
+        }
         for (names) |name| {
-            {
-                line = try fmt.allocPrint(self.allocator, "            .{0s} => self.{0s}.?.frame(allocator),\n", .{name});
-                defer self.allocator.free(line);
-                try lines.appendSlice(line);
-            }
+            line = try fmt.allocPrint(self.allocator, "            .{0s} => self.{0s}.?.frame(allocator),\n", .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
         if (names.len > 0) {
             line = try fmt.allocPrint(self.allocator, "            .none => self.{0s}.?.frame(allocator),\n", .{names[0]});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-
-        try lines.appendSlice(line5);
+        if (self.panel_names_index > 0) {
+            try lines.appendSlice(line5_names);
+        } else {
+            try lines.appendSlice(line5_no_names);
+        }
         for (names) |name| {
-            try lines.appendSlice("\n");
             {
+                try lines.appendSlice("\n");
                 line = try fmt.allocPrint(self.allocator, "    pub fn setCurrentTo{0s}(self: *Panels) void {{\n", .{name});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
+
             {
                 line = try fmt.allocPrint(self.allocator, "        self.current_panel_tag = PanelTags.{0s};\n", .{name});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             }
+
             try lines.appendSlice("    }\n");
         }
 
@@ -110,20 +119,22 @@ pub const Template = struct {
         if (names.len > 0) {
             for (names) |name| {
                 try lines.appendSlice("\n");
+
                 {
-                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, messenger, window);\n", .{name});
+                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, main_view, panels, messenger, exit, window);\n", .{name});
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }
+
                 try lines.appendSlice("    errdefer {\n");
                 try lines.appendSlice("        panels.deinit();\n");
                 try lines.appendSlice("    }\n");
             }
         } else {
-            try lines.appendSlice("    _ = all_screens;\n");
+            try lines.appendSlice("    _ = main_view;\n");
             try lines.appendSlice("    _ = messenger;\n");
-            try lines.appendSlice("    _ = window;\n");
             try lines.appendSlice("    _ = exit;\n");
+            try lines.appendSlice("    _ = window;\n");
         }
 
         try lines.appendSlice(line7);
@@ -149,8 +160,11 @@ pub fn init(allocator: std.mem.Allocator) !*Template {
 const line1a =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
+    \\
     \\const _framers_ = @import("framers");
     \\const _messenger_ = @import("messenger.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
     \\
 ;
 // \\const _Home_ = @import("home_panel.zig");
@@ -189,19 +203,33 @@ const line3 =
 // \\            other.deinit();
 // \\        }
 
-const line4 =
+const line4_no_names =
     \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    pub fn frameCurrent(self: *Panels, allocator: std.mem.Allocator) !void {
     \\        _ = allocator;
+    \\
+;
+
+const line4_names =
+    \\        self.allocator.destroy(self);
+    \\    }
+    \\
+    \\    pub fn frameCurrent(self: *Panels, allocator: std.mem.Allocator) !void {
     \\        var result = switch (self.current_panel_tag) {
     \\
 ;
 // \\            .home => self.home.?.frame(allocator),
 // \\            .other => self.other.?.frame(allocator),
 
-const line5 =
+const line5_no_names =
+    \\        };
+    \\    }
+    \\
+;
+
+const line5_names =
     \\        };
     \\        return result;
     \\    }
@@ -218,17 +246,17 @@ const line5 =
 const line6 =
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panels {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panels {
     \\    var panels: *Panels = try allocator.create(Panels);
     \\    panels.allocator = allocator;
     \\
 ;
 // \\
-// \\    panels.home = try home_panel.init(allocator, all_screens, panels, messenger);
+// \\    panels.home = try home_panel.init(allocator, main_view, panels, messenger, exit, window);
 // \\    errdefer {
 // \\        panels.deinit();
 // \\    }
-// \\    panels.other = try other_panel.init(allocator, all_screens, panels, messenger);
+// \\    panels.other = try other_panel.init(allocator, main_view, panels, messenger, exit, window);
 // \\    errdefer {
 // \\        panels.deinit();
 // \\    }

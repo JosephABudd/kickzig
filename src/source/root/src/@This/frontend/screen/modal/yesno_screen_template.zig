@@ -2,98 +2,53 @@ pub const content =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\const _channel_ = @import("channel");
-    \\const _framers_ = @import("framers");
     \\const _panels_ = @import("panels.zig");
     \\const _startup_ = @import("startup");
+    \\const MainView = @import("framers").MainView;
     \\const ModalParams = @import("modal_params").YesNo;
     \\
     \\pub const Screen = struct {
     \\    allocator: std.mem.Allocator,
-    \\    all_screens: *_framers_.Group,
+    \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
-    \\    name: []const u8,
+    \\
+    \\    /// init constructs this screen, subscribes it to main_view and returns the error.
+    \\    pub fn init(startup: _startup_.Frontend) !*Screen {
+    \\        var self: *Screen = try startup.allocator.create(Screen);
+    \\        self.allocator = startup.allocator;
+    \\        self.main_view = startup.main_view;
+    \\        self.receive_channels = startup.receive_channels;
+    \\        self.send_channels = startup.send_channels;
+    \\
+    \\        // All of the panels.
+    \\        self.all_panels = try _panels_.init(startup.allocator, startup.main_view, startup.exit, startup.window);
+    \\        errdefer {
+    \\            self.deinit();
+    \\        }
+    \\        // The YesNo panel is the default.
+    \\        self.all_panels.setCurrentToYesNo();
+    \\        return self;
+    \\    }
     \\
     \\    pub fn deinit(self: *Screen) void {
     \\        self.all_panels.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    // The caller owns the returned value.
-    \\    // If the len of returned value is 0 then do not free.
-    \\    // 0 len == error.
-    \\    fn nameFn(implementor: *anyopaque) []const u8 {
-    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
-    \\        var name: []const u8 = self.allocator.alloc(u8, self.name.len) catch {
-    \\            return "";
-    \\        };
-    \\        @memcpy(@constCast(name), self.name);
-    \\        return name;
+    \\    /// The caller does not own the returned value.
+    \\    pub fn label(_: *Screen) []const u8 {
+    \\        return "YesNo";
     \\    }
     \\
-    \\    /// deinitFn is an implementation of _framers_.Behavior.
-    \\    fn deinitFn(implementor: *anyopaque) void {
-    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
-    \\        self.all_panels.deinit();
-    \\        self.allocator.destroy(self);
-    \\    }
-    \\
-    \\    /// frameFn is an implementation of _framers_.Behavior.
-    \\    fn frameFn(implementor: *anyopaque, arena: std.mem.Allocator) ?anyerror {
-    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
+    \\    pub fn frame(self: *Screen, arena: std.mem.Allocator) !void {
     \\        try self.all_panels.frameCurrent(arena);
-    \\        return null;
     \\    }
     \\
-    \\    /// goModalFn is an implementation of _framers_.Behavior.
-    \\    fn goModalFn(implementor: *anyopaque, args_ptr: *anyopaque) ?anyerror {
-    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
-    \\        var name = nameFn(implementor);
-    \\        defer self.allocator.free(name);
-    \\
-    \\        var setup_args: *ModalParams = @alignCast(@ptrCast(args_ptr));
+    \\    /// setState sets the state for this modal screen.
+    \\    pub fn setState(self: *Screen, setup_args: *ModalParams) !void {
     \\        try self.all_panels.YesNo.?.presetModal(setup_args);
-    \\        try self.all_screens.setCurrent(name);
-    \\        return null;
     \\    }
     \\};
-    \\
-    \\/// init constructs this screen, subscribes it to all_screens and returns the error.
-    \\pub fn init(startup: _startup_.Frontend) !void {
-    \\    var screen: *Screen = try startup.allocator.create(Screen);
-    \\    screen.allocator = startup.allocator;
-    \\    screen.all_screens = startup.all_screens;
-    \\    screen.receive_channels = startup.receive_channels;
-    \\    screen.send_channels = startup.send_channels;
-    \\    screen.name = "YesNo";
-    \\
-    \\    // All of the panels.
-    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, startup.exit, startup.window);
-    \\    errdefer {
-    \\        screen.deinit();
-    \\    }
-    \\    // The YesNo panel is the default.
-    \\    screen.all_panels.setCurrentToYesNo();
-    \\
-    \\    // Subscribe to all screens.
-    \\    var behavior: *_framers_.Behavior = try startup.all_screens.initBehavior(
-    \\        screen,
-    \\        Screen.deinitFn,
-    \\        Screen.nameFn,
-    \\        Screen.frameFn,
-    \\        Screen.goModalFn,
-    \\    );
-    \\    errdefer {
-    \\        screen.all_panels.deinit();
-    \\        screen.deinit();
-    \\    }
-    \\    try startup.all_screens.subscribe(behavior);
-    \\    errdefer {
-    \\        behavior.deinit();
-    \\        screen.all_panels.deinit();
-    \\        screen.deinit();
-    \\    }
-    \\    // screen is now controlled by startup.all_screens.
-    \\}
 ;

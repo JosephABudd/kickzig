@@ -45,6 +45,7 @@ pub const FolderPaths = struct {
     root_src_this_deps_modal_params: ?[]const u8,
     root_src_this_deps_widget: ?[]const u8,
     root_src_this_deps_startup: ?[]const u8,
+    root_src_this_deps_various: ?[]const u8,
 
     pub fn deinit(self: *FolderPaths) void {
         const allocator: std.mem.Allocator = self.allocator;
@@ -130,6 +131,9 @@ pub const FolderPaths = struct {
             allocator.free(member);
         }
         if (self.root_src_this_deps_startup) |member| {
+            allocator.free(member);
+        }
+        if (self.root_src_this_deps_various) |member| {
             allocator.free(member);
         }
         allocator.destroy(self);
@@ -273,6 +277,10 @@ pub const FolderPaths = struct {
         self.allocator.free(temp);
         // deps/startup/
         temp = try deps.pathStartupFolder(self.allocator);
+        try this_dir.makePath(temp);
+        self.allocator.free(temp);
+        // deps/various/
+        temp = try deps.pathVariousFolder(self.allocator);
         try this_dir.makePath(temp);
         self.allocator.free(temp);
     }
@@ -624,6 +632,19 @@ pub fn folders() !*FolderPaths {
     }
     params2[1] = temp;
     folder_paths.root_src_this_deps_widget = try fspath.join(gpa, params2);
+    errdefer {
+        gpa.free(temp);
+        folder_paths.deinit();
+    }
+    gpa.free(temp);
+
+    // /src/@This/deps/various/ path.
+    temp = try deps.pathVariousFolder(gpa);
+    errdefer {
+        folder_paths.deinit();
+    }
+    params2[1] = temp;
+    folder_paths.root_src_this_deps_various = try fspath.join(gpa, params2);
     errdefer {
         gpa.free(temp);
         folder_paths.deinit();

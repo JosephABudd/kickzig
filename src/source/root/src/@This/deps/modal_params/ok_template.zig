@@ -1,7 +1,8 @@
 pub const content =
     \\const std = @import("std");
     \\
-    \\/// Params is the parameters for the OK modal screen's goModalFn.
+    \\/// Params is the parameters for the OK modal screen's state.
+    \\/// See src/@This/frontend/screen/modal/OK/screen.zig setState.
     \\/// Your arguments are the values assigned to each Params member.
     \\pub const Params = struct {
     \\    allocator: std.mem.Allocator,
@@ -34,5 +35,4 @@ pub const content =
     \\        self.allocator.destroy(self);
     \\    }
     \\};
-    \\
 ;

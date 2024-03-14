@@ -78,11 +78,7 @@ pub const Template = struct {
             try lines.appendSlice("        }\n");
         }
 
-        if (self.panel_names_index > 0) {
-            try lines.appendSlice(line4_names);
-        } else {
-            try lines.appendSlice(line4_no_names);
-        }
+        try lines.appendSlice(line4);
         for (names) |name| {
             line = try fmt.allocPrint(self.allocator, "            .{0s} => self.{0s}.?.frame(allocator),\n", .{name});
             defer self.allocator.free(line);
@@ -93,11 +89,8 @@ pub const Template = struct {
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-        if (self.panel_names_index > 0) {
-            try lines.appendSlice(line5_names);
-        } else {
-            try lines.appendSlice(line5_no_names);
-        }
+
+        try lines.appendSlice(line5);
         for (names) |name| {
             {
                 try lines.appendSlice("\n");
@@ -203,33 +196,19 @@ const line3 =
 // \\            other.deinit();
 // \\        }
 
-const line4_no_names =
+const line4 =
     \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    pub fn frameCurrent(self: *Panels, allocator: std.mem.Allocator) !void {
     \\        _ = allocator;
-    \\
-;
-
-const line4_names =
-    \\        self.allocator.destroy(self);
-    \\    }
-    \\
-    \\    pub fn frameCurrent(self: *Panels, allocator: std.mem.Allocator) !void {
     \\        var result = switch (self.current_panel_tag) {
     \\
 ;
 // \\            .home => self.home.?.frame(allocator),
 // \\            .other => self.other.?.frame(allocator),
 
-const line5_no_names =
-    \\        };
-    \\    }
-    \\
-;
-
-const line5_names =
+const line5 =
     \\        };
     \\        return result;
     \\    }

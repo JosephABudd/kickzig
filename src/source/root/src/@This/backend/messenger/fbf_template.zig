@@ -43,12 +43,14 @@ const template =
     \\const _channel_ = @import("channel");
     \\const _message_ = @import("message");
     \\const _startup_ = @import("startup");
+    \\const ExitFn = @import("various").ExitFn;
     \\
     \\pub const Messenger = struct {
     \\    allocator: std.mem.Allocator,
     \\    send_channels: *_channel_.BackendToFrontend,
     \\    receive_channels: *_channel_.FrontendToBackend,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    triggers: *_channel_.Trigger,
+    \\    exit: ExitFn,
     \\
     \\    pub fn deinit(self: *Messenger) void {
     \\        self.allocator.destroy(self);
@@ -63,13 +65,13 @@ const template =
     \\
     \\        self.receiveJob(message) catch |err| {
     \\            // Fatal error.
-    \\            self.exit(@errorName(err));
+    \\            self.exit(@src(), err, "self.receiveJob(message)");
     \\            return err;
     \\        };
     \\        // Send the send the reply to the front-end if required.
     \\        self.send_channels.{{ message_name }}.send(message) catch |err| {
     \\            // Fatal error.
-    \\            self.exit(@errorName(err));
+    \\            self.exit(@src(), err, "self.send_channels.{{ message_name }}.send(message)");
     \\            return err;
     \\        };
     \\
@@ -93,6 +95,10 @@ const template =
     \\    messenger.allocator = startup.allocator;
     \\    messenger.send_channels = startup.send_channels;
     \\    messenger.receive_channels = startup.receive_channels;
+    \\    messenger.triggers = startup.triggers;
+    \\    messenger.exit = startup.exit;
+    \\
+    \\    // Subscribe to receive the {{ message_name }} message.
     \\    var receive_behavior = try startup.receive_channels.{{ message_name }}.initBehavior();
     \\    errdefer {
     \\        messenger.deinit();
@@ -103,7 +109,6 @@ const template =
     \\    errdefer {
     \\        messenger.deinit();
     \\    }
-    \\    messenger.exit = startup.exit;
     \\    return messenger;
     \\}
     \\

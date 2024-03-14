@@ -1,92 +1,92 @@
 pub const content =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
-    \\const _framers_ = @import("framers");
-    \\const _panels_ = @import("panels.zig");
-    \\const _messenger_ = @import("messenger.zig");
-    \\const _lock_ = @import("lock");
-    \\const ModalParams = @import("modal_params").EOJ;
+    \\
     \\const _closedownjobs_ = @import("closedownjobs");
     \\const _closer_ = @import("closer");
+    \\const _lock_ = @import("lock");
+    \\const _messenger_ = @import("messenger.zig");
+    \\const _panels_ = @import("panels.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
+    \\const ModalParams = @import("modal_params").EOJ;
     \\
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator,
     \\    window: *dvui.Window,
-    \\    all_screens: *_framers_.Group,
+    \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
     \\    messenger: *_messenger_.Messenger,
     \\    lock: *_lock_.ThreadLock,
-    \\    heading: ?[]u8,
-    \\    message: ?[]u8,
+    \\    exit: ExitFn,
+    \\
+    \\    modal_params: ?*ModalParams,
+    \\
     \\    status: [255]u8,
     \\    status_len: usize,
-    \\    is_fatal: bool,
-    \\    completed: bool,
+    \\    completed_callbacks: bool,
     \\    progress: f32,
-    \\    exit: *const fn (user_message: []const u8) void,
     \\
     \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
-    \\        // heading.
-    \\        if (setup_args.heading) |heading| {
-    \\            if (self.heading) |self_heading| {
-    \\                self.allocator.free(self_heading);
-    \\            }
-    \\            self.heading = try self.allocator.alloc(u8, heading.len);
-    \\            @memcpy(self.heading.?, heading);
-    \\        } else {
-    \\            self.heading = null;
+    \\        if (self.modal_params != null) {
+    \\            // Single once only.
+    \\            return;
     \\        }
+    \\        self.modal_params = setup_args;
+    \\        self.status_len = 0;
+    \\        self.progress = 0.0;
     \\
-    \\        // message.
-    \\        if (setup_args.message) |message| {
-    \\            if (self.message) |self_message| {
-    \\                self.allocator.free(self_message);
-    \\            }
-    \\            self.message = try self.allocator.alloc(u8, message.len);
-    \\            @memcpy(self.message.?, message);
+    \\        if (setup_args.exit_jobs.jobs_index > 0) {
+    \\            // There are jobs to run.
+    \\            self.completed_callbacks = false;
+    \\
+    \\            // Send the jobs to the back-end to process.
+    \\            var jobs: ?[]const *_closedownjobs_.Job = try setup_args.exit_jobs.slice();
+    \\            self.messenger.sendCloseDownJobs(jobs);
     \\        } else {
-    \\            self.message = null;
+    \\            // No jobs to run.
+    \\            self.completed_callbacks = true;
     \\        }
-    \\        self.is_fatal = setup_args.is_fatal;
-    \\
-    \\        // Send the jobs to the back-end to process.
-    \\        var jobs: ?[]const *_closedownjobs_.Job = try setup_args.exit_jobs.slice();
-    \\        self.messenger.sendCloseDownJobs(jobs);
     \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
-    \\        if (self.heading) |heading| {
-    \\            self.allocator.free(heading);
-    \\        }
-    \\        if (self.message) |message| {
-    \\            self.allocator.free(message);
+    \\        if (self.modal_params) |modal_params| {
+    \\            modal_params.deinit();
     \\        }
     \\        self.lock.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    // close removes this modal screen replacing it with the previous screen.
-    \\    fn close(self: *Panel) !void {
-    \\        try self.all_screens.popCurrent();
+    \\    fn close(self: *Panel) void {
+    \\        self.main_view.hideEOJ();
     \\    }
     \\
-    \\    pub fn update(self: *Panel, status: ?[]const u8, completed: bool, progress: f32) void {
+    \\    pub fn update(self: *Panel, status: ?[]const u8, completed_callbacks: bool, progress: f32) void {
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
     \\
     \\        if (status) |text| {
-    \\            self.status_len = @min(text.len, self.status.len);
-    \\            for (0..self.status_len) |i| {
-    \\                self.status[i] = text[i];
+    \\            if (text.len > 0) {
+    \\                self.status_len = @min(text.len, self.status.len);
+    \\                for (0..self.status_len) |i| {
+    \\                    self.status[i] = text[i];
+    \\                }
+    \\            } else {
+    \\                self.status_len = 0;
     \\            }
     \\        } else {
     \\            self.status_len = 0;
     \\        }
-    \\        self.completed = completed;
+    \\        self.completed_callbacks = completed_callbacks;
     \\        self.progress = progress;
     \\    }
     \\
-    \\    // frame is a simple screen rendering one panel at a time.
+    \\    /// frame this panel.
+    \\    /// Layout, Draw, Handle user events.
+    \\    /// Displays a progress bar.
+    \\    /// Continues the progress bar after callbacks are finished running.
+    \\    /// Allows the window to close after the progress bar finishes.
     \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {
     \\        _ = arena;
     \\        var theme: *dvui.Theme = dvui.themeGet();
@@ -105,54 +105,56 @@ pub const content =
     \\        var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
     \\        defer scroller.deinit();
     \\
-    \\        var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
+    \\        var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{ .expand = .horizontal });
     \\        defer layout.deinit();
     \\
     \\        // Row 1. Heading.
-    \\        if (self.heading) |heading| {
-    \\            var header = try dvui.textLayout(@src(), .{}, .{ .expand = .both, .font_style = .title_4 });
-    \\            try header.addText(heading, .{});
-    \\            header.deinit();
+    \\        if (self.modal_params.?.heading) |heading| {
+    \\            try dvui.labelNoFmt(@src(), heading, .{ .font_style = .title });
     \\        }
     \\
     \\        // Row 2. Message.
-    \\        if (self.is_fatal) {
-    \\            if (self.message) |message| {
-    \\                var content = try dvui.textLayout(@src(), .{}, .{ .expand = .both });
-    \\                try content.addText(message, .{});
-    \\                content.deinit();
-    \\            }
+    \\        if (self.modal_params.?.message) |message| {
+    \\            try dvui.labelNoFmt(@src(), message, .{ .font_style = .title_4 });
     \\        }
     \\
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
     \\
-    \\        if (self.is_fatal) {
+    \\        if (self.modal_params.?.is_fatal) {
     \\            // Row 3. Status.
+    \\            // Show the user the updated status if there is one.
     \\            if (self.status_len > 0) {
-    \\                var content = try dvui.textLayout(@src(), .{}, .{ .expand = .both });
-    \\                try content.addText(self.status[0..self.status_len], .{});
-    \\                content.deinit();
+    \\                try dvui.labelNoFmt(@src(), self.status[0..self.status_len], .{ .font_style = .title_4 });
     \\            }
     \\        }
     \\
     \\        // Row 3b Progress.
     \\        try dvui.progress(@src(), .{ .percent = self.progress }, .{ .expand = .horizontal, .gravity_y = 0.5, .corner_radius = dvui.Rect.all(100) });
-    \\        if (self.completed) {
+    \\        if (self.completed_callbacks) {
     \\            const bg_thread = try std.Thread.spawn(.{}, background_progress, .{self});
     \\            bg_thread.detach();
     \\        }
     \\
-    \\        if (self.is_fatal) {
-    \\            // Row 4. Buttons.
-    \\            if (self.completed and self.progress >= 1.0) {
-    \\                if (try dvui.button(@src(), "CloseDownJobs", .{}, .{})) {
-    \\                    _closer_.eoj();
+    \\        // Closing this modal and quitting the app.
+    \\        if (self.progress >= 1.0) {
+    \\            // The progress has completed.
+    \\            if (self.modal_params.?.is_fatal) {
+    \\                // Caused by a fatal error.
+    \\                // Let the user close.
+    \\                // Row 4. Display a close button.
+    \\                // Close when the user clicks it.
+    \\                if (self.completed_callbacks) {
+    \\                    // The user clicked this button.
+    \\                    // Handle the event.
+    \\                    if (try dvui.button(@src(), "CloseDownJobs", .{}, .{})) {
+    \\                        // Signal that the app can finally quit.
+    \\                        _closer_.eoj();
+    \\                    }
     \\                }
-    \\            }
-    \\        } else {
-    \\            if (self.progress >= 1.0) {
-    \\                // Done closing normally so just close the window.
+    \\            } else {
+    \\                // Not caused by a fatal error so just close.
+    \\                // Signal that the app can finally quit.
     \\                _closer_.eoj();
     \\            }
     \\        }
@@ -182,20 +184,19 @@ pub const content =
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
     \\    panel.lock = try _lock_.init(allocator);
     \\    errdefer allocator.destroy(panel);
     \\    panel.allocator = allocator;
     \\    panel.window = window;
-    \\    panel.all_screens = all_screens;
+    \\    panel.main_view = main_view;
     \\    panel.all_panels = all_panels;
     \\    panel.messenger = messenger;
-    \\    panel.heading = null;
-    \\    panel.message = null;
     \\    panel.exit = exit;
+    \\    panel.modal_params = null;
     \\    panel.status_len = 0;
-    \\    panel.completed = false;
+    \\    panel.completed_callbacks = false;
     \\    panel.progress = 0.0;
     \\    return panel;
     \\}

@@ -1,22 +1,23 @@
 pub const content =
     \\const std = @import("std");
     \\
-    \\const _framers_ = @import("framers");
     \\const _channel_ = @import("channel");
     \\const _closedownjobs_ = @import("closedownjobs");
     \\const _message_ = @import("message");
-    \\
+    \\const _modal_params_ = @import("modal_params");
     \\const _panels_ = @import("panels.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
     \\
     \\pub const Messenger = struct {
     \\    allocator: std.mem.Allocator,
     \\    arena: std.mem.Allocator,
     \\
-    \\    all_screens: *_framers_.Group,
+    \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    exit: ExitFn,
     \\
     \\    pub fn deinit(self: *Messenger) void {
     \\        self.allocator.destroy(self);
@@ -48,10 +49,10 @@ pub const content =
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: *const fn (user_message: []const u8) void) !*Messenger {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: ExitFn) !*Messenger {
     \\    var messenger: *Messenger = try allocator.create(Messenger);
     \\    messenger.allocator = allocator;
-    \\    messenger.all_screens = all_screens;
+    \\    messenger.main_view = main_view;
     \\    messenger.send_channels = send_channels;
     \\    messenger.receive_channels = receive_channels;
     \\    messenger.exit = exit;

@@ -16,13 +16,14 @@ const _widget_ = @import("widget/framework.zig");
 const _startup_ = @import("startup/framework.zig");
 const _closer_ = @import("closer/framework.zig");
 const _closedownjobs_ = @import("closedownjobs/framework.zig");
+const _various_ = @import("various/framework.zig");
 
 pub const modal_params = _modal_params_;
 
 pub fn create(allocator: std.mem.Allocator) !void {
     try _channel_.create(allocator);
     try _counter_.create();
-    try _framers_.create();
+    try _framers_.create(allocator);
     try _lock_.create();
     try _message_.create(allocator);
     try _modal_params_.create(allocator);
@@ -30,6 +31,11 @@ pub fn create(allocator: std.mem.Allocator) !void {
     try _widget_.create(allocator);
     try _closer_.create();
     try _closedownjobs_.create();
+    try _various_.create();
+}
+
+pub fn rebuildForUpdatedScreens(allocator: std.mem.Allocator) !void {
+    try _framers_.rebuild(allocator);
 }
 
 pub fn addMessageBF(allocator: std.mem.Allocator, message_name: []const u8) !void {

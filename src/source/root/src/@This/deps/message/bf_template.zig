@@ -51,21 +51,24 @@ const template =
     \\    allocator: std.mem.Allocator = undefined,
     \\    is_set: bool,
     \\
-    \\    // The member foofoo is presented as an example.
-    \\    foofoo: ?usize,
+    \\    // The member user_error_message is presented as an example.
+    \\    user_error_message: ?[]const u8,
     \\
     \\    pub const Settings = struct {
-    \\        foofoo: ?usize,
+    \\        user_error_message: ?[]const u8 = null,
     \\    };
     \\
     \\    fn init(allocator: std.mem.Allocator) !*BackendPayload {
     \\        var self: *BackendPayload = try allocator.create(BackendPayload);
     \\        self.allocator = allocator;
-    \\        self.foofoo = null;
+    \\        self.user_error_message = null;
     \\        return self;
     \\    }
     \\
     \\    fn deinit(self: *BackendPayload) void {
+    \\        if (self.user_error_message) |user_error_message| {
+    \\            self.allocator.free(user_error_message);
+    \\        }
     \\        self.allocator.destroy(self);
     \\    }
     \\
@@ -75,8 +78,9 @@ const template =
     \\            return error.{{ message_name }}BackendPayloadAlreadySet;
     \\        }
     \\        self.is_set = true;
-    \\        if (values.foofoo) |foofoo| {
-    \\            self.foofoo = foofoo;
+    \\        if (values.user_error_message) |user_error_message| {
+    \\            self.user_error_message = try self.allocator.alloc(u8, user_error_message.len);
+    \\            @memcpy(@constCast(self.user_error_message), user_error_message);
     \\        }
     \\    }
     \\};
@@ -89,7 +93,6 @@ const template =
     \\
     \\    // deinit does not deinit until self is the final pointer to Message.
     \\    pub fn deinit(self: *Message) void {
-    \\        std.log.debug(" == Init msg.deinit()", .{});
     \\        if (self.count_pointers.dec() > 0) {
     \\            // There are more pointers.
     \\            // See fn copy.

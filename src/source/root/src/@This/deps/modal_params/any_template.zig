@@ -22,12 +22,12 @@ pub fn init(allocator: std.mem.Allocator) !*Template {
 const template =
     \\const std = @import("std");
     \\
-    \\/// Params is the parameters for the {0s} modal screen's goModalFn.
-    \\/// See src/@This/frontend/screen/modal/{0s}/screen.zig goModalFn.
+    \\/// Params is the parameters for the {0s} modal screen's state.
+    \\/// See src/@This/frontend/screen/modal/{0s}/screen.zig setState.
     \\/// Your arguments are the values assigned to each Params member.
     \\/// For examples:
     \\/// * See OK.zig for a Params example.
-    \\/// * See src/@This/frontend/screen/modal/OK/screen.zig goModalFn.
+    \\/// * See src/@This/frontend/screen/modal/OK/screen.zig setState.
     \\pub const Params = struct {{
     \\    allocator: std.mem.Allocator,
     \\

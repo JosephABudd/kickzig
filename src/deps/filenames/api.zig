@@ -20,6 +20,8 @@ pub const yesno_file_name: []const u8 = "YesNo.zig";
 pub const tabbar_file_name: []const u8 = "tabbar.zig";
 pub const counter_file_name = "counter.zig";
 pub const backend_file_name = "backend.zig";
+pub const screen_tabs_file_name = "screen_tags.zig";
+pub const screen_pointers_file_name = "screen_pointers.zig";
 
 // framework.
 

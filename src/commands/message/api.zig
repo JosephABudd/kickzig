@@ -25,9 +25,10 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
     defer folder_paths.deinit();
     switch (remaining_args.len) {
         0 => {
-            const message_usage: []u8 = try _usage_.message(allocator, cli_name);
-            defer allocator.free(message_usage);
-            try _stdout_.print(message_usage);
+            try syntaxError(allocator, cli_name);
+            // const message_usage: []u8 = try _usage_.message(allocator, cli_name);
+            // defer allocator.free(message_usage);
+            // try _stdout_.print(message_usage);
             return;
         },
         1 => {
@@ -41,8 +42,8 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 try list(allocator);
                 return;
             } else {
-                // Unknown.
-                try help(allocator, cli_name);
+                // User input is "message 💩".
+                try syntaxError(allocator, cli_name);
                 return;
             }
         },
@@ -139,19 +140,29 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                     try _stdout_.print(output);
                 }
                 return;
+            } else {
+                // User input is "message 💩 💩".
+                try syntaxError(allocator, cli_name);
             }
         },
         else => {
-            try help(allocator, cli_name);
+            // User input is "message 💩 💩 💩".
+            try syntaxError(allocator, cli_name);
             return;
         },
     }
 }
 
+fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8) !void {
+    const message: []const u8 = try _warning_.syntaxError(allocator, cli_name, command, verb_help);
+    defer allocator.free(message);
+    try _stdout_.print(message);
+}
+
 fn help(allocator: std.mem.Allocator, cli_name: []const u8) !void {
-    const message_usage: []u8 = try _usage_.message(allocator, cli_name);
-    defer allocator.free(message_usage);
-    try _stdout_.print(message_usage);
+    const message: []u8 = try _usage_.message(allocator, cli_name);
+    defer allocator.free(message);
+    try _stdout_.print(message);
 }
 
 fn list(allocator: std.mem.Allocator) !void {

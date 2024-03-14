@@ -6,7 +6,6 @@ pub const Template = struct {
     screen_name: []const u8,
     tab_names: [][]const u8,
     tab_has_panel: []bool,
-    tab_panel_count: u8 = 0,
 
     pub fn deinit(self: *Template) void {
         for (self.tab_names) |tab_name| {
@@ -25,40 +24,22 @@ pub const Template = struct {
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
 
-        try lines.appendSlice(line_import_start);
-        if (self.tab_panel_count > 0) {
-            try lines.appendSlice(line_import_panels);
-        }
-        try lines.appendSlice(line_import_end);
-        try lines.appendSlice(line_tabs_enum_start);
+        try lines.appendSlice(line1);
         for (self.tab_names) |name| {
             line = try fmt.allocPrint(self.allocator, "    {0s},\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-        try lines.appendSlice(line_tabs_enum_end_tab_labels_start);
+
+        try lines.appendSlice(line2);
         for (self.tab_names) |name| {
             line = try fmt.allocPrint(self.allocator, "    const {0s}_label: []const u8 = \"{0s}\";\n", .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-        try lines.appendSlice(line_struct_start);
-        if (self.tab_panel_count > 0) {
-            try lines.appendSlice(line_struct_all_panels);
-        }
-        try lines.appendSlice(line_struct_continue);
+
         {
-            line = try fmt.allocPrint(self.allocator, line_struct_init, .{self.tab_names[0]});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
-        if (self.tab_panel_count > 0) {
-            line = try fmt.allocPrint(self.allocator, line_struct_messenger, .{self.tab_names[0]});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
-        if (self.tab_panel_count > 0) {
-            line = try fmt.allocPrint(self.allocator, line_init_end, .{self.screen_name});
+            line = try fmt.allocPrint(self.allocator, line_struct_start, .{ self.screen_name, self.tab_names[0] });
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -114,13 +95,13 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: []
     defer panels_names.deinit();
     for (tab_names, 0..) |name, i| {
         var tab_name: []const u8 = undefined;
+        var has_panel: bool = false;
         if (name[0] == '+') {
             tab_name = name[1..];
-            self.tab_has_panel[i] = true;
-            self.tab_panel_count += 1;
+            has_panel = true;
         } else {
             tab_name = name;
-            self.tab_has_panel[i] = false;
+            has_panel = false;
         }
         self.tab_names[i] = try allocator.alloc(u8, tab_name.len);
         errdefer {
@@ -135,35 +116,23 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: []
             allocator.free(self.tab_names);
         }
         @memcpy(@constCast(self.tab_names[i]), tab_name);
+        self.tab_has_panel[i] = has_panel;
     }
     self.allocator = allocator;
     return self;
 }
 
-const line_import_start =
+const line1 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
     \\const _channel_ = @import("channel");
-    \\
-;
-
-const line_import_panels =
     \\const _messenger_ = @import("messenger.zig");
     \\const _panels_ = @import("panels.zig");
-    \\
-;
-
-const line_import_end =
     \\const _startup_ = @import("startup");
     \\const _tabbar_ = @import("widget").tabbar;
     \\const MainView = @import("framers").MainView;
-    \\const ScreenPointers = @import("../../../screen_pointers.zig").ScreenPointers;
     \\
-    \\
-;
-
-const line_tabs_enum_start =
     \\/// Define each tab's enum.
     \\/// Always include none.
     \\const tabs = enum {
@@ -172,7 +141,7 @@ const line_tabs_enum_start =
 // \\    +Select,
 // \\    Edit,
 
-const line_tabs_enum_end_tab_labels_start =
+const line2 =
     \\    none,
     \\};
     \\
@@ -186,46 +155,32 @@ const line_tabs_enum_end_tab_labels_start =
 
 const line_struct_start =
     \\
-    \\pub const Screen = struct {
+    \\pub const Screen = struct {{
     \\    allocator: std.mem.Allocator,
     \\    main_view: *MainView,
-    \\
-;
-const line_struct_all_panels =
     \\    all_panels: *_panels_.Panels,
-    \\
-;
-const line_struct_continue =
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
-    \\    screen_pointers: *ScreenPointers,
     \\
     \\    selected_tab: tabs,
     \\
-    \\
-;
-const line_struct_init =
     \\    /// init constructs this screen, subscribes it to all_screens and returns the error.
-    \\    pub fn init(startup: _startup_.Frontend) !*Screen {{
+    \\    pub fn init(startup: _startup_.Frontend) !void {{
     \\        var self: *Screen = try startup.allocator.create(Screen);
     \\        self.allocator = startup.allocator;
     \\        self.main_view = startup.main_view;
     \\        self.receive_channels = startup.receive_channels;
     \\        self.send_channels = startup.send_channels;
-    \\        self.screen_pointers = startup.screen_pointers;
-    \\
-    \\        // The {0s} tab is selected by default.
-    \\        self.selected_tab = tabs.{0s};
-    \\
-    \\
-;
-const line_struct_messenger =
+    \\    
+    \\    
+    \\        // The {1s} tab is selected by default.
+    \\        self.selected_tab = tabs.{1s};
+    \\    
     \\        // The messenger.
     \\        var messenger: *_messenger_.Messenger = try _messenger_.init(startup.allocator, startup.main_view, startup.send_channels, startup.receive_channels, startup.exit);
     \\        errdefer {{
     \\            self.deinit();
     \\        }}
-    \\
     \\
     \\        // All of the panels.
     \\        self.all_panels = try _panels_.init(startup.allocator, startup.main_view, messenger, startup.exit, startup.window);
@@ -234,11 +189,8 @@ const line_struct_messenger =
     \\            self.deinit();
     \\        }}
     \\        messenger.all_panels = self.all_panels;
-    \\        // The {0s} panel is the default.
-    \\        self.all_panels.setCurrentTo{0s}();
-    \\
-;
-const line_init_end =
+    \\        // The {1s} panel is the default.
+    \\        self.all_panels.setCurrentTo{1s}();
     \\        return self;
     \\    }}
     \\
@@ -253,21 +205,21 @@ const line_init_end =
     \\        return "{0s}";
     \\    }}
     \\
-    \\    pub fn frame(self: *Screen, arena: std.mem.Allocator) !void {{
-    \\        var layout = try dvui.box(@src(), .horizontal, .{{ .expand = .both }});
+    \\    pub fn frame(self: *Screen, arena: std.mem.Allocator) ?anyerror {{
+    \\        var layout = try dvui.box(@src(), .vertical, .{{ .expand = .both }});
     \\        defer layout.deinit();
     \\
     \\        {{
-    \\            // The vertical column.
-    \\            var column = try _tabbar_.verticalTabBarColumn(@src());
-    \\            defer column.deinit();
+    \\            // The horizontal row.
+    \\            var row = try _tabbar_.horizontalTabBarRow(@src());
+    \\            defer row.deinit();
     \\
-    \\            // The vertical scroller.
-    \\            var scroller = try _tabbar_.verticalTabScroller(@src());
+    \\            // The horizontal scroller.
+    \\            var scroller = try _tabbar_.horizontalTabScroller(@src());
     \\            defer scroller.deinit();
     \\
     \\            // The tab bar.
-    \\            var tabbar = try _tabbar_.verticalTabBar(@src());
+    \\            var tabbar = try _tabbar_.horizontalTabBar(@src());
     \\            defer tabbar.deinit();
     \\
     \\            var selected: bool = false;
@@ -279,7 +231,7 @@ const line_init_end =
 const line_frame_tab =
     \\            // The {0s} tab.
     \\            selected = self.selected_tab == tabs.{0s};
-    \\            tab = try _tabbar_.verticalTabBarItemLabel(@src(), {0s}_label, selected);
+    \\            tab = try _tabbar_.horizontalTabBarItemLabel(@src(), {0s}_label, selected);
     \\            if (tab != null) {{
     \\                // The user selected this tab.
     \\                if (!selected) {{
@@ -312,7 +264,10 @@ const line_frame_first_tab_local_content =
 
 const line_frame_first_tab_separate_content =
     \\                .{0s}, .none => {{
-    \\                    try self.screen_pointers.{0s}.?.frame(arena);
+    \\                    var behavior: *_framers_.Behavior = try self.all_screens.get("{0s}");
+    \\                    if(behavior.frame(behavior.implementor, arena)) |err| {{
+    \\                        return err;
+    \\                    }}
     \\                }},
     \\
 ;
@@ -326,15 +281,19 @@ const line_frame_next_tab_local_content =
 
 const line_frame_next_tab_separate_content =
     \\                .{0s} => {{
-    \\                    try self.screen_pointers.{0s}.?.frame(arena);
+    \\                    var behavior: *_framers_.Behavior = try self.all_screens.get("{0s}");
+    \\                    if (behavior.frame(behavior.implementor, arena)) |err| {{
+    \\                        return err;
+    \\                    }}
     \\                }},
     \\
 ;
 
 const line_struct_end =
-    \\            }
-    \\        }
-    \\    }
-    \\};
+    \\            }}
+    \\        }}
+    \\        return null;
+    \\    }}
+    \\}};
     \\
 ;

@@ -48,38 +48,62 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, panel_name: [
 const template =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
-    \\const _framers_ = @import("framers");
-    \\const _panels_ = @import("panels.zig");
+    \\
+    \\const _channel_ = @import("channel");
+    \\const _lock_ = @import("lock");
     \\const _messenger_ = @import("messenger.zig");
+    \\const _panels_ = @import("panels.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
     \\const ModalParams = @import("modal_params").{{ screen_name }};
     \\
     \\pub const Panel = struct {
-    \\    allocator: std.mem.Allocator,
+    \\    allocator: std.mem.Allocator, // For persistant state data.
+    \\    lock: *_lock_.ThreadLock, // For persistant state data.
     \\    window: *dvui.Window,
-    \\    all_screens: *_framers_.Group,
+    \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
     \\    messenger: *_messenger_.Messenger,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    exit: ExitFn,
     \\
+    \\    modal_params: ?*ModalParams,
+    \\
+    \\    // This panels owns the modal params.
     \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
-    \\        // KICKFYNE TODO: Set any members that need set using the setup_args.
-    \\        _ = self;
-    \\        _ = setup_args;
+    \\        if (self.modal_params) |modal_params| {
+    \\            modal_params.deinit();
+    \\        }
+    \\        self.modal_params = setup_args;
+    \\    }
+    \\
+    \\    /// refresh only if this panel is showing and this screen is showing.
+    \\    pub fn refresh(self: *Panel) void {
+    \\        if (self.all_panels.current_panel_tag == .{{ panel_name }}) {
+    \\            self.main_view.refresh{{ screen_name }}();
+    \\        }
     \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
-    \\        // KICKFYNE TODO: deinit and free any members that require it.
+    \\        if (self.modal_params) |modal_params| {
+    \\            modal_params.deinit();
+    \\        }
+    \\        self.lock.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    // close removes this modal screen replacing it with the previous screen.
-    \\    fn close(self: *Panel) !void {
-    \\        try self.all_screens.popCurrent();
+    \\    fn close(self: *Panel) void {
+    \\        self.main_view.hide{{ screen_name }}();
     \\    }
     \\
-    \\    // frame is a simple screen rendering one panel at a time.
+    \\    /// frame this panel.
+    \\    /// Layout, Draw, Handle user events.
     \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {
     \\        _ = arena;
+    \\
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
     \\        var theme: *dvui.Theme = dvui.themeGet();
     \\
     \\        const padding_options = .{
@@ -99,31 +123,38 @@ const template =
     \\        var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
     \\        defer layout.deinit();
     \\
-    \\        // Row 1: The screen's name.
-    \\        var example_title = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
-    \\        try example_title.addText("{{ screen_name }} Screen.", .{});
-    \\        example_title.deinit();
+    \\        // Row 1 example: The screen's name.
+    \\        try dvui.labelNoFmt(@src(), "{{ screen_name }} Screen.", .{ .font_style = .title });
     \\
-    \\        // Row 2: This panel's name.
-    \\        var example_message = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
-    \\        try example_message.addText("{{ panel_name }} panel.", .{});
-    \\        example_message.deinit();
+    \\        // Row 2 example: This panel's name.
+    \\        {
+    \\            var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+    \\            defer row.deinit();
     \\
-    \\        // Row 3: The close button.
+    \\            try dvui.labelNoFmt(@src(), "Panel Name: ", .{ .font_style = .heading });
+    \\            try dvui.labelNoFmt(@src(), "{{ panel_name }}", .{});
+    \\        }
+    \\
+    \\        // Row 3: The close button closes this modal screen and returns to the previous screen.
     \\        if (try dvui.button(@src(), "Close", .{}, .{})) {
-    \\            try self.close();
+    \\            self.close();
     \\        }
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
+    \\    panel.lock = try _lock_.init(allocator);
+    \\    errdefer {
+    \\        allocator.destroy(panel);
+    \\    }
     \\    panel.allocator = allocator;
-    \\    panel.window = window;
-    \\    panel.all_screens = all_screens;
+    \\    panel.main_view = main_view;
     \\    panel.all_panels = all_panels;
     \\    panel.messenger = messenger;
     \\    panel.exit = exit;
+    \\    panel.window = window;
+    \\    panel.modal_params = null;
     \\    return panel;
     \\}
 ;

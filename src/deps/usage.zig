@@ -79,8 +79,8 @@ const screen_template: []const u8 =
     \\＄ {{cli_name}} screen add-modal «screen-name» «panel-name, ...»
     \\＄ {{cli_name}} screen remove «screen-name»
     \\
-    \\A vtab and htab tab-name prefixed with '+' is given its own panel of the same name as the tab for content.
-    \\A vtab and htab tab-name not prefixed with '+' is given the screen of the same name as the tab for content.
+    \\A tab-name prefixed with '+', is has its own panel of the same name, for content.
+    \\A tab-name not prefixed with '+', must be given a separate screen of the same name as the tab, for content.
     \\
     \\After a screen is added:
     \\1. A search for KICKZIG TODO will reveal instructions for proper developement and management of the screen operation.
@@ -104,7 +104,6 @@ const message_template: []const u8 =
     \\＄ cd myapp
     \\＄ {{cli_name}} message help
     \\＄ {{cli_name}} message list
-    \\＄ {{cli_name}} message add «name-of-message»
     \\＄ {{cli_name}} message add-fbf «name-of-message» // front-end to back-end to front-end
     \\＄ {{cli_name}} message add-bf «name-of-message» // back-end to front-end
     \\＄ {{cli_name}} message add-bf-fbf «name-of-message» // back-end to front-end & front-end to back-end to front-end

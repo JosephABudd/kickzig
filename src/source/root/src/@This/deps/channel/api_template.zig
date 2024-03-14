@@ -318,6 +318,8 @@ const line1: []const u8 =
     \\const std = @import("std");
     \\const testing = std.testing;
     \\
+    \\const ExitFn = @import("various").ExitFn;
+    \\
 ;
 // \\const _XXX_ = @import("src/XXX.zig");
 // \\const _YYY_ = @import("src/YYY.zig");
@@ -351,7 +353,7 @@ const lineFBc =
     \\    }
     \\
     \\
-    \\    pub fn init(allocator: std.mem.Allocator, exit: *const fn (user_message: []const u8) void) !*FrontendToBackend {
+    \\    pub fn init(allocator: std.mem.Allocator, exit: ExitFn) !*FrontendToBackend {
     \\        var channels: *FrontendToBackend = try allocator.create(FrontendToBackend);
     \\        channels.allocator = allocator;
     \\    
@@ -412,7 +414,7 @@ const lineBFc =
     \\    }
     \\
     \\
-    \\    pub fn init(allocator: std.mem.Allocator, exit: *const fn (user_message: []const u8) void) !*BackendToFrontend {
+    \\    pub fn init(allocator: std.mem.Allocator, exit: ExitFn) !*BackendToFrontend {
     \\        var channels: *BackendToFrontend = try allocator.create(BackendToFrontend);
     \\        channels.allocator = allocator;
     \\    
@@ -463,7 +465,7 @@ const lineTRb =
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    pub fn init(backend_to_frontend: *BackendToFrontend, exit: *const fn (user_message: []const u8) void) !*Trigger {
+    \\    pub fn init(backend_to_frontend: *BackendToFrontend, exit: ExitFn) !*Trigger {
     \\        var triggers: *Trigger = try backend_to_frontend.allocator.create(Trigger);
     \\        triggers.allocator = backend_to_frontend.allocator;
     \\    

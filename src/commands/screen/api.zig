@@ -8,6 +8,7 @@ const _strings_ = @import("strings");
 const _filenames_ = @import("filenames");
 const _verify_ = @import("verify");
 const _src_this_frontend_ = @import("source").frontend;
+const _src_this_deps_ = @import("source").deps;
 
 pub const command: []const u8 = "screen";
 pub const verb_help: []const u8 = "help";
@@ -25,8 +26,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
     return switch (remaining_args.len) {
         0 => blk: {
             // User input is "screen".
-            // The user input is invalid so show the help.
-            break :blk try help(allocator, cli_name);
+            break :blk try syntaxError(allocator, cli_name);
         },
         1 => blk: {
             const verb: []const u8 = remaining_args[0];
@@ -39,9 +39,8 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 // The user input is "screen list".
                 break :blk try _src_this_frontend_.listScreens(allocator);
             }
-            // "screen 💩"
-            // The user input is invalid so show the help.
-            break :blk try help(allocator, cli_name);
+            // The user input is screen 💩.
+            break :blk try syntaxError(allocator, cli_name);
         },
         2 => blk: {
             // The user input is:
@@ -88,14 +87,16 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                     break :blk;
                 }
                 // The screen was removed.
+                // Rebuild deps/framers/api.zig
+                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+                // Inform the user.
                 const msg: []const u8 = try _success_.screenRemoved(allocator, screen_name);
                 defer allocator.free(msg);
                 try _stdout_.print(msg);
                 break :blk;
             }
-            // "screen 💩 💩"
-            // The user input is invalid so show the help.
-            break :blk try help(allocator, cli_name);
+            // The user input is screen 💩 💩.
+            break :blk try syntaxError(allocator, cli_name);
         },
         else => blk: {
             // The user input can be:
@@ -141,7 +142,16 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the panel screen.
-                break :blk try _src_this_frontend_.addPanelScreen(allocator, app_name, screen_name, panel_names);
+                try _src_this_frontend_.addPanelScreen(allocator, app_name, screen_name, panel_names);
+
+                // Rebuild deps/framers/api.zig
+                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+
+                // Inform the user.
+                const msg: []const u8 = try _success_.screenAddedPanel(allocator, screen_name);
+                defer allocator.free(msg);
+                try _stdout_.print(msg);
+                break :blk;
             }
             if (std.mem.eql(u8, verb, verb_add_vtab)) {
                 // User input is "screen add-vtab Contacts +Add Edit Remove".
@@ -176,7 +186,16 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the vtab screen.
-                break :blk try _src_this_frontend_.addVTabScreen(allocator, app_name, screen_name, tab_names);
+                try _src_this_frontend_.addVTabScreen(allocator, app_name, screen_name, tab_names);
+
+                // Rebuild deps/framers/api.zig
+                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+
+                // Inform the user.
+                const msg: []const u8 = try _success_.screenAddedVTab(allocator, screen_name);
+                defer allocator.free(msg);
+                try _stdout_.print(msg);
+                break :blk;
             }
             if (std.mem.eql(u8, verb, verb_add_book)) {
                 // User input is "screen add-book Story +Cover +Chapter1 +Chapter2 +Chapter3 +Chapter4 +Appendix".
@@ -211,7 +230,16 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the book screen.
-                break :blk try _src_this_frontend_.addBookScreen(allocator, app_name, screen_name, menu_item_names);
+                try _src_this_frontend_.addBookScreen(allocator, app_name, screen_name, menu_item_names);
+
+                // Rebuild deps/framers/api.zig
+                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+
+                // Inform the user.
+                const msg: []const u8 = try _success_.screenAddedBook(allocator, screen_name);
+                defer allocator.free(msg);
+                try _stdout_.print(msg);
+                break :blk;
             }
             if (std.mem.eql(u8, verb, verb_add_htab)) {
                 // User input is "screen add-htab Contacts +Add Edit Remove".
@@ -246,7 +274,16 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the htab screen.
-                break :blk try _src_this_frontend_.addHTabScreen(allocator, app_name, screen_name, tab_names);
+                try _src_this_frontend_.addHTabScreen(allocator, app_name, screen_name, tab_names);
+
+                // Rebuild deps/framers/api.zig
+                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+
+                // Inform the user.
+                const msg: []const u8 = try _success_.screenAddedHTab(allocator, screen_name);
+                defer allocator.free(msg);
+                try _stdout_.print(msg);
+                break :blk;
             }
             if (std.mem.eql(u8, verb, verb_add_modal)) {
                 // User input is "screen add-modal YesNo YesNo".
@@ -281,32 +318,27 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the modal screen.
-                break :blk try _src_this_frontend_.addModalScreen(allocator, app_name, screen_name, panel_names);
-                // Add the modal screen params.
+                try _src_this_frontend_.addModalScreen(allocator, app_name, screen_name, panel_names);
 
+                // Rebuild deps/framers/api.zig
+                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+
+                // Inform the user.
+                const msg: []const u8 = try _success_.screenAddedModal(allocator, screen_name);
+                defer allocator.free(msg);
+                try _stdout_.print(msg);
+                break :blk;
             }
-            // "screen 💩 💩 💩..."
-            // The user input is invalid so show the help.
-            break :blk try help(allocator, cli_name);
+            // "The user input is screen 💩 💩 💩..."
+            break :blk try syntaxError(allocator, cli_name);
         },
     };
 }
 
-fn addHTab(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: [][]const u8) !void {
-    _ = tab_names;
-    _ = screen_name;
-    _ = allocator;
-}
-
-fn addModal(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: [][]const u8) !void {
-    _ = tab_names;
-    _ = screen_name;
-    _ = allocator;
-}
-
-fn remove(allocator: std.mem.Allocator, screen_name: []const u8) !void {
-    _ = screen_name;
-    _ = allocator;
+fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8) !void {
+    const message: []const u8 = try _warning_.syntaxError(allocator, cli_name, command, verb_help);
+    defer allocator.free(message);
+    try _stdout_.print(message);
 }
 
 fn help(allocator: std.mem.Allocator, cli_name: []const u8) !void {

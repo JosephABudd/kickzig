@@ -1,7 +1,19 @@
 const std = @import("std");
 
+// The caller owns the returned value.
 pub fn fatal(allocator: std.mem.Allocator, err: anyerror, command: []const u8) ![]const u8 {
-    return try std.fmt.allocPrint(allocator, "The following fatal error occurred while executing \"{s}\": \"{s}.\n", .{ command, @errorName(err) });
+    return std.fmt.allocPrint(allocator, "The following fatal error occurred while executing \"{s}\": \"{s}.\n", .{ command, @errorName(err) });
+}
+
+// The caller owns the returned value.
+pub fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8, cmd: []const u8, help_verb: []const u8) ![]const u8 {
+    const line2: []const u8 = try std.fmt.allocPrint(allocator, "Try «{0s} {1s} {2s}»\n", .{ cli_name, cmd, help_verb });
+    defer allocator.free(line2);
+    const lines: [2][]const u8 = [2][]const u8{
+        "Not sure what you are trying to do.\n",
+        line2,
+    };
+    return std.mem.join(allocator, "", &lines);
 }
 
 // Framework build.

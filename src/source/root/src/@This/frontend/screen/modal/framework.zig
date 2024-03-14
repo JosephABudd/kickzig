@@ -29,7 +29,7 @@ pub fn createAnyPackage(allocator: std.mem.Allocator, screen_name: []const u8, p
     // Add the screen.zig file.
     try addScreenFile(allocator, package_dir, screen_name, panel_names);
     // Add the messenger file.
-    try addMessengerFile(allocator, package_dir, screen_name);
+    try addMessengerFile(package_dir);
     // Add each panel file.
     for (panel_names) |panel_name| {
         try addAnyPanel(allocator, package_dir, screen_name, panel_name);
@@ -158,7 +158,7 @@ pub fn removePanel(allocator: std.mem.Allocator, screen_name: []const u8, panel_
 // Call this after panels are added or removed.
 pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8, using_messenger: bool) !void {
     // Build the template and the content.
-    const template: *_panels_template_.Template = try _panels_template_.init(allocator, screen_name);
+    const template: *_panels_template_.Template = try _panels_template_.init(allocator, screen_name, using_messenger);
     defer template.deinit();
     // Get the names of each panel and use them in the template.
     const current_panel_names: [][]const u8 = try _filenames_.allFrontendModalScreenPanelNames(allocator, screen_name);
@@ -171,7 +171,7 @@ pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, s
     for (current_panel_names) |name| {
         try template.addName(name);
     }
-    const content: []const u8 = try template.content(using_messenger);
+    const content: []const u8 = try template.content();
     defer allocator.free(content);
 
     // Open, write and close the file.
@@ -181,16 +181,11 @@ pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, s
 }
 
 /// addMessengerFile adds the messenger.zig to a screen package.
-fn addMessengerFile(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8) !void {
-    var template: *_messenger_template_.Template = try _messenger_template_.init(allocator, screen_name);
-    defer template.deinit();
-    const content: []const u8 = try template.content();
-    defer allocator.free(content);
-
+fn addMessengerFile(package_dir: std.fs.Dir) !void {
     // Open, write and close the file.
     var ofile = try package_dir.createFile(_filenames_.screen_messenger_file_name, .{});
     defer ofile.close();
-    try ofile.writeAll(content);
+    try ofile.writeAll(_messenger_template_.content);
 }
 
 /// addEOJMessengerFile adds the messenger.zig to the Example screen package.

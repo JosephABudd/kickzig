@@ -2,12 +2,12 @@ pub const content =
     \\const std = @import("std");
     \\const _closedownjobs_ = @import("closedownjobs");
     \\
-    \\/// Params is the parameters for the EOJ modal screen's goModalFn.
-    \\/// See src/@This/frontend/screen/modal/EOJ/screen.zig goModalFn.
+    \\/// Params is the parameters for the EOJ modal screen's state.
+    \\/// See src/@This/frontend/screen/modal/EOJ/screen.zig setState.
     \\/// Your arguments are the values assigned to each Params member.
     \\/// For examples:
     \\/// * See OK.zig for a Params example.
-    \\/// * See src/@This/frontend/screen/modal/OK/screen.zig goModalFn.
+    \\/// * See src/@This/frontend/screen/modal/OK/screen.zig setState.
     \\pub const Params = struct {
     \\    allocator: std.mem.Allocator,
     \\    exit_jobs: *_closedownjobs_.Jobs,
@@ -26,13 +26,11 @@ pub const content =
     \\        args.is_fatal = false;
     \\        args.heading = null;
     \\        args.message = null;
-    \\        args.progress = 0.0;
     \\        return args;
     \\    }
     \\
     \\    pub fn setHeading(self: *Params, text: []const u8) void {
     \\        self.heading = self.allocator.alloc(u8, text.len) catch {
-    \\            self.message = null;
     \\            return;
     \\        };
     \\        @memcpy(@constCast(self.heading), text);
@@ -40,7 +38,6 @@ pub const content =
     \\
     \\    pub fn setMessage(self: *Params, text: []const u8) void {
     \\        self.message = self.allocator.alloc(u8, text.len) catch {
-    \\            self.message = null;
     \\            return;
     \\        };
     \\        @memcpy(@constCast(self.message), text);

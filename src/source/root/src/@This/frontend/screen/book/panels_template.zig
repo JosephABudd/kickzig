@@ -151,8 +151,10 @@ pub fn init(allocator: std.mem.Allocator) !*Template {
 
 const line1a =
     \\const std = @import("std");
+    \\
     \\const _framers_ = @import("framers");
     \\const _messenger_ = @import("messenger.zig");
+    \\const ExitFn = @import("various").ExitFn;
     \\
 ;
 // \\const _Home_ = @import("home_panel.zig");
@@ -219,7 +221,7 @@ const line5 =
 const line6 =
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void) !*Panels {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Screens, messenger: *_messenger_.Messenger, exit: ExitFn) !*Panels {
     \\    var panels: *Panels = try allocator.create(Panels);
     \\    panels.allocator = allocator;
     \\

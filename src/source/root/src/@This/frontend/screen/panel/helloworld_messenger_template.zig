@@ -1,23 +1,22 @@
 pub const content =
     \\const std = @import("std");
     \\
-    \\const _message_ = @import("message");
     \\const _channel_ = @import("channel");
-    \\const _framers_ = @import("framers");
+    \\const _message_ = @import("message");
     \\const _modal_params_ = @import("modal_params");
-    \\const OKModalParams = _modal_params_.OK;
-    \\
     \\const _panels_ = @import("panels.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
+    \\const OKModalParams = _modal_params_.OK;
     \\
     \\pub const Messenger = struct {
     \\    allocator: std.mem.Allocator,
-    \\    arena: std.mem.Allocator,
     \\
-    \\    all_screens: *_framers_.Group,
+    \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    exit: ExitFn,
     \\
     \\    pub fn deinit(self: *Messenger) void {
     \\        self.allocator.destroy(self);
@@ -38,63 +37,40 @@ pub const content =
     \\    // It implements a behavior required by receive_channels.Fubar.
     \\    // pub fn receiveFubar(implementor: *anyopaque, message: *_message_.Fubar.Message) ?anyerror {
     \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
+    \\    //     defer message.deinit();
     \\    //     _ = self;
-    \\    //     _ = message;
+    \\    //
     \\    //     // message.backend_payload is the struct holding the message from the backend.
-    \\    //     if (message.backend_payload.error_message) |error_message| {
-    \\    //         // There was an error so inform the user.
-    \\    //         self.informError(error_message);
-    \\    //         return error.receiveFubar;
+    \\    //     if (message.backend_payload.user_error_message) |user_error_message| {
+    \\    //         // There was a user error so inform the user.
+    \\    //         const ok_args = try OKModalParams.init(
+    \\    //            self.allocator,
+    \\    //            "Error",
+    \\    //            user_error_message,
+    \\    //         );
+    \\    //         // The ok modal screen owns the ok_args.
+    \\    //         // So do not deinit the ok_args.
+    \\    //         self.main_view.showOK(ok_args)
+    \\    //         // This was only a user error not a fatal error.
+    \\    //         return null;
     \\    //     }
-    \\    //     // No error reported by the backend so process the message.
-    \\    //     if (self.doSomething(message.something)) catch |err| {
-    \\    //         self.exit(@errorName(err));
-    \\    //         return error;
-    \\    //     }
-    \\    //     // No error so process the message.
+    \\    //     // No user error.
+    \\    //     // Pass on the information contained in the message to panels.
+    \\    //     // Handling Errors: Call exit and return the error.
     \\    //     self.panels.HelloWorld.setHeading(message.BackendPayload.something) catch |err| {
-    \\    //         // An error while processing the message so exit.
-    \\    //         self.exit(@errorName(err));
+    \\    //         // Handle the error.
+    \\    //         self.exit(@src(), err, "self.panels.HelloWorld.setHeading(message.BackendPayload.something)");
     \\    //         return err;
     \\    //     };
     \\    //     // No error so return null;
     \\    //     return null;
     \\    // }
-    \\
-    \\    fn informError(self: *Messenger, message: []const u8) void {
-    \\        self.inform("Error", message);
-    \\    }
-    \\
-    \\    fn informSuccess(self: *Messenger, message: []const u8) void {
-    \\        self.inform("Success", message);
-    \\    }
-    \\
-    \\    fn inform(self: *Messenger, title: []const u8, message: []const u8) void {
-    \\        // Use the OK modal screen to inform the user.
-    \\        var ok_modal = self.all_screens.get("OK") catch {
-    \\            std.debug.print("The OK screen has gone missing!", .{});
-    \\            return;
-    \\        };
-    \\        // Get the arguments for the OK modal screen.
-    \\        const ok_args = try OKModalParams.init(
-    \\            self.allocator,
-    \\            title,
-    \\            message,
-    \\        ) catch |ok_args_err| {
-    \\            std.debug.print("error OKModalParams.init {s}.", .{@errorName(ok_args_err)});
-    \\            return;
-    \\        };
-    \\        // Open the OK modal screen.
-    \\        if(ok_modal.goModalFn.?(ok_modal.implementor, ok_args)) |err| {
-    \\            self.exit(@errorName(err));
-    \\        }
-    \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: *const fn (user_message: []const u8) void) !*Messenger {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: ExitFn) !*Messenger {
     \\    var messenger: *Messenger = try allocator.create(Messenger);
     \\    messenger.allocator = allocator;
-    \\    messenger.all_screens = all_screens;
+    \\    messenger.main_view = main_view;
     \\    messenger.send_channels = send_channels;
     \\    messenger.receive_channels = receive_channels;
     \\    messenger.exit = exit;

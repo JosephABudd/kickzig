@@ -46,49 +46,79 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, panel_name: [
 const template =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
-    \\const _framers_ = @import("framers");
-    \\const _panels_ = @import("panels.zig");
+    \\
+    \\const _lock_ = @import("lock");
     \\const _messenger_ = @import("messenger.zig");
+    \\const _panels_ = @import("panels.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
+    \\
+    \\// KICKZIG TODO:
+    \\// Remember. Defers happen in reverse order.
+    \\// When updating panel state.
+    \\//     self.lock();
+    \\//     defer self.refresh(); // 2nd defer: Refreshes the main view.
+    \\//     defer self.unlock(); //  1st defer: Unlocks.
+    \\//     // DO THE UPDATES.
     \\
     \\/// {{ panel_name }} panel.
     \\/// This panel is the content for the {{ panel_name }} tab.
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator, // For persistant state data.
+    \\    lock: *_lock_.ThreadLock, // For persistant state data.
     \\    window: *dvui.Window,
-    \\    all_screens: *_framers_.Group,
+    \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
     \\    messenger: *_messenger_.Messenger,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    exit: ExitFn,
+    \\
+    \\    /// refresh only if this panel is showing and this screen is showing.
+    \\    pub fn refresh(self: *Panel) void {
+    \\        if (self.all_panels.current_panel_tag == .{{ panel_name }}) {
+    \\            self.main_view.refresh{{ screen_name }}();
+    \\        }
+    \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
+    \\        self.lock.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    /// frame this panel for rendering.
+    \\    /// frame this panel.
+    \\    /// Layout, Draw, Handle user events.
     \\    /// The arena allocator is for building this frame. Not for state.
     \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {
-    \\        _ = self;
     \\        _ = arena;
     \\
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        // The content area for a tab's content.
     \\        var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
     \\        defer scroll.deinit();
     \\
-    \\        // Example 1: The screen's name.
-    \\        var example_title = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
-    \\        try example_title.addText("{{ screen_name }} Screen.", .{});
-    \\        example_title.deinit();
+    \\        // Row 1 example: The screen's name.
+    \\        try dvui.labelNoFmt(@src(), "{{ screen_name }} Screen.", .{ .font_style = .title });
     \\
-    \\        // Example 2: This panel's name.
-    \\        var example_message = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
-    \\        try example_message.addText("{{ panel_name }} panel.", .{});
-    \\        example_message.deinit();
+    \\        // Row 2 example: This panel's name.
+    \\        {
+    \\            var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+    \\            defer row.deinit();
+    \\
+    \\            try dvui.labelNoFmt(@src(), "Panel Name: ", .{ .font_style = .heading });
+    \\            try dvui.labelNoFmt(@src(), "{{ panel_name }}", .{});
+    \\        }
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
+    \\    panel.lock = try _lock_.init(allocator);
+    \\    errdefer {
+    \\        allocator.destroy(panel);
+    \\    }
     \\    panel.allocator = allocator;
-    \\    panel.all_screens = all_screens;
+    \\    panel.main_view = main_view;
     \\    panel.all_panels = all_panels;
     \\    panel.messenger = messenger;
     \\    panel.exit = exit;

@@ -101,7 +101,7 @@ const template =
     \\    user_error_message: ?[]const u8,
     \\
     \\    pub const Settings = struct {
-    \\        user_error_message: ?[]const u8,
+    \\        user_error_message: ?[]const u8 = null,
     \\    };
     \\
     \\    fn init(allocator: std.mem.Allocator) !*BackendPayload {
@@ -125,7 +125,7 @@ const template =
     \\        }
     \\        self.is_set = true;
     \\        if (values.user_error_message) |user_error_message| {
-    \\            self.user_error_message = self.allocator.alloc(u8, user_error_message.len);
+    \\            self.user_error_message = try self.allocator.alloc(u8, user_error_message.len);
     \\            @memcpy(@constCast(self.user_error_message), user_error_message);
     \\        }
     \\    }
@@ -140,7 +140,6 @@ const template =
     \\
     \\    // deinit does not deinit until self is the final pointer to Message.
     \\    pub fn deinit(self: *Message) void {
-    \\        std.log.debug(" == Init msg.deinit()", .{});
     \\        if (self.count_pointers.dec() > 0) {
     \\            // There are more pointers.
     \\            // See fn copy.
@@ -157,16 +156,16 @@ const template =
     \\    /// The back-end receiveFn must only send a copy to the front-end.
     \\    /// Back-end Messenger Example:
     \\    /// var return_copy = message.copy() catch |err| {
-    \\    ///     self.exit(@errorName(err));
+    \\    ///     self.exit(@src(), err, "message.copy()");
     \\    /// };
     \\    /// // Set the back-end payload.
     \\    /// return_copy.backend_payload.set(.{.name = record.name}) catch |err| {
-    \\    ///     self.exit(@errorName(err));
+    \\    ///     self.exit(@src(), err, "return_copy.backend_payload.set(.{.name = record.name})");
     \\    /// };
     \\    /// // Send the message copy to the front-end.
     \\    /// // The channel's send function owns the copy and will deinit it.
     \\    /// self.send_channels.{{ message_name }}.send(message) catch |err| {
-    \\    ///     self.exit(@errorName(err));
+    \\    ///     self.exit(@src(), err, "self.send_channels.{{ message_name }}.send(message)");
     \\    /// };
     \\    ///
     \\    /// In this case copy does not return a copy of itself.

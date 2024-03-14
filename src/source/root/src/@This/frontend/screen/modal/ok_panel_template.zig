@@ -1,51 +1,44 @@
 pub const content =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
-    \\const _framers_ = @import("framers");
-    \\const _panels_ = @import("panels.zig");
+    \\
     \\const _lock_ = @import("lock");
+    \\const _panels_ = @import("panels.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
     \\const ModalParams = @import("modal_params").OK;
     \\
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator,
     \\    window: *dvui.Window,
-    \\    all_screens: *_framers_.Group,
+    \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
-    \\    heading: ?[]u8,
-    \\    message: ?[]u8,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    exit: ExitFn,
     \\
+    \\    modal_params: ?*ModalParams,
+    \\
+    \\    // This panels owns the modal params.
     \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
-    \\        // heading.
-    \\        if (self.heading) |self_heading| {
-    \\            self.allocator.free(self_heading);
+    \\        if (self.modal_params) |modal_params| {
+    \\            modal_params.deinit();
     \\        }
-    \\        self.heading = try self.allocator.alloc(u8, setup_args.heading.len);
-    \\        @memcpy(self.heading.?, setup_args.heading);
-    \\        // message.
-    \\        if (self.message) |self_message| {
-    \\            self.allocator.free(self_message);
-    \\        }
-    \\        self.message = try self.allocator.alloc(u8, setup_args.message.len);
-    \\        @memcpy(self.message.?, setup_args.message);
+    \\        self.modal_params = setup_args;
     \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
-    \\        if (self.heading) |heading| {
-    \\            self.allocator.free(heading);
-    \\        }
-    \\        if (self.message) |message| {
-    \\            self.allocator.free(message);
+    \\        if (self.modal_params) |modal_params| {
+    \\            modal_params.deinit();
     \\        }
     \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    // close removes this modal screen replacing it with the previous screen.
-    \\    fn close(self: *Panel) !void {
-    \\        try self.all_screens.popCurrent();
+    \\    fn close(self: *Panel) void {
+    \\        self.main_view.hideOK();
     \\    }
     \\
-    \\    // frame is a simple screen rendering one panel at a time.
+    \\    /// frame this panel.
+    \\    /// Layout, Draw, Handle user events.
     \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {
     \\        _ = arena;
     \\        var theme: *dvui.Theme = dvui.themeGet();
@@ -69,40 +62,33 @@ pub const content =
     \\
     \\        {
     \\            // Row 1. Heading.
-    \\            if (self.heading) |heading| {
-    \\                var header = try dvui.textLayout(@src(), .{}, .{ .expand = .both, .font_style = .title_4 });
-    \\                try header.addText(heading, .{});
-    \\                header.deinit();
-    \\            }
+    \\            try dvui.labelNoFmt(@src(), self.modal_params.?.heading, .{ .font_style = .title });
     \\        }
     \\
     \\        {
     \\            // Row 2. Message.
-    \\            if (self.message) |message| {
-    \\                var content = try dvui.textLayout(@src(), .{}, .{ .expand = .both });
-    \\                try content.addText(message, .{});
-    \\                content.deinit();
-    \\            }
+    \\            try dvui.labelNoFmt(@src(), self.modal_params.?.message, .{});
     \\        }
     \\
     \\        {
-    \\            // Row 3. Buttons.
+    \\            // Row 3. The OK buttons closes this modal screen and returns to the previous screen.
     \\            if (try dvui.button(@src(), "OK", .{}, .{})) {
-    \\                try self.close();
+    \\                // The user clicked this button.
+    \\                // Handle the event.
+    \\                self.close();
     \\            }
     \\        }
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, exit: ExitFn, window: *dvui.Window) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
     \\    panel.allocator = allocator;
     \\    panel.window = window;
-    \\    panel.all_screens = all_screens;
+    \\    panel.main_view = main_view;
     \\    panel.all_panels = all_panels;
-    \\    panel.heading = null;
-    \\    panel.message = null;
     \\    panel.exit = exit;
+    \\    panel.modal_params = null;
     \\    return panel;
     \\}
 ;

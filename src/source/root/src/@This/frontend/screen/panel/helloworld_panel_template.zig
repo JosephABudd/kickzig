@@ -1,44 +1,71 @@
 pub const content =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
-    \\const _framers_ = @import("framers");
-    \\const _panels_ = @import("panels.zig");
-    \\const _messenger_ = @import("messenger.zig");
+    \\
     \\const _lock_ = @import("lock");
+    \\const _messenger_ = @import("messenger.zig");
     \\const _modal_params_ = @import("modal_params");
+    \\const _panels_ = @import("panels.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
     \\const OKModalParams = _modal_params_.OK;
     \\const YesNoModalParams = _modal_params_.YesNo;
     \\
+    \\// KICKZIG TODO:
+    \\// Remember. Defers happen in reverse order.
+    \\// When updating panel state.
+    \\//     self.lock();
+    \\//     defer self.refresh(); // 2nd defer: Refreshes the main view.
+    \\//     defer self.unlock(); //  1st defer: Unlocks.
+    \\//     // DO THE UPDATES.
+    \\
     \\pub const Panel = struct {
     \\    allocator: std.mem.Allocator, // For persistant state data.
+    \\    lock: *_lock_.ThreadLock, // For persistant state data.
     \\    window: *dvui.Window,
-    \\    all_screens: *_framers_.Group,
+    \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
     \\    messenger: *_messenger_.Messenger,
     \\    example_message_from_messenger: ?[]const u8,
     \\    title: []const u8,
     \\    message: []const u8,
     \\    yes_no: ?bool,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    exit: ExitFn,
+    \\
+    \\    /// refresh only if this panel is showing and this screen is showing.
+    \\    pub fn refresh(self: *Panel) void {
+    \\        if (self.all_panels.current_panel_tag == .HelloWorld) {
+    \\            self.main_view.refreshHelloWorld();
+    \\        }
+    \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
+    \\        self.lock.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    fn modalNoCB(implementor: *anyopaque) void {
     \\        var self: *Panel = @alignCast(@ptrCast(implementor));
+    \\        self.lock.lock();
     \\        self.yes_no = false;
+    \\        self.lock.unlock();
     \\    }
     \\
     \\    fn modalYesCB(implementor: *anyopaque) void {
     \\        var self: *Panel = @alignCast(@ptrCast(implementor));
+    \\        self.lock.lock();
     \\        self.yes_no = true;
+    \\        self.lock.unlock();
     \\    }
     \\
-    \\    // frame this panel for rendering.
+    \\    /// frame this panel.
+    \\    /// Layout, Draw, Handle user events.
     \\    // The arena allocator is for building this frame. Not for state.
     \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {
     \\        _ = arena;
+    \\
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
     \\
     \\        var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
     \\        defer scroller.deinit();
@@ -46,33 +73,29 @@ pub const content =
     \\        var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
     \\        defer layout.deinit();
     \\
-    \\        // Row 1:.
-    \\        var example_title = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font_style = .title_4 });
-    \\        try example_title.addText("Hello...", .{});
-    \\        example_title.deinit();
+    \\        // Row 1 example: The screen's name.
+    \\        try dvui.labelNoFmt(@src(), "HelloWorld Screen.", .{ .font_style = .title });
     \\
-    \\        // Row 2:.
-    \\        var example_message = try dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
-    \\        if (self.example_message_from_messenger) |message| {
-    \\            try example_message.addText(message, .{});
-    \\        } else {
-    \\            try example_message.addText(self.message, .{});
+    \\        // Row 2 example: This panel's name.
+    \\        {
+    \\            var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+    \\            defer row.deinit();
+    \\
+    \\            try dvui.labelNoFmt(@src(), "Panel Name: ", .{ .font_style = .heading });
+    \\            try dvui.labelNoFmt(@src(), "HelloWorld", .{});
     \\        }
-    \\        example_message.deinit();
     \\
-    \\        // Row 3: A button which opens the OK modal screen.
+    \\        // Row 3 example text:
+    \\        try dvui.labelNoFmt(@src(), "HelloWorld", .{});
+    \\
+    \\        // Row 4: A button which opens the OK modal screen.
     \\        if (try dvui.button(@src(), "OK Modal Screen.", .{}, .{})) {
-    \\            var ok_modal = try self.all_screens.get("OK");
     \\            var ok_args = try OKModalParams.init(self.allocator, "Hello World!", "This is the OK modal popped from the HelloWorld screen.");
-    \\            defer ok_args.deinit();
-    \\            if(ok_modal.goModalFn.?(ok_modal.implementor, ok_args)) |err| {
-    \\                return err;
-    \\            }
+    \\            self.main_view.showOK(ok_args);
     \\        }
     \\
-    \\        // Row 4: A button which opens the YesNo modal screen.
+    \\        // Row 5: A button which opens the YesNo modal screen.
     \\        if (try dvui.button(@src(), "YesNo Modal Screen.", .{}, .{})) {
-    \\            var yesno_modal = try self.all_screens.get("YesNo");
     \\            var heading: []const u8 = undefined;
     \\            var yes_label: []const u8 = "Yes.";
     \\            var no_label: []const u8 = "No.";
@@ -95,18 +118,19 @@ pub const content =
     \\                Panel.modalYesCB,
     \\                Panel.modalNoCB,
     \\            );
-    \\            defer yesno_args.deinit();
-    \\            if(yesno_modal.goModalFn.?(yesno_modal.implementor, yesno_args)) |err| {
-    \\                return err;
-    \\            }
+    \\            self.main_view.showYesNo(yesno_args);
     \\        }
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panel {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
     \\    var panel: *Panel = try allocator.create(Panel);
+    \\    panel.lock = try _lock_.init(allocator);
+    \\    errdefer {
+    \\        allocator.destroy(panel);
+    \\    }
     \\    panel.allocator = allocator;
-    \\    panel.all_screens = all_screens;
+    \\    panel.main_view = main_view;
     \\    panel.all_panels = all_panels;
     \\    panel.messenger = messenger;
     \\    panel.example_message_from_messenger = null;
@@ -117,5 +141,4 @@ pub const content =
     \\    panel.window = window;
     \\    return panel;
     \\}
-    \\
 ;

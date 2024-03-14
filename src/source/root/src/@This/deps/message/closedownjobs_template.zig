@@ -129,7 +129,6 @@ pub const content: []const u8 =
     \\
     \\    // deinit does not deinit until self is the final pointer to Message.
     \\    pub fn deinit(self: *Message) void {
-    \\        std.log.debug(" == Init msg.deinit()", .{});
     \\        if (self.count_pointers.dec() > 0) {
     \\            // There are more pointers.
     \\            // See fn copy.
@@ -146,16 +145,16 @@ pub const content: []const u8 =
     \\    /// The back-end receiveFn must only send a copy to the front-end.
     \\    /// Back-end Messenger Example:
     \\    /// var return_copy = message.copy() catch |err| {
-    \\    ///     self.exit(@errorName(err));
+    \\    ///     self.exit(@src(), err, "message.copy()");
     \\    /// };
     \\    /// // Set the back-end payload.
     \\    /// return_copy.backend_payload.set(.{.name = record.name}) catch |err| {
-    \\    ///     self.exit(@errorName(err));
+    \\    ///     self.exit(@src(), err, "return_copy.backend_payload.set(.{.name = record.name})");
     \\    /// };
     \\    /// // Send the message copy to the front-end.
     \\    /// // The channel's send function owns the copy and will deinit it.
     \\    /// self.send_channels.CloseDownJobs.send(message) catch |err| {
-    \\    ///     self.exit(@errorName(err));
+    \\    ///     self.exit(@src(), err, "self.send_channels.CloseDownJobs.send(message)");
     \\    /// };
     \\    ///
     \\    /// In this case copy does not return a copy of itself.

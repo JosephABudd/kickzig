@@ -8,49 +8,33 @@ As I started learning zig, I found and started using [Dave Vanderson's dvui proj
 
 As I continue to learn and appreciate zig and dvui, I am recreating my kick code generator to work with zig and dvui.
 
-## Feb 12, 2024
+## March 14, 2024
 
-Updated wiki.
+* The main menu is optional.
+* The front-end screens are simpler and easier to use.
+* The closing down process logs the error info if there is an error.
+* Added missing CLI responses.
 
-## Feb 10, 2024
+### To do. The next big steps are
 
-Put changes made to modal EOJ into all the other screens.
+* The wiki needs to be redone.
+* Spawned tabs. Tabs which can be added and removed.
+* Review the closing down process.
+* Review responses when `kickzig message` and `kickzig screen` commands are used before the `kickzig framework` command.
 
-## Feb 9, 2024
+### More to do
 
-I thought I had kickzig and the framework it generates working the way I wanted, so I began building a CRUD. It wasn't long before I wanted some changes.
+* review CLI error and success responses.
+* review source code documentation,
 
-### zig release
+## kickzig is a framework code generator
 
-Upated to work with zig released on 2024-01-25.
-
-### Startup params
-
-1. Added back-end startup params that are passed through the back-end at startup as every part of it is initialized. The developer can add to the back-end startup params if needed. I needed to when I added my sqlite module because I needed to pass my sqlite Store to the backend message handlers.
-1. I did the same with the front-end just to be safe. I added front-end startup params that are passed through the front-end at startup as every part of it is initialized. The developer can add to the front-end startup params if needed.
-
-### Messages
-
-The old command for adding a message is gone. There are 3 more new commands for adding messages.
-
-### Added a closing down process
-
-The closing down process runs any call backs set to run right before the window closes.
-
-### To do
-
-* add clearer CLI responses and followup instructions,
-* add the missing source code documentation,
-* fix the bad source code documentation.
-
-### kickzig is a code generator
-
-Kickzig generates my version of an application framework, written in zig, using dvui, that is ready to build and run right away. The application has a front-end which is the gui logic and it has the back-end which is the business logic. The front-end and back-end communicate asynchronously using messages. Kickzig also adds and removes those messages.
+Kickzig generates my version of an application framework, written in zig, using dvui. The framework is an application that is ready to build and run right away. The application has a front-end which is the gui logic and it has the back-end which is the business logic. The front-end and back-end communicate asynchronously using messages. Kickzig also adds and removes those messages.
 
 1. The framework puts the application code at
    * «app-folder»/ (build.zig, build.zig.zon, standalone.zig, etc)
-   * «app-folder»/src/@This/back-end/ (back-end code)
-   * «app-folder»/src/@This/front-end/ (front-end code)
+   * «app-folder»/src/@This/backend/ (back-end code)
+   * «app-folder»/src/@This/frontend/ (front-end code)
    * «app-folder»/src/@This/deps/ (dependencies)
 1. Vendor code can be placed in «app-folder»/src/vendor/.
 1. DVUI must be cloned into «app-folder»/src/vendor/dvui/.
@@ -90,7 +74,7 @@ A screen is a collection of panels. Panels are displayed one at a time. A screen
 
 Whenever you add any type of screen with kickzig, it functions perfectly.
 
-1. A screen can be accessed from the main menu if you add it's name to the main menu list.
+1. A screen can be accessed from the main menu if you add it's tag ( name ) to the main menu list.
 1. A screen can be content for a tab in a vertical tabbar screen. (See **Vertical tab-bar screens** below.)
 1. A screen can be content for a tab in a horizontal tabbar screen. (See **Horizontal tab-bar screens** below.)
 
@@ -130,17 +114,17 @@ Below is the ContactsH screen with the **Remove** tab selected. Notice that the 
 
 Modal screens are the framework's dialogs. They are the same as panel screens where one panel is displayed at a time.
 
-When a modal screen is to be displayed, the framwork pushes the current screen onto a screen stack before displaying the modal screen. When a modal screen is finally closed, the framework pulls that previous screen off the stack and displays it.
+When a modal screen is to be displayed, the framwork caches the current screen before displaying the modal screen. When a modal screen is finally closed, the framework gets that cached previous screen and displays it.
 
 The **OK** modal screen and **YesNo** modal screen are part of the framework. They also work as examples for writing other types of dialogs although they do not have a messenger. The **YesNo** modal screen is interesting because it demostrates how to use call backs.
 
 The **EOJ** modal screen is also part of the framework. It is only used in the shutdown process.
 
-`kickzig screen add-modal YesNoMaybe YesNoMaybe` creates a modal screen named **YesNoMaybe** with a panel named **YesNoMaybe**. It also creates a **YesNoMaybe** modal parameter for passing information to the screen's goModalFn().
+`kickzig screen add-modal YesNoMaybe YesNoMaybe` creates a modal screen named **YesNoMaybe** with a panel named **YesNoMaybe**. It also creates a **YesNoMaybe** modal parameter for passing information to the screen's setState function.
 
 ##### Removing an unwanted screen
 
-`kickzig screen remove YesNo` removes the screen named **YesNO**.
+`kickzig screen remove YesNoMaybe` removes the screen named **YesNoMaybe**.
 
 ### DVUI tools for the developer
 
@@ -187,7 +171,7 @@ Removing a message also removes the back-end's messenger at src/@This/backend/me
 #### Startup parameters
 
 1. The startup parameter `finish_up_jobs: *_closedownjobs_.Jobs` allows modules to add their shut down call back to be executed during the closing down process.
-1. The startup parameter `exit: *const fn (user_message: []const u8) void` is the function called only when there is a fatal error. It starts the shut down process with an error message.
+1. The startup parameter `exit: ExitFn` is the function called only when there is a fatal error. It starts the shut down process with an error message.
 
 #### 2 Ways to start the shut down process
 

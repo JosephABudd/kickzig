@@ -32,16 +32,17 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/deps/paths/api.zig" },
         .imports = &.{},
     });
-    const success_mod = b.addModule("success", .{
-        .root_source_file = .{ .path = "src/deps/success.zig" },
-        .imports = &.{
-            .{ .name = "paths", .module = paths_mod },
-        },
-    });
     const filenames_mod = b.addModule("filenames", .{
         .root_source_file = .{ .path = "src/deps/filenames/api.zig" },
         .imports = &.{
             .{ .name = "paths", .module = paths_mod },
+        },
+    });
+    const success_mod = b.addModule("success", .{
+        .root_source_file = .{ .path = "src/deps/success.zig" },
+        .imports = &.{
+            .{ .name = "paths", .module = paths_mod },
+            .{ .name = "filenames", .module = filenames_mod },
         },
     });
     const slices_mod = b.addModule("slices", .{

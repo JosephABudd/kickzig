@@ -1,247 +1,397 @@
-pub const content =
+const std = @import("std");
+const fmt = std.fmt;
+
+pub const Template = struct {
+    allocator: std.mem.Allocator,
+    screen_names: [][]const u8,
+    screen_names_index: usize,
+    not_modal_screen_names: [][]const u8,
+    not_modal_screen_names_index: usize,
+    modal_screen_names: [][]const u8,
+    modal_screen_names_index: usize,
+
+    pub fn init(allocator: std.mem.Allocator) !*Template {
+        var data: *Template = try allocator.create(Template);
+        data.not_modal_screen_names = try allocator.alloc([]const u8, 5);
+        errdefer {
+            allocator.destroy(data);
+        }
+        data.not_modal_screen_names_index = 0;
+        data.modal_screen_names = try allocator.alloc([]const u8, 5);
+        errdefer {
+            allocator.destroy(data);
+        }
+        data.modal_screen_names_index = 0;
+        data.allocator = allocator;
+        return data;
+    }
+
+    pub fn deinit(self: *Template) void {
+        for (self.not_modal_screen_names, 0..) |name, i| {
+            if (i == self.not_modal_screen_names_index) {
+                break;
+            }
+            self.allocator.free(name);
+        }
+        self.allocator.free(self.not_modal_screen_names);
+        for (self.modal_screen_names, 0..) |name, i| {
+            if (i == self.modal_screen_names_index) {
+                break;
+            }
+            self.allocator.free(name);
+        }
+        self.allocator.free(self.not_modal_screen_names);
+        self.allocator.destroy(self);
+    }
+
+    pub fn addNotModalScreenName(self: *Template, new_name: []const u8) !void {
+        var new_not_modal_screen_names: [][]const u8 = undefined;
+        if (self.not_modal_screen_names_index == self.not_modal_screen_names.len) {
+            // Full list so create a new bigger one.
+            new_not_modal_screen_names = try self.allocator.alloc([]const u8, (self.not_modal_screen_names.len + 5));
+            for (self.not_modal_screen_names, 0..) |name, i| {
+                new_not_modal_screen_names[i] = name;
+            }
+            // Replace the old list with the new bigger one.
+            self.allocator.free(self.not_modal_screen_names);
+            self.not_modal_screen_names = new_not_modal_screen_names;
+        }
+        self.not_modal_screen_names[self.not_modal_screen_names_index] = try self.allocator.alloc(u8, new_name.len);
+        @memcpy(@constCast(self.not_modal_screen_names[self.not_modal_screen_names_index]), new_name);
+        self.not_modal_screen_names_index += 1;
+    }
+
+    pub fn addModalScreenName(self: *Template, new_name: []const u8) !void {
+        if (std.mem.eql(u8, "EOJ", new_name)) {
+            // The EOJ modal is built into this template.
+            return;
+        }
+        if (self.modal_screen_names_index == self.modal_screen_names.len) {
+            // Full list so create a new bigger one.
+            var new_modal_screen_names: [][]const u8 = try self.allocator.alloc([]const u8, (self.modal_screen_names.len + 5));
+            for (self.modal_screen_names, 0..) |name, i| {
+                new_modal_screen_names[i] = name;
+            }
+            // Replace the old list with the new bigger one.
+            self.allocator.free(self.modal_screen_names);
+            self.modal_screen_names = new_modal_screen_names;
+        }
+        self.modal_screen_names[self.modal_screen_names_index] = try self.allocator.alloc(u8, new_name.len);
+        @memcpy(@constCast(self.modal_screen_names[self.modal_screen_names_index]), new_name);
+        self.modal_screen_names_index += 1;
+    }
+
+    // The caller owns the returned value.
+    pub fn content(self: *Template) ![]const u8 {
+        const modal_names: ?[][]const u8 = switch (self.modal_screen_names_index) {
+            0 => null,
+            else => self.modal_screen_names[0..self.modal_screen_names_index],
+        };
+        const not_modal_names: ?[][]const u8 = switch (self.not_modal_screen_names_index) {
+            0 => null,
+            else => self.not_modal_screen_names[0..self.not_modal_screen_names_index],
+        };
+
+        var line: []u8 = undefined;
+        var lines = std.ArrayList(u8).init(self.allocator);
+        defer lines.deinit();
+
+        // Build the content.
+        try lines.appendSlice(line1);
+
+        // Tag each screen.
+        if (not_modal_names) |names| {
+            for (names) |name| {
+                // Replace {{ screen_name }} with the message name.
+                const replacement_size: usize = std.mem.replacementSize(u8, line1_not_modal, "{{ screen_name }}", name);
+                line = try self.allocator.alloc(u8, replacement_size);
+                defer self.allocator.free(line);
+                _ = std.mem.replace(u8, line1_not_modal, "{{ screen_name }}", name, line);
+                try lines.appendSlice(line);
+            }
+        }
+
+        try lines.appendSlice(line2);
+
+        // Show funcs for not modal screens.
+        if (not_modal_names) |names| {
+            for (names) |name| {
+                // Replace {{ screen_name }} with the message name.
+                const replacement_size: usize = std.mem.replacementSize(u8, line2_not_modal, "{{ screen_name }}", name);
+                line = try self.allocator.alloc(u8, replacement_size);
+                defer self.allocator.free(line);
+                _ = std.mem.replace(u8, line2_not_modal, "{{ screen_name }}", name, line);
+                try lines.appendSlice(line);
+            }
+        }
+
+        // Show funcs for modal screens.
+        if (modal_names) |names| {
+            for (names) |name| {
+                // Replace {{ screen_name }} with the message name.
+                const replacement_size: usize = std.mem.replacementSize(u8, line2_modal, "{{ screen_name }}", name);
+                line = try self.allocator.alloc(u8, replacement_size);
+                defer self.allocator.free(line);
+                _ = std.mem.replace(u8, line2_modal, "{{ screen_name }}", name, line);
+                try lines.appendSlice(line);
+            }
+        }
+
+        try lines.appendSlice(line_eoj);
+
+        const temp: []const u8 = try lines.toOwnedSlice();
+        line = try self.allocator.alloc(u8, temp.len);
+        @memcpy(line, temp);
+        return line;
+    }
+};
+
+const line1 =
     \\const std = @import("std");
+    \\const dvui = @import("dvui");
+    \\
+    \\const _lock_ = @import("lock");
+    \\const _modal_params_ = @import("modal_params");
     \\const _startup_ = @import("startup");
+    \\const ExitFn = @import("various").ExitFn;
+    \\pub const ScreenTags = @import("screen_tags.zig").ScreenTags;
     \\
-    \\/// Behavior defines a behavior that must be implemented by members of Group.
-    \\pub const Behavior = struct {
+    \\/// MainView is each and every screen.
+    \\pub const MainView = struct {
     \\    allocator: std.mem.Allocator,
-    \\    // implementor is a pointer to the implementor of the Behavior.
-    \\    implementor: *anyopaque,
+    \\    lock: *_lock_.ThreadLock,
+    \\    window: *dvui.Window,
+    \\    exit: ExitFn,
+    \\    current: ?ScreenTags,
+    \\    current_modal_is_new: bool,
+    \\    current_is_modal: bool,
+    \\    previous: ?ScreenTags,
+    \\    modal_args: ?*anyopaque,
     \\
-    \\    // deinitFn deinits the implementor.
-    \\    deinitFn: *const fn (implementor: *anyopaque) void,
+    \\    pub fn init(startup: _startup_.Frontend) !*MainView {
+    \\        var self: *MainView = try startup.allocator.create(MainView);
+    \\        self.lock = try _lock_.init(startup.allocator);
+    \\        errdefer startup.allocator.destroy(self);
     \\
-    \\    // nameFn returns a framer's unique name.
-    \\    nameFn: *const fn (self: *anyopaque) []const u8,
+    \\        self.allocator = startup.allocator;
+    \\        self.exit = startup.exit;
+    \\        self.window = startup.window;
     \\
-    \\    // goModalFn opens this screen as a modal view.
-    \\    // It is called after the modal behavior is returned by fn Group.get(...).
-    \\    // It is called before the modal Behavior is made current by fn Group.setCurrentBehavior(...).
-    \\    goModalFn: ?*const fn (self: *anyopaque, args: *anyopaque) ?anyerror,
+    \\        self.current = null;
+    \\        self.previous = null;
+    \\        self.current_is_modal = false;
+    \\        self.modal_args = null;
+    \\        self.current_modal_is_new = false;
     \\
-    \\    // frameFn implements a gui frame.
-    \\    // It is called during the gui's framing event.
-    \\    frameFn: *const fn (self: *anyopaque, allocator: std.mem.Allocator) ?anyerror,
+    \\        return self;
+    \\    }
     \\
-    \\    // deinit the implementor and self.
-    \\    pub fn deinit(self: *Behavior) void {
-    \\        self.deinitFn(self.implementor);
+    \\    pub fn deinit(self: *MainView) void {
+    \\        self.lock.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    pub fn isModal(self: *Behavior) bool {
-    \\        if (self.goModalFn) |_| {
-    \\            return true;
-    \\        } else {
-    \\            return false;
-    \\        }
-    \\    }
-    \\};
+    \\    pub fn show(self: *MainView, screen: ScreenTags) !void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
     \\
-    \\/// Group is a collection of Behavior implementations.
-    \\pub const Group = struct {
-    \\    allocator: std.mem.Allocator,
-    \\    current: ?*Behavior,
-    \\    members: std.StringHashMap(*Behavior),
-    \\    behavior_stack: *BehaviorStack,
-    \\    behavior_stack_index: usize,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\        // Only show if not a modal screen.
+    \\        return switch (screen) {
     \\
-    \\    /// initBehavior constructs a Behavior.
-    \\    /// The Group has control over the Bahavior after subscribed.
-    \\    pub fn initBehavior(
-    \\        self: *Group,
-    \\        implementor: *anyopaque,
-    \\        deinitFn: *const fn (implementor: *anyopaque) void,
-    \\        nameFn: *const fn (self: *anyopaque) []const u8,
-    \\        frameFn: *const fn (self: *anyopaque, allocator: std.mem.Allocator) ?anyerror,
-    \\        goModalFn: ?*const fn (self: *anyopaque, args: *anyopaque) ?anyerror,
-    \\    ) !*Behavior {
-    \\        var behavior: *Behavior = try self.allocator.create(Behavior);
-    \\        behavior.allocator = self.allocator;
-    \\        behavior.implementor = implementor;
-    \\        behavior.deinitFn = deinitFn;
-    \\        behavior.nameFn = nameFn;
-    \\        behavior.frameFn = frameFn;
-    \\        behavior.goModalFn = goModalFn;
-    \\        return behavior;
+;
+
+const line1_not_modal =
+    \\            .{{ screen_name }} => self.show{{ screen_name }}(),
+    \\
+;
+
+const line2 =
+    \\            else => error.CantShowModalScreen,
+    \\        };
     \\    }
     \\
-    \\    pub fn deinit(self: *Group) void {
-    \\        var iter = self.members.iterator();
-    \\        while (iter.next()) |member| {
-    \\            member.value_ptr.*.deinit();
-    \\        }
-    \\        self.members.deinit();
-    \\        self.behavior_stack.deinit();
+    \\    pub fn isModal(self: *MainView) bool {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        return self.current_is_modal;
     \\    }
     \\
-    \\    pub fn frame(self: *Group, arena: std.mem.Allocator) !void {
-    \\        if (self.current) |current| {
-    \\            if (current.frameFn(current.implementor, arena)) |err| {
-    \\                return err;
-    \\            }
-    \\        }
+    \\    pub fn isNewModal(self: *MainView) bool {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        const is_new: bool = self.current_modal_is_new;
+    \\        self.current_modal_is_new = false;
+    \\        return is_new;
     \\    }
     \\
-    \\    /// subscribe adds a Behavior to the group.
-    \\    /// Group has complete control of behavior and will deinit it.
-    \\    pub fn subscribe(self: *Group, behavior: *Behavior) !void {
-    \\        var name = behavior.nameFn(behavior.implementor);
-    \\        if (name.len == 0) {
-    \\            return error.BehaviorNameEmpty;
-    \\        }
-    \\        try self.members.put(name, behavior);
-    \\    }
+    \\    pub fn currentTag(self: *MainView) ?ScreenTags {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
     \\
-    \\    /// unsubscribe removes a named Behavior from Group.
-    \\    /// Group has complete control of behavior and will deinit it.
-    \\    pub fn unsubscribe(self: *Group, name: []const u8) !void {
-    \\        var behavior: *Behavior = try self.get(name);
-    \\        self.members.remove(name);
-    \\        behavior.deinit();
-    \\    }
-    \\
-    \\    /// get returns a Behavior.
-    \\    pub fn get(self: *Group, name: []const u8) !*Behavior {
-    \\        if (self.members.get(name)) |behavior| {
-    \\            return behavior;
-    \\        } else {
-    \\            std.log.debug("BehaviorNameNotFound get: {s}", .{name});
-    \\            return error.BehaviorNameNotFound;
-    \\        }
-    \\    }
-    \\
-    \\    /// setCurrent sets the current behavior.
-    \\    /// Param name is the name of the Behavior.
-    \\    /// The Behavior will frame in the next frame.
-    \\    pub fn setCurrent(self: *Group, name: []const u8) !void {
-    \\        if (self.members.get(name)) |behavior| {
-    \\            try self.setCurrentBehavior(behavior);
-    \\        } else {
-    \\            std.log.debug("BehaviorNameNotFound set: {s}", .{name});
-    \\            return error.BehaviorNameNotFound;
-    \\        }
-    \\    }
-    \\
-    \\    // isModal returns if the current Behavior is modal.
-    \\    pub fn isModal(self: *Group) bool {
-    \\        if (self.current) |current| {
-    \\            return current.isModal();
-    \\        } else {
-    \\            return false;
-    \\        }
-    \\    }
-    \\
-    \\    /// setCurrentBehavior sets the current behavior.
-    \\    /// Param behavior is the Behavior.
-    \\    /// The Behavior will frame in the next frame.
-    \\    pub fn setCurrentBehavior(self: *Group, behavior: *Behavior) !void {
-    \\        if (self.current == null) {
-    \\            // There is no current behavior.
-    \\            if (behavior.isModal()) {
-    \\                // Can't start with a modal behavior.
-    \\                return error.CanStartWithModalBehavior;
-    \\            }
-    \\            // Set the current behavior.
-    \\            self.current = behavior;
-    \\        } else if (self.current.?.isModal()) {
-    \\            // The user is currently viewing a modal screen.
-    \\            // Replace the last behavior pushed onto the stack.
-    \\            try self.behavior_stack.replacePush(behavior);
-    \\        } else {
-    \\            // Replace the current behavior.
-    \\            if (behavior.isModal()) {
-    \\                // Save the current Behavior onto the stack.
-    \\                if (self.current) |current| {
-    \\                    try self.behavior_stack.push(current);
-    \\                }
-    \\            }
-    \\            self.current = behavior;
-    \\        }
-    \\    }
-    \\
-    \\    /// getCurrent returns the current Behavior.
-    \\    pub fn getCurrent(self: *Group) ?*Behavior {
     \\        return self.current;
     \\    }
     \\
-    \\    /// popCurrent
-    \\    /// 1. Pops the previous Behavior from the stack.
-    \\    /// 2. Sets the previous Behavior as the new current Behavior.
-    \\    /// The Behavior will frame in the next frame.
-    \\    pub fn popCurrent(self: *Group) !void {
-    \\        // Try to get the previous current behavior.
-    \\        self.current = try self.behavior_stack.pop();
-    \\    }
-    \\};
+    \\    pub fn modalArgs(self: *MainView) ?*anyopaque {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
     \\
-    \\pub fn init(allocator: std.mem.Allocator, exit: *const fn (user_message: []const u8) void) !*Group {
-    \\    var group: *Group = try allocator.create(Group);
-    \\    group.behavior_stack = try BehaviorStack.init(allocator);
-    \\    errdefer allocator.destroy(group);
-    \\    group.allocator = allocator;
-    \\    group.members = std.StringHashMap(*Behavior).init(allocator);
-    \\    group.behavior_stack_index = 0;
-    \\    group.current = null;
-    \\    group.exit = exit;
-    \\    return group;
-    \\}
-    \\
-    \\const BehaviorStackCap: usize = 5;
-    \\
-    \\const BehaviorStack = struct {
-    \\    allocator: std.mem.Allocator,
-    \\    list: []*Behavior,
-    \\    list_index: usize,
-    \\
-    \\    fn init(allocator: std.mem.Allocator) !*BehaviorStack {
-    \\        var behavior_stack: *BehaviorStack = try allocator.create(BehaviorStack);
-    \\        behavior_stack.list = try allocator.alloc(*Behavior, 5);
-    \\        errdefer allocator.destroy(behavior_stack);
-    \\        behavior_stack.allocator = allocator;
-    \\        behavior_stack.list_index = 0;
-    \\        return behavior_stack;
+    \\        const modal_args = self.modal_args;
+    \\        self.modal_args = null;
+    \\        return modal_args;
     \\    }
     \\
-    \\    fn deinit(self: *BehaviorStack) void {
-    \\        // The BehaviorStack does not control the behaviors.
-    \\        // They are controlled by the Group.
-    \\        self.allocator.free(self.list);
-    \\        self.allocator.destroy(self);
-    \\    }
+;
+
+const line2_not_modal =
     \\
-    \\    fn inc_cap(self: *BehaviorStack) !void {
-    \\        const cap: usize = self.list.len + BehaviorStackCap;
-    \\        var new_list = try self.allocator.alloc(*Behavior, cap);
-    \\        for (self.list, 0..) |behavior, i| {
-    \\            new_list[i] = behavior;
-    \\        }
-    \\        self.allocator.free(self.list);
-    \\        self.list = new_list;
-    \\    }
+    \\    // The {{ screen_name }} screen.
     \\
-    \\    fn push(self: *BehaviorStack, behavior: *Behavior) !void {
-    \\        if (self.list_index == self.list.len) {
-    \\            try self.inc_cap();
-    \\        }
-    \\        self.list[self.list_index] = behavior;
-    \\        self.list_index += 1;
-    \\    }
+    \\    /// show{{ screen_name }} makes the {{ screen_name }} screen to the current one.
+    \\    pub fn show{{ screen_name }}(self: *MainView) void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
     \\
-    \\    fn replacePush(self: *BehaviorStack, behavior: *Behavior) !void {
-    \\        if (self.list_index > 0) {
-    \\            self.list[self.list_index - 1] = behavior;
+    \\        if (!self.current_is_modal) {
+    \\            // The current screen is not modal so replace it.
+    \\            self.current = .{{ screen_name }};
+    \\            self.current_is_modal = false;
     \\        }
     \\    }
     \\
-    \\    fn pop(self: *BehaviorStack) !*Behavior {
-    \\        if (self.list_index == 0) {
-    \\            return error.EmptyStack;
+    \\    /// refresh{{ screen_name }} refreshes the window if the {{ screen_name }} screen is the current one.
+    \\    pub fn refresh{{ screen_name }}(self: *MainView) void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        if (self.current) |current| {
+    \\            if (current == .{{ screen_name }}) {
+    \\                // {{ screen_name }} is the current screen.
+    \\                dvui.refresh(self.window, @src(), null);
+    \\            }
     \\        }
-    \\        self.list_index -= 1;
-    \\        var behavior: *Behavior = self.list[self.list_index];
-    \\        return behavior;
+    \\    }
+    \\
+;
+
+const line2_modal =
+    \\    // The {{ screen_name }} modal screen.
+    \\
+    \\    /// show{{ screen_name }} starts the {{ screen_name }} modal screen.
+    \\    /// Param args is the {{ screen_name }} modal args.
+    \\    /// show{{ screen_name }} owns modal_args_ptr.
+    \\    pub fn show{{ screen_name }}(self: *MainView, modal_args_ptr: *anyopaque) void {
+    \\        self.lock.lock();
+    \\        defer dvui.refresh(self.window, @src(), null);
+    \\        defer self.lock.unlock();
+    \\
+    \\        if (self.current_is_modal) {
+    \\            // The current modal is still showing.
+    \\            return;
+    \\        }
+    \\        // Save the current screen.
+    \\        self.previous = self.current;
+    \\        self.current_modal_is_new = true;
+    \\        self.current_is_modal = true;
+    \\        self.modal_args = modal_args_ptr;
+    \\        self.current = .{{ screen_name }};
+    \\    }
+    \\
+    \\    /// hide{{ screen_name }} hides the modal screen {{ screen_name }}.
+    \\    pub fn hide{{ screen_name }}(self: *MainView) void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        if (self.current) |current| {
+    \\            if (current == .{{ screen_name }}) {
+    \\                // {{ screen_name }} is the current screen so hide it.
+    \\                self.current = self.previous;
+    \\                self.current_is_modal = false;
+    \\                self.modal_args = null;
+    \\                self.previous = null;
+    \\            }
+    \\        }
+    \\    }
+    \\
+    \\    /// refresh{{ screen_name }} refreshes the window if the {{ screen_name }} screen is the current one.
+    \\    pub fn refresh{{ screen_name }}(self: *MainView) void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        if (self.current) |current| {
+    \\            if (current == .{{ screen_name }}) {
+    \\                // {{ screen_name }} is the current screen.
+    \\                dvui.refresh(self.window, @src(), null);
+    \\            }
+    \\        }
+    \\    }
+    \\
+;
+
+const line_eoj =
+    \\
+    \\    // The EOJ modal screen.
+    \\
+    \\    /// forceEOJ starts the EOJ modal screen even if another modal is shown.
+    \\    /// Param args is the EOJ modal args.
+    \\    /// forceEOJ owns modal_args_ptr.
+    \\    pub fn forceEOJ(self: *MainView, modal_args_ptr: *anyopaque) void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        // Don't save the current screen.
+    \\        self.current_modal_is_new = true;
+    \\        self.current_is_modal = true;
+    \\        self.modal_args = modal_args_ptr;
+    \\        self.current = .EOJ;
+    \\    }
+    \\
+    \\    /// showEOJ starts the EOJ modal screen.
+    \\    /// Param args is the EOJ modal args.
+    \\    /// showEOJ owns modal_args_ptr.
+    \\    pub fn showEOJ(self: *MainView, modal_args_ptr: *anyopaque) void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        if (self.current_is_modal) {
+    \\            // The current modal is not hidden yet.
+    \\            return;
+    \\        }
+    \\        // Don't save the current screen.
+    \\        self.current_modal_is_new = true;
+    \\        self.current_is_modal = true;
+    \\        self.modal_args = modal_args_ptr;
+    \\        self.current = .EOJ;
+    \\    }
+    \\
+    \\    /// hideEOJ hides the modal screen EOJ.
+    \\    pub fn hideEOJ(self: *MainView) void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        if (self.current) |current| {
+    \\            if (current == .EOJ) {
+    \\                // EOJ is the current screen so hide it.
+    \\                self.current = self.previous;
+    \\                self.current_is_modal = false;
+    \\                self.modal_args = null;
+    \\                self.previous = null;
+    \\            }
+    \\        }
+    \\    }
+    \\
+    \\    /// refreshEOJ refreshes the window if the EOJ screen is the current one.
+    \\    pub fn refreshEOJ(self: *MainView) void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        if (self.current) |current| {
+    \\            if (current == .EOJ) {
+    \\                // EOJ is the current screen.
+    \\                dvui.refresh(self.window, @src(), null);
+    \\            }
+    \\        }
     \\    }
     \\};
 ;

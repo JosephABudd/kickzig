@@ -8,35 +8,27 @@ const _any_panel_template_ = @import("any_panel_template.zig");
 const _messenger_template_ = @import("messenger_template.zig");
 const _screen_template_ = @import("screen_template.zig");
 
-/// add creates a vtab screen folder and package.
+/// add creates a htab screen folder and package.
 pub fn add(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: [][]const u8) !void {
-    var panel_count: u8 = 0;
-    for (tab_names) |tab_name| {
-        if (tab_name[0] == '+') {
-            panel_count += 1;
-        }
-    }
     // Open/Create the screen package folder.
     var package_dir: std.fs.Dir = try directory(screen_name);
     defer package_dir.close();
     // Add the screen.zig file.
     try addScreenFile(allocator, package_dir, screen_name, tab_names);
-    if (panel_count > 0) {
-        // Add the panel files.
-        // Tab names prefixed with '+' use a package panel.
-        for (tab_names) |tab_name| {
-            if (tab_name[0] == '+') {
-                try addAnyPanel(allocator, package_dir, screen_name, tab_name[1..]);
-            }
+    // Add the panel files.
+    // Tab names prefixed with '+' use a package panel.
+    for (tab_names) |tab_name| {
+        if (tab_name[0] == '+') {
+            try addAnyPanel(allocator, package_dir, screen_name, tab_name[1..]);
         }
-        // Add the messenger file.
-        try addMessengerFile(package_dir, screen_name);
-        try rebuildPanelsZig(allocator, package_dir, screen_name);
     }
+    // Add the messenger file.
+    try addMessengerFile(package_dir, screen_name);
+    try rebuildPanelsZig(allocator, package_dir, screen_name);
 }
 
-/// remove removes a vtab screen package folder and files.
-/// Returns if the screen is a vtab screen and was removed.
+/// remove removes a htab screen package folder and files.
+/// Returns if the screen is a htab screen and was removed.
 pub fn remove(screen_name: []const u8) !bool {
     var dir: std.fs.Dir = directory(null) catch {
         return false;
@@ -93,7 +85,7 @@ pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, s
     const template: *_panels_template_.Template = try _panels_template_.init(allocator);
     defer template.deinit();
     // Get the names of each panel and use them in the template.
-    const current_panel_names: [][]const u8 = try _filenames_.allFrontendVTabScreenPanelNames(allocator, screen_name);
+    const current_panel_names: [][]const u8 = try _filenames_.allFrontendHTabScreenPanelNames(allocator, screen_name);
     defer {
         for (current_panel_names, 0..) |name, i| {
             _ = i;
@@ -140,7 +132,7 @@ fn addScreenFile(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_n
 fn directory(screen_name: ?[]const u8) !std.fs.Dir {
     const folders: *_paths_.FolderPaths = try _paths_.folders();
     defer folders.deinit();
-    var panel_folder: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_vtab.?, .{});
+    var panel_folder: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_htab.?, .{});
     if (screen_name == null) {
         return panel_folder;
     }

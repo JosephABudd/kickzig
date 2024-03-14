@@ -110,7 +110,7 @@ pub const Template = struct {
             for (names) |name| {
                 try lines.appendSlice("\n");
                 {
-                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, all_screens, panels, messenger, exit, window);\n", .{name});
+                    line = try fmt.allocPrint(self.allocator, "    panels.{0s} = try _{0s}_.init(allocator, main_view, panels, messenger, exit, window);\n", .{name});
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }
@@ -119,8 +119,10 @@ pub const Template = struct {
                 try lines.appendSlice("    }\n");
             }
         } else {
-            try lines.appendSlice("    _ = all_screens;\n");
+            try lines.appendSlice("    _ = main_view;\n");
             try lines.appendSlice("    _ = messenger;\n");
+            try lines.appendSlice("    _ = exit;\n");
+            try lines.appendSlice("    _ = window;\n");
         }
 
         try lines.appendSlice(line7);
@@ -146,8 +148,11 @@ pub fn init(allocator: std.mem.Allocator) !*Template {
 const line1a =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
+    \\
     \\const _framers_ = @import("framers");
     \\const _messenger_ = @import("messenger.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
     \\
 ;
 // \\const _Home_ = @import("home_panel.zig");
@@ -214,7 +219,7 @@ const line5 =
 const line6 =
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, messenger: *_messenger_.Messenger, exit: *const fn (user_message: []const u8) void, window: *dvui.Window) !*Panels {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panels {
     \\    var panels: *Panels = try allocator.create(Panels);
     \\    panels.allocator = allocator;
     \\

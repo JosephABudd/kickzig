@@ -37,6 +37,7 @@ const template =
     \\const std = @import("std");
     \\
     \\pub const _message_ = @import("message").{{ channel_name }};
+    \\const ExitFn = @import("various").ExitFn;
     \\
     \\/// Behavior is back-end messenger's call-backs and state.
     \\/// .implementor implements the recieveFn and triggerFn.
@@ -49,7 +50,7 @@ const template =
     \\pub const Group = struct {
     \\    allocator: std.mem.Allocator = undefined,
     \\    members: std.AutoHashMap(*anyopaque, *Behavior),
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    exit: ExitFn,
     \\
     \\    /// initBehavior constructs an empty Behavior.
     \\    pub fn initBehavior(self: *Group) !*Behavior {
@@ -108,7 +109,7 @@ const template =
     \\    }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, exit: *const fn (user_message: []const u8) void) !*Group {
+    \\pub fn init(allocator: std.mem.Allocator, exit: ExitFn) !*Group {
     \\    var channel: *Group = try allocator.create(Group);
     \\    channel.members = std.AutoHashMap(*anyopaque, *Behavior).init(allocator);
     \\    channel.allocator = allocator;

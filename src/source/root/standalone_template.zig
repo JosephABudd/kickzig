@@ -45,12 +45,22 @@ pub const template =
     \\const _channel_ = @import("channel");
     \\const _closer_ = @import("closer");
     \\const _closedownjobs_ = @import("closedownjobs");
-    \\const _framers_ = @import("framers");
     \\const _frontend_ = @import("src/@This/frontend/api.zig");
     \\const _modal_params_ = @import("modal_params");
     \\const _startup_ = @import("startup");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
     \\
     \\const window_icon_png = @embedFile("src/vendor/dvui/src/zig-favicon.png");
+    \\
+    \\// KICKZIG TODO:
+    \\// When the user clicks the window's X:
+    \\// - If a modal screen is not shown:
+    \\//   * then the app will just close.
+    \\// - If a modal screen is shown:
+    \\//   * If force_close == true: then the app will just close.
+    \\//   * If force_close == false: then the app will not close until after the modal screen is hidden (closes).
+    \\const force_close: bool = true;
     \\
     \\// General Purpose Allocator for frontend-state, backend and channels.
     \\var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
@@ -78,12 +88,10 @@ pub const template =
     \\    win.content_scale = gui_backend.initial_scale * 1.5;
     \\    defer win.deinit();
     \\
-    \\    var all_screens: *_framers_.Group = undefined;
-    \\    var finish_up_jobs: *_closedownjobs_.Jobs = undefined;
-    \\    // init the finish_up_jobs.
-    \\    finish_up_jobs = try _closedownjobs_.Jobs.init(gpa);
+    \\    var main_view: *MainView = undefined;
+    \\    var finish_up_jobs: *_closedownjobs_.Jobs = try _closedownjobs_.Jobs.init(gpa);
     \\    defer finish_up_jobs.deinit();
-    \\    const exit: *const fn (user_message: []const u8) void = try _closer_.init(gpa, finish_up_jobs);
+    \\    const exit: ExitFn = try _closer_.init(gpa, finish_up_jobs, &win);
     \\    defer _closer_.deinit();
     \\
     \\    // The channels between the front and back ends.
@@ -95,19 +103,22 @@ pub const template =
     \\
     \\    // Initialize the front end.
     \\    // See src/@This/deps/startup/api.zig
-    \\    var startup_frontend: *_startup_.Frontend = try _startup_.Frontend.init(
-    \\        gpa,
-    \\        &win,
-    \\        frontToBack,
-    \\        backToFront,
-    \\        finish_up_jobs,
-    \\        exit,
-    \\    );
-    \\    all_screens = try _framers_.init(gpa, exit);
-    \\    defer all_screens.deinit();
-    \\    _closer_.set_screens(all_screens);
-    \\    startup_frontend.setAllScreens(all_screens);
-    \\    try _frontend_.init(startup_frontend.*);
+    \\    var startup_frontend: _startup_.Frontend = _startup_.Frontend{
+    \\        .allocator = gpa,
+    \\        .window = &win,
+    \\        .send_channels = frontToBack,
+    \\        .receive_channels = backToFront,
+    \\        .main_view = undefined,
+    \\        .finish_up_jobs = finish_up_jobs,
+    \\        .exit = exit,
+    \\        .screen_pointers = undefined,
+    \\    };
+    \\    main_view = try MainView.init(startup_frontend);
+    \\    defer main_view.deinit();
+    \\    startup_frontend.setMainView(main_view);
+    \\    try _frontend_.init(&startup_frontend);
+    \\    defer _frontend_.deinit();
+    \\    _closer_.set_screens(main_view);
     \\
     \\    // Initialize and kick-start the back end.
     \\    try _backend_.init(
@@ -150,19 +161,27 @@ pub const template =
     \\        const quit = try gui_backend.addAllEvents(&win);
     \\        const state = _closer_.context();
     \\        switch (state) {
-    \\            .none => blk: {
+    \\            .none => {
     \\                if (quit) {
-    \\                    _closer_.close("Bye-bye.");
+    \\                    // User clicked window's X to close the window.
+    \\                    _closer_.close("Bye-bye.", force_close);
     \\                }
-    \\                break :blk;
     \\            },
-    \\            .started => blk: {
-    \\                // already quitting so ignore quit.
-    \\                break :blk;
+    \\            .forced => {
+    \\                // The previous frame set state to .forced.
+    \\                // So start forcing close this frame.
+    \\                _closer_.forced();
+    \\            },
+    \\            .started => {
+    \\                // The close process is now running.
     \\            },
     \\            .completed => {
-    \\                std.log.debug("break :main_loop;", .{});
+    \\                // The close process has completed.
     \\                break :main_loop;
+    \\            },
+    \\            .waiting => {
+    \\                // The close process is waiting for the modal screen to close.
+    \\                _closer_.waiting();
     \\            },
     \\        }
     \\
@@ -170,7 +189,7 @@ pub const template =
     \\        // the previous frame's render
     \\        gui_backend.clear();
     \\
-    \\        try _frontend_.frame(arena, all_screens);
+    \\        try _frontend_.frame(arena);
     \\
     \\        // marks end of dvui frame, don't call dvui functions after this
     \\        // - sends all dvui stuff to gui_backend for rendering, must be called before renderPresent()

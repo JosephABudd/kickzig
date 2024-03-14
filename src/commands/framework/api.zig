@@ -49,9 +49,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
             };
         } else {
             // User input is "framework ????".
-            const framework_usage: []u8 = try _usage_.framework(allocator, cli_name);
-            defer allocator.free(framework_usage);
-            try _stdout_.print(framework_usage);
+            try syntaxError(allocator, cli_name);
         }
     } else {
         // User input is "framework".
@@ -75,6 +73,12 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
             return create_err;
         };
     }
+}
+
+fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8) !void {
+    const message: []const u8 = try _warning_.syntaxError(allocator, cli_name, command, verb_help);
+    defer allocator.free(message);
+    try _stdout_.print(message);
 }
 
 fn help(allocator: std.mem.Allocator, cli_name: []const u8) !void {

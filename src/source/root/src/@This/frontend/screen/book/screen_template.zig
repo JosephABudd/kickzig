@@ -38,7 +38,11 @@ pub const Template = struct {
             try lines.appendSlice(line);
         }
 
-        try lines.appendSlice(line3);
+        {
+            line = try fmt.allocPrint(self.allocator, line3, .{self.screen_name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
+        }
         {
             line = try fmt.allocPrint(self.allocator, line3StartFirstMenuItem, .{self.menu_item_names[0]});
             defer self.allocator.free(line);
@@ -70,14 +74,10 @@ pub const Template = struct {
             try lines.appendSlice(line);
         }
 
-        {
-            line = try fmt.allocPrint(self.allocator, line7, .{self.screen_name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
+        try lines.appendSlice(line7);
 
         {
-            line = try fmt.allocPrint(self.allocator, line8, .{self.menu_item_names[0]});
+            line = try fmt.allocPrint(self.allocator, line8, .{ self.screen_name, self.menu_item_names[0] });
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -164,43 +164,28 @@ const line2 =
 
 const line3 =
     \\
-    \\const Screen = struct {
+    \\const Screen = struct {{
     \\    allocator: std.mem.Allocator,
-    \\    all_screens: *_framers_.Group,
+    \\    all_screens: *_framers_.Screens,
     \\    all_panels: *_panels_.Panels,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
-    \\    name: []const u8,
     \\
     \\    selected_menu_item: menu_items,
     \\
-    \\    pub fn deinit(self: *Screen) void {
+    \\    pub fn deinit(self: *Screen) void {{
     \\        self.all_panels.deinit();
     \\        self.allocator.destroy(self);
-    \\    }
+    \\    }}
     \\
-    \\    // The caller owns the returned value.
-    \\    // If the len of returned value is 0 then do not free.
-    \\    // 0 len == error.
-    \\    fn nameFn(implementor: *anyopaque) []const u8 {
-    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
-    \\        var name: []const u8 = self.allocator.alloc(u8, self.name.len) catch {
-    \\            return "";
-    \\        };
-    \\        @memcpy(@constCast(name), self.name);
-    \\        return name;
-    \\    }
+    \\    /// The caller does not own the returned value.
+    \\    /// KICKZIG TODO: You may want to edit the returned label.
+    \\    pub fn label(_: *Screen) []const u8 {{
+    \\        return "{0s}";
+    \\    }}
     \\
-    \\    /// deinitFn is an implementation of _framers_.Behavior.
-    \\    fn deinitFn(implementor: *anyopaque) void {
-    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
-    \\        self.all_panels.deinit();
-    \\        self.allocator.destroy(self);
-    \\    }
-    \\
-    \\    fn frameFn(implementor: *anyopaque, arena: std.mem.Allocator) ?anyerror {
-    \\        var self: *Screen = @alignCast(@ptrCast(implementor));
-    \\        var layout = try dvui.box(@src(), .horizontal, .{ .expand = .both });
+    \\    pub fn frame(self: *Screen, arena: std.mem.Allocator) ?anyerror {{
+    \\        var layout = try dvui.box(@src(), .horizontal, .{{ .expand = .both }});
     \\        defer layout.deinit();
     \\
     \\        // The menu screen has multiple panels which are selected from the menu.
@@ -208,17 +193,17 @@ const line3 =
     \\        // 1. Frame the menu.
     \\        // 2. Frame the content.
     \\
-    \\        var m = try dvui.menu(@src(), .horizontal, .{});
+    \\        var m = try dvui.menu(@src(), .horizontal, .{{}});
     \\        defer m.deinit();
     \\
     \\        // Display the open book icon.
-    \\        var r: ?dvui.Rect = try dvui.menuItemIcon(@src(), "open_book", dvui.entypo.open_book, .{ .submenu = true }, .{ .expand = .none });
+    \\        var r: ?dvui.Rect = try dvui.menuItemIcon(@src(), "open_book", dvui.entypo.open_book, .{{ .submenu = true }}, .{{ .expand = .none }});
     \\
-    \\        if (r != null) {
+    \\        if (r != null) {{
     \\            // The user clicked on the menu icon or it is open.
     \\            // Frame the menu.
     \\
-    \\            var fw = try dvui.popup(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.?.x, .y = r.?.y + r.?.h }), .{});
+    \\            var fw = try dvui.popup(@src(), dvui.Rect.fromPoint(dvui.Point{{ .x = r.?.x, .y = r.?.y + r.?.h }}), .{{}});
     \\            defer fw.deinit();
     \\
     \\
@@ -274,7 +259,7 @@ const line6local =
 const line6separate =
     \\                .{0s} => {{
     \\                    var behavior: *_framers_.Behavior = try self.all_screens.get("{0s}");
-    \\                    if(behavior.frameFn(behavior.implementor, arena) |err| {{
+    \\                    if(behavior.frame(behavior.implementor, arena) |err| {{
     \\                        return err;
     \\                    }}
     \\                }},
@@ -282,27 +267,28 @@ const line6separate =
 ;
 
 const line7 =
-    \\                .none => {{}},
-    \\            }}
-    \\        }}
+    \\                .none => {
+    \\                    return;
+    \\                },
+    \\            }
+    \\        }
     \\        return null;
-    \\    }}
-    \\}};
+    \\    }
+    \\};
     \\
     \\/// init constructs this screen, subscribes it to all_screens and returns the error.
-    \\pub fn init(startup: _startup_.Frontend) !void {{
+    \\pub fn init(startup: _startup_.Frontend) !void {
     \\    var screen: *Screen = try startup.allocator.create(Screen);
     \\    screen.allocator = startup.allocator;
     \\    screen.all_screens = startup.all_screens;
     \\    screen.receive_channels = startup.receive_channels;
     \\    screen.send_channels = startup.send_channels;
-    \\    screen.name = "{s}";
     \\
     \\
 ;
 const line8 =
-    \\    // The {0s} tab is selected by default.
-    \\    screen.selected_menu_item = menu_items.{0s};
+    \\    // The {1s} tab is selected by default.
+    \\    screen.selected_menu_item = menu_items.{1s};
     \\
     \\    // The messenger.
     \\    var messenger: *_messenger_.Messenger = try _messenger_.init(startup.allocator, startup.all_screens, startup.send_channels, startup.receive_channels, startup.exit);
@@ -319,26 +305,6 @@ const line8 =
     \\    messenger.all_panels = screen.all_panels;
     \\
     \\    // Subscribe to all screens.
-    \\    var behavior: *_framers_.Behavior = try startup.all_screens.initBehavior(
-    \\        screen,
-    \\        Screen.deinitFn,
-    \\        Screen.nameFn,
-    \\        Screen.frameFn,
-    \\        null,
-    \\    );
-    \\    errdefer {{
-    \\        screen.all_panels.deinit();
-    \\        messenger.deinit();
-    \\        screen.deinit();
-    \\    }}
-    \\    try startup.all_screens.subscribe(behavior);
-    \\    errdefer {{
-    \\        behavior.deinit();
-    \\        screen.all_panels.deinit();
-    \\        messenger.deinit();
-    \\        screen.deinit();
-    \\    }}
-    \\    // screen is now controlled by startup.all_screens.
-    \\}}
-    \\
+    \\    screen.all_screens.{0s} = screen;
+    \\    // screen is now owned by startup.all_screens.
 ;

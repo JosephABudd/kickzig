@@ -1,20 +1,21 @@
 pub const content =
     \\const std = @import("std");
     \\
-    \\const _message_ = @import("message");
     \\const _channel_ = @import("channel");
     \\const _framers_ = @import("framers");
-    \\
+    \\const _message_ = @import("message");
+    \\const _modal_params_ = @import("modal_params");
     \\const _panels_ = @import("panels.zig");
+    \\const ExitFn = @import("various").ExitFn;
     \\
     \\pub const Messenger = struct {
     \\    allocator: std.mem.Allocator,
     \\    arena: std.mem.Allocator,
-    \\    all_screens: *_framers_.Group,
+    \\    all_screens: *_framers_.Screens,
     \\    all_panels: *_panels_.Panels,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    exit: ExitFn,
     \\
     \\    pub fn deinit(self: *Messenger) void {
     \\        self.allocator.destroy(self);
@@ -26,14 +27,15 @@ pub const content =
     \\    // // It implements a behavior required by receive_channels.GetBook.
     \\    // pub fn receiveGetBook(implementor: *anyopaque, message: *_message_.GetBook.Message) ?anyerror {
     \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
+    \\    //     defer message.deinit();
     \\    //     _ = self;
-    \\    //     _ = message;
+    \\    //
     \\    //     // No error so return null;
     \\    //     return null;
     \\    // }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: *const fn (user_message: []const u8) void) !*Messenger {
+    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Screens, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: ExitFn) !*Messenger {
     \\    var messenger: *Messenger = try allocator.create(Messenger);
     \\    messenger.allocator = allocator;
     \\    messenger.all_screens = all_screens;

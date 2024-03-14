@@ -35,21 +35,21 @@ pub fn init(allocator: std.mem.Allocator, screen_name: []const u8) !*Template {
 const template =
     \\const std = @import("std");
     \\
-    \\const _message_ = @import("message");
     \\const _channel_ = @import("channel");
-    \\const _framers_ = @import("framers");
-    \\
+    \\const _message_ = @import("message");
+    \\const _modal_params_ = @import("modal_params");
     \\const _panels_ = @import("panels.zig");
+    \\const ExitFn = @import("various").ExitFn;
+    \\const MainView = @import("framers").MainView;
     \\
     \\pub const Messenger = struct {
     \\    allocator: std.mem.Allocator,
-    \\    arena: std.mem.Allocator,
     \\
-    \\    all_screens: *_framers_.Group,
+    \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
-    \\    exit: *const fn (user_message: []const u8) void,
+    \\    exit: ExitFn,
     \\
     \\    pub fn deinit(self: *Messenger) void {
     \\        self.allocator.destroy(self);
@@ -61,36 +61,34 @@ const template =
     \\    // // It implements a behavior required by receive_channels.AddContact.
     \\    // pub fn receiveAddContact(implementor: *anyopaque, message: *_message_.AddContact.Message) ?anyerror {
     \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
+    \\    //     defer message.deinit();
     \\    //     _ = self;
-    \\    //     _ = message;
+    \\    //
     \\    //     // No error so return null;
     \\    //     return null;
     \\    // }
     \\};
     \\
-    \\pub fn init(allocator: std.mem.Allocator, all_screens: *_framers_.Group, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: *const fn (user_message: []const u8) void) !*Messenger {
+    \\pub fn init(allocator: std.mem.Allocator, main_view: *MainView, send_channels: *_channel_.FrontendToBackend, receive_channels: *_channel_.BackendToFrontend, exit: ExitFn) !*Messenger {
     \\    var messenger: *Messenger = try allocator.create(Messenger);
     \\    messenger.allocator = allocator;
-    \\    messenger.all_screens = all_screens;
+    \\    messenger.main_view = main_view;
     \\    messenger.send_channels = send_channels;
     \\    messenger.receive_channels = receive_channels;
     \\    messenger.exit = exit;
     \\
     \\    // For a messenger to receive a message, the messenger must:
-    \\    // 1. implement the behavior of the message's channel.
-    \\    // 2. subscribe to the message's channel.
-    \\
-    \\    // Below is an example of the messenger adding the behavior requried to receive the AddContact message.
-    \\    // // The AddContact message.
-    \\    // // * Define the required behavior.
-    \\    // var addContactBehavior = try receive_channels.AddContact.initBehavior();
+    \\    //
+    \\    // 1. Implement the behavior of the message's channel.
+    \\    // var fubarBehavior = try receive_channels.Fubar.initBehavior();
     \\    // errdefer {
     \\    //     allocator.destroy(messenger);
     \\    // }
-    \\    // addContactBehavior.implementor = messenger;
-    \\    // addContactBehavior.receiveFn = Messenger.receiveAddContact;
-    \\    // // * Subscribe in order to receive the AddContact messages.
-    \\    // try receive_channels.AddContact.subscribe(addContactBehavior);
+    \\    // fubarBehavior.implementor = messenger;
+    \\    // fubarBehavior.receiveFn = Messenger.receiveFubar;
+    \\    //
+    \\    // 2. Subscribe to the Fubar channel in order to receive the Fubar messages.
+    \\    // try receive_channels.Fubar.subscribe(fubarBehavior);
     \\    // errdefer {
     \\    //     allocator.destroy(messenger);
     \\    // }
