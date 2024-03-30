@@ -11,7 +11,8 @@ pub const content =
     \\pub const Screen = struct {
     \\    allocator: std.mem.Allocator,
     \\    main_view: *MainView,
-    \\    all_panels: *_panels_.Panels,
+    \\    all_panels: ?*_panels_.Panels,
+    \\    messenger: ?*_messenger_.Messenger,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
     \\
@@ -24,25 +25,29 @@ pub const content =
     \\        self.send_channels = startup.send_channels;
     \\
     \\        // The messenger.
-    \\        var messenger: *_messenger_.Messenger = try _messenger_.init(startup.allocator, startup.main_view, startup.send_channels, startup.receive_channels, startup.exit);
+    \\        self.messenger = try _messenger_.init(startup.allocator, startup.main_view, startup.send_channels, startup.receive_channels, startup.exit);
     \\        errdefer {
     \\            self.deinit();
     \\        }
     \\
     \\        // All of the panels.
-    \\        self.all_panels = try _panels_.init(startup.allocator, startup.main_view, messenger, startup.exit, startup.window);
+    \\        self.all_panels = try _panels_.init(startup.allocator, startup.main_view, self.messenger.?, startup.exit, startup.window);
     \\        errdefer {
-    \\            messenger.deinit();
     \\            self.deinit();
     \\        }
-    \\        messenger.all_panels = self.all_panels;
+    \\        self.messenger.?.all_panels = self.all_panels.?;
     \\        // The EOJ panel is the default.
-    \\        self.all_panels.setCurrentToEOJ();
+    \\        self.all_panels.?.setCurrentToEOJ();
     \\        return self;
     \\    }
     \\
     \\    pub fn deinit(self: *Screen) void {
-    \\        self.all_panels.deinit();
+    \\        if (self.messenger) |member| {
+    \\            member.deinit();
+    \\        }
+    \\        if (self.all_panels) |member| {
+    \\            member.deinit();
+    \\        }
     \\        self.allocator.destroy(self);
     \\    }
     \\
@@ -52,12 +57,12 @@ pub const content =
     \\    }
     \\
     \\    pub fn frame(self: *Screen, arena: std.mem.Allocator) !void {
-    \\        try self.all_panels.frameCurrent(arena);
+    \\        try self.all_panels.?.frameCurrent(arena);
     \\    }
     \\
     \\    /// setState sets the state for this modal screen.
     \\    pub fn setState(self: *Screen, setup_args: *ModalParams) !void {
-    \\        try self.all_panels.EOJ.?.presetModal(setup_args);
+    \\        try self.all_panels.?.EOJ.?.presetModal(setup_args);
     \\    }
     \\};
 ;

@@ -6,13 +6,12 @@ pub const Template = struct {
     allocator: std.mem.Allocator,
 
     _htab_screen_names: [][]const u8,
-    _vtab_screen_names: [][]const u8,
+    _tab_screen_names: [][]const u8,
     _panel_screen_names: [][]const u8,
     _modal_screen_names: [][]const u8,
     _book_screen_names: [][]const u8,
 
-    _htab_screen_names_index: usize,
-    _vtab_screen_names_index: usize,
+    _tab_screen_names_index: usize,
     _panel_screen_names_index: usize,
     _modal_screen_names_index: usize,
     _book_screen_names_index: usize,
@@ -20,21 +19,13 @@ pub const Template = struct {
     _app_name: []const u8,
 
     pub fn deinit(self: *Template) void {
-        for (self._htab_screen_names, 0..) |name, i| {
-            if (i == self._htab_screen_names_index) {
+        for (self._tab_screen_names, 0..) |name, i| {
+            if (i == self._tab_screen_names_index) {
                 break;
             }
             self.allocator.free(name);
         }
-        self.allocator.free(self._htab_screen_names);
-
-        for (self._vtab_screen_names, 0..) |name, i| {
-            if (i == self._vtab_screen_names_index) {
-                break;
-            }
-            self.allocator.free(name);
-        }
-        self.allocator.free(self._vtab_screen_names);
+        self.allocator.free(self._tab_screen_names);
 
         for (self._panel_screen_names, 0..) |name, i| {
             if (i == self._panel_screen_names_index) {
@@ -64,36 +55,20 @@ pub const Template = struct {
         self.allocator.destroy(self);
     }
 
-    pub fn addVTabScreenName(self: *Template, new_screen_name: []const u8) !void {
-        if (self._vtab_screen_names_index == self._vtab_screen_names.len) {
+    pub fn addTabScreenName(self: *Template, new_screen_name: []const u8) !void {
+        if (self._tab_screen_names_index == self._tab_screen_names.len) {
             // Full list so create a new bigger one.
-            var new_screen_names: [][]const u8 = try self.allocator.alloc([]const u8, (self._vtab_screen_names.len + 5));
-            for (self._vtab_screen_names, 0..) |vtab_screen_name, i| {
-                new_screen_names[i] = vtab_screen_name;
+            var new_screen_names: [][]const u8 = try self.allocator.alloc([]const u8, (self._tab_screen_names.len + 5));
+            for (self._tab_screen_names, 0..) |tab_screen_name, i| {
+                new_screen_names[i] = tab_screen_name;
             }
             // Replace the old list with the new bigger one.
-            self.allocator.free(self._vtab_screen_names);
-            self._vtab_screen_names = new_screen_names;
+            self.allocator.free(self._tab_screen_names);
+            self._tab_screen_names = new_screen_names;
         }
-        self._vtab_screen_names[self._vtab_screen_names_index] = try self.allocator.alloc(u8, new_screen_name.len);
-        @memcpy(@constCast(self._vtab_screen_names[self._vtab_screen_names_index]), new_screen_name);
-        self._vtab_screen_names_index += 1;
-    }
-
-    pub fn addHTabScreenName(self: *Template, new_screen_name: []const u8) !void {
-        if (self._htab_screen_names_index == self._htab_screen_names.len) {
-            // Full list so create a new bigger one.
-            var new_screen_names: [][]const u8 = try self.allocator.alloc([]const u8, (self._htab_screen_names.len + 5));
-            for (self._htab_screen_names, 0..) |htab_screen_name, i| {
-                new_screen_names[i] = htab_screen_name;
-            }
-            // Replace the old list with the new bigger one.
-            self.allocator.free(self._htab_screen_names);
-            self._htab_screen_names = new_screen_names;
-        }
-        self._htab_screen_names[self._htab_screen_names_index] = try self.allocator.alloc(u8, new_screen_name.len);
-        @memcpy(@constCast(self._htab_screen_names[self._htab_screen_names_index]), new_screen_name);
-        self._htab_screen_names_index += 1;
+        self._tab_screen_names[self._tab_screen_names_index] = try self.allocator.alloc(u8, new_screen_name.len);
+        @memcpy(@constCast(self._tab_screen_names[self._tab_screen_names_index]), new_screen_name);
+        self._tab_screen_names_index += 1;
     }
 
     pub fn addPanelScreenName(self: *Template, new_screen_name: []const u8) !void {
@@ -152,17 +127,10 @@ pub const Template = struct {
         try lines.appendSlice(line1);
         var line: []u8 = undefined;
 
-        // vtab screens.
-        const vtab_screen_names: [][]const u8 = self._vtab_screen_names[0..self._vtab_screen_names_index];
-        for (vtab_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line1_import_vtab, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
-        // htab screens.
-        const htab_screen_names: [][]const u8 = self._htab_screen_names[0..self._htab_screen_names_index];
-        for (htab_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line1_import_htab, .{name});
+        // tab screens.
+        const tab_screen_names: [][]const u8 = self._tab_screen_names[0..self._tab_screen_names_index];
+        for (tab_screen_names) |name| {
+            line = try fmt.allocPrint(self.allocator, line1_import_tab, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -190,14 +158,8 @@ pub const Template = struct {
 
         try lines.appendSlice(line2);
 
-        // vtab screens.
-        for (vtab_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line2_member, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
-        // htab screens.
-        for (htab_screen_names) |name| {
+        // tab screens.
+        for (tab_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, line2_member, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
@@ -223,14 +185,8 @@ pub const Template = struct {
 
         try lines.appendSlice(line3);
 
-        // vtab screens.
-        for (vtab_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line3_deinit, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
-        // htab screens.
-        for (htab_screen_names) |name| {
+        // tab screens.
+        for (tab_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, line3_deinit, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
@@ -256,35 +212,33 @@ pub const Template = struct {
 
         try lines.appendSlice(line4);
 
-        // vtab screens.
-        for (vtab_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line4_init, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
-        // htab screens.
-        for (htab_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line4_init, .{name});
+        // tab screens.
+        for (tab_screen_names) |name| {
+            line = try fmt.allocPrint(self.allocator, line4_init_not_modal, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
         // panel screens.
         for (panel_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line4_init, .{name});
+            line = try fmt.allocPrint(self.allocator, line4_init_not_modal, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
         // book screens.
         for (book_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line4_init, .{name});
+            line = try fmt.allocPrint(self.allocator, line4_init_not_modal, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
         // modal screens.
         for (modal_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line4_init, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
+            if (std.mem.eql(u8, name, "OK")) {
+                try lines.appendSlice(line4_init_ok_modal);
+            } else {
+                line = try fmt.allocPrint(self.allocator, line4_init_modal, .{name});
+                defer self.allocator.free(line);
+                try lines.appendSlice(line);
+            }
         }
 
         try lines.appendSlice(line5);
@@ -304,13 +258,11 @@ pub fn init(allocator: std.mem.Allocator, app_name: []const u8) !*Template {
     }
     @memcpy(@constCast(self._app_name), app_name);
     self.allocator = allocator;
-    self._htab_screen_names = try allocator.alloc([]const u8, 5);
-    self._vtab_screen_names = try allocator.alloc([]const u8, 5);
+    self._tab_screen_names = try allocator.alloc([]const u8, 5);
     self._panel_screen_names = try allocator.alloc([]const u8, 5);
     self._modal_screen_names = try allocator.alloc([]const u8, 5);
     self._book_screen_names = try allocator.alloc([]const u8, 5);
-    self._htab_screen_names_index = 0;
-    self._vtab_screen_names_index = 0;
+    self._tab_screen_names_index = 0;
     self._panel_screen_names_index = 0;
     self._modal_screen_names_index = 0;
     self._book_screen_names_index = 0;
@@ -323,28 +275,23 @@ const line1 =
     \\
 ;
 
-const line1_import_vtab =
-    \\const {0s} = @import("screen/vtab/{0s}/screen.zig").Screen;
-    \\
-;
-
-const line1_import_htab =
-    \\const {0s} = @import("screen/htab/{0s}/screen.zig").Screen;
+const line1_import_tab =
+    \\pub const {0s} = @import("screen/tab/{0s}/screen.zig").Screen;
     \\
 ;
 
 const line1_import_panel =
-    \\const {0s} = @import("screen/panel/{0s}/screen.zig").Screen;
+    \\pub const {0s} = @import("screen/panel/{0s}/screen.zig").Screen;
     \\
 ;
 
 const line1_import_book =
-    \\const {0s} = @import("screen/book/{0s}/screen.zig").Screen;
+    \\pub const {0s} = @import("screen/book/{0s}/screen.zig").Screen;
     \\
 ;
 
 const line1_import_modal =
-    \\const {0s} = @import("screen/modal/{0s}/screen.zig").Screen;
+    \\pub const {0s} = @import("screen/modal/{0s}/screen.zig").Screen;
     \\
 ;
 
@@ -363,12 +310,14 @@ const line2_member =
 const line3 =
     \\
     \\    pub fn deinit(self: *ScreenPointers) void {
+    \\
 ;
 
 const line3_deinit =
     \\        if (self.{0s}) |screen| {{
     \\            screen.deinit();
     \\        }}
+    \\
 ;
 
 const line4 =
@@ -386,8 +335,31 @@ const line4 =
     \\        // Modal screens.
     \\
 ;
+const line4_init_not_modal =
+    \\        self.{0s} = try {0s}.init(startup);
+    \\        errdefer self.deinit();
+    \\        if (!self.{0s}.?.willFrame()) {{
+    \\            // The {0s} screen won't frame inside the main view.
+    \\            // It will only frame in a container.
+    \\            // It can't be used in the main menu.
+    \\            self.{0s}.?.deinit();
+    \\            self.{0s} = null;
+    \\        }}
+;
 
-const line4_init =
+const line4_init_ok_modal =
+    \\        // The OK screen is a modal screen.
+    \\        // Modal screens frame inside the main view.
+    \\        // It is the only modal screen that can be used in the main menu.
+    \\        self.OK = try OK.init(startup);
+    \\        errdefer self.deinit();
+    \\
+;
+
+const line4_init_modal =
+    \\        // The {0s} screen is a modal screen.
+    \\        // Modal screens frame inside the main view.
+    \\        // The {0s} modal screen can not be used in the main menu.
     \\        self.{0s} = try {0s}.init(startup);
     \\        errdefer self.deinit();
     \\

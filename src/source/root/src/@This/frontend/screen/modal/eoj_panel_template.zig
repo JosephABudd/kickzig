@@ -29,7 +29,7 @@ pub const content =
     \\
     \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
     \\        if (self.modal_params != null) {
-    \\            // Single once only.
+    \\            // Single use only.
     \\            return;
     \\        }
     \\        self.modal_params = setup_args;

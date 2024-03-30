@@ -10,7 +10,7 @@ pub const content =
     \\pub const Screen = struct {
     \\    allocator: std.mem.Allocator,
     \\    main_view: *MainView,
-    \\    all_panels: *_panels_.Panels,
+    \\    all_panels: ?*_panels_.Panels,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
     \\
@@ -28,12 +28,14 @@ pub const content =
     \\            self.deinit();
     \\        }
     \\        // The OK panel is the default.
-    \\        self.all_panels.setCurrentToOK();
+    \\        self.all_panels.?.setCurrentToOK();
     \\        return self;
     \\    }
     \\
     \\    pub fn deinit(self: *Screen) void {
-    \\        self.all_panels.deinit();
+    \\        if (self.all_panels) |member| {
+    \\            member.deinit();
+    \\        }
     \\        self.allocator.destroy(self);
     \\    }
     \\
@@ -43,12 +45,12 @@ pub const content =
     \\    }
     \\
     \\    pub fn frame(self: *Screen, arena: std.mem.Allocator) !void {
-    \\        try self.all_panels.frameCurrent(arena);
+    \\        try self.all_panels.?.frameCurrent(arena);
     \\    }
     \\
     \\    /// setState sets the state for this modal screen.
     \\    pub fn setState(self: *Screen, setup_args: *ModalParams) !void {
-    \\        try self.all_panels.OK.?.presetModal(setup_args);
+    \\        try self.all_panels.?.OK.?.presetModal(setup_args);
     \\    }
     \\};
 ;

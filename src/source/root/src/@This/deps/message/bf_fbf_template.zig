@@ -155,6 +155,7 @@ const template =
     \\            return;
     \\        }
     \\        // This is the last existing pointer.
+    \\        self.count_pointers.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\

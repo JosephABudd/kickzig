@@ -17,7 +17,7 @@ pub const content =
     \\    send_channels: *_channel_.BackendToFrontend,
     \\    receive_channels: *_channel_.FrontendToBackend,
     \\    triggers: *_channel_.Trigger,
-    \\    finish_up_jobs: *_closedownjobs_.Jobs,
+    \\    close_down_jobs: *_closedownjobs_.Jobs,
     \\    exit: ExitFn,
     \\};
     \\
@@ -28,7 +28,7 @@ pub const content =
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
     \\    main_view: *MainView,
-    \\    finish_up_jobs: *_closedownjobs_.Jobs,
+    \\    close_down_jobs: *_closedownjobs_.Jobs,
     \\    exit: ExitFn,
     \\    screen_pointers: *ScreenPointers,
     \\

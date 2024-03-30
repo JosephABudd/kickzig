@@ -52,6 +52,7 @@ const template =
     \\const _lock_ = @import("lock");
     \\const _messenger_ = @import("messenger.zig");
     \\const _panels_ = @import("panels.zig");
+    \\const _various_ = @import("various");
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\
@@ -68,21 +69,10 @@ const template =
     \\    lock: *_lock_.ThreadLock, // For persistant state data.
     \\    window: *dvui.Window,
     \\    main_view: *MainView,
+    \\    container: ?*_various_.Container,
     \\    all_panels: *_panels_.Panels,
     \\    messenger: *_messenger_.Messenger,
     \\    exit: ExitFn,
-    \\
-    \\    /// refresh only if this panel is showing and this screen is showing.
-    \\    pub fn refresh(self: *Panel) void {
-    \\        if (self.all_panels.current_panel_tag == .{{ panel_name }}) {
-    \\            self.main_view.refresh{{ screen_name }}();
-    \\        }
-    \\    }
-    \\
-    \\    pub fn deinit(self: *Panel) void {
-    \\        self.lock.deinit();
-    \\        self.allocator.destroy(self);
-    \\    }
     \\
     \\    /// frame this panel.
     \\    /// Layout, Draw, Handle user events.
@@ -110,6 +100,40 @@ const template =
     \\            try dvui.labelNoFmt(@src(), "Panel Name: ", .{ .font_style = .heading });
     \\            try dvui.labelNoFmt(@src(), "{{ panel_name }}", .{});
     \\        }
+    \\
+    \\        // Row 3 example: A button which closes the container.
+    \\        if (self.container) |container| {
+    \\            // This screen is framing inside a container.
+    \\            // Allow the user to close the container.
+    \\            if (try dvui.button(@src(), "Close Container.", .{}, .{})) {
+    \\                container.close();
+    \\            }
+    \\        }
+    \\    }
+    \\
+    \\    pub fn deinit(self: *Panel) void {
+    \\        // The screen will deinit the container.
+    \\        self.lock.deinit();
+    \\        self.allocator.destroy(self);
+    \\    }
+    \\
+    \\    /// refresh only if this panel and ( container or screen ) are showing.
+    \\    pub fn refresh(self: *Panel) void {
+    \\        if (self.all_panels.current_panel_tag == .{{ panel_name }}) {
+    \\            // This is the current panel.
+    \\            if (self.container) |container| {
+    \\                // Refresh the container.
+    \\                // The container will refresh only if it's the currently viewed screen.
+    \\                container.refresh();
+    \\            } else {
+    \\                // Main view will refresh only if this is the currently viewed screen.
+    \\                self.main_view.refresh{{ screen_name }}();
+    \\            }
+    \\        }
+    \\    }
+    \\
+    \\    pub fn setContainer(self: *Panel, container: *_various_.Container) void {
+    \\        self.container = container;
     \\    }
     \\};
     \\
@@ -119,6 +143,7 @@ const template =
     \\    errdefer {
     \\        allocator.destroy(panel);
     \\    }
+    \\    panel.container = null;
     \\    panel.allocator = allocator;
     \\    panel.main_view = main_view;
     \\    panel.all_panels = all_panels;

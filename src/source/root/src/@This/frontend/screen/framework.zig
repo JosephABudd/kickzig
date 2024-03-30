@@ -16,21 +16,11 @@ pub fn listScreens(allocator: std.mem.Allocator) !void {
     }
 
     {
-        // HTab screens.
-        const screens: [][]const u8 = try _filenames_.frontend.allHTabFolders(allocator);
+        // Tab screens.
+        const screens: [][]const u8 = try _filenames_.frontend.allTabFolders(allocator);
         defer allocator.free(screens);
         // Heading
-        try printScreenNamesHeading(allocator, "HTab", screens.len);
-        // List
-        try printScreenNames(allocator, screens);
-    }
-
-    {
-        // VTab screens.
-        const screens: [][]const u8 = try _filenames_.frontend.allVTabFolders(allocator);
-        defer allocator.free(screens);
-        // Heading
-        try printScreenNamesHeading(allocator, "VTab", screens.len);
+        try printScreenNamesHeading(allocator, "Tab", screens.len);
         // List
         try printScreenNames(allocator, screens);
     }

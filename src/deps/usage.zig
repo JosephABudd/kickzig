@@ -74,16 +74,18 @@ const screen_template: []const u8 =
     \\＄ {{cli_name}} screen help
     \\＄ {{cli_name}} screen list
     \\＄ {{cli_name}} screen add-panel «screen-name» «panel-name, ...»
-    \\＄ {{cli_name}} screen add-vtab «screen-name» «[+]tab-name, ...»
-    \\＄ {{cli_name}} screen add-htab «screen-name» «[+]tab-name, ...»
+    \\＄ {{cli_name}} screen add-content «screen-name» «panel-name, ...»
+    \\＄ {{cli_name}} screen add-tab «screen-name» «[*]tab-name, ...»
     \\＄ {{cli_name}} screen add-modal «screen-name» «panel-name, ...»
     \\＄ {{cli_name}} screen remove «screen-name»
     \\
-    \\A tab-name prefixed with '+', is has its own panel of the same name, for content.
-    \\A tab-name not prefixed with '+', must be given a separate screen of the same name as the tab, for content.
+    \\A tab-name not prefixed with '*', will have it's own panel, of the same name, to provide content.
+    \\A tab-name prefixed with '*', will get its content from the screen in the panel/ folder, of the same name.
+    \\That screen in the panel/ folder, must already exist.
     \\
     \\After a screen is added:
-    \\1. A search for KICKZIG TODO will reveal instructions for proper developement and management of the screen operation.
+    \\1. A link to it's screen.zig file is displayed.
+    \\2. A search for KICKZIG TODO in the screen package files will reveal instructions for proper developement and management of the screen operation.
     \\
     \\
 ;

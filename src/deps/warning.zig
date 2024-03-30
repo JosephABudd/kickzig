@@ -20,26 +20,6 @@ pub fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8, cmd: []co
 
 pub const already_built: []const u8 = "The framework is already built.\n";
 
-// Screen name.
-
-/// invalidScreenNameMessage returns a invalid screen name message.
-/// The caller controls the returned value.
-pub fn invalidScreenNameMessage(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
-    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a valid screen name. Use lower case and underscore.", name);
-}
-
-/// notNewScreenNameMessage returns a not new screen name message.
-/// The caller controls the returned value.
-pub fn notNewScreenNameMessage(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
-    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a new screen name.", name);
-}
-
-/// notCurrentScreenNameMessage returns a not new screen name message.
-/// The caller controls the returned value.
-pub fn notCurrentScreenNameMessage(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
-    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a current screen name.", name);
-}
-
 // Channel name.
 
 /// invalidChannelNameMessage returns a invalid channel name message.
@@ -78,4 +58,70 @@ pub fn notNewMessageNameMessage(allocator: std.mem.Allocator, name: []const u8) 
 /// The caller controls the returned value.
 pub fn notCurrentMessageNameMessage(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
     return try std.fmt.allocPrint(allocator, "\"{s}\" is not a current message name.", name);
+}
+
+// Screen.
+
+/// notUniqueScreenName returns not a unique screen name message.
+/// The caller controls the returned value.
+pub fn notUniqueScreenName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a new and unique screen name.\n", .{name});
+}
+
+/// notValidScreenName returns not a valid screen name message.
+/// The caller controls the returned value.
+pub fn notValidScreenName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not an valid screen name.\n", .{name});
+}
+
+/// partOfFrameworkScreenName returns screen is part of framework message.
+/// The caller controls the returned value.
+pub fn partOfFrameworkScreenName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "The \"{s}\" screen is part of the framework and cannot be removed.\n", .{name});
+}
+
+/// notNewScreenName returns not an new screen name message.
+/// The caller controls the returned value.
+pub fn notNewScreenName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a new screen name.\n", .{name});
+}
+
+/// notExistingScreenName returns not an current screen name message.
+/// The caller controls the returned value.
+pub fn notExistingScreenName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not an current screen name.\n", .{name});
+}
+
+/// notExistingPanelScreenName returns not an current panel-screen name message.
+/// The caller controls the returned value.
+pub fn notExistingPanelScreenName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not an current panel-screen name.\n", .{name});
+}
+
+// Screen Panel.
+
+/// notValidPanelName returns not a valid panel name message.
+/// The caller controls the returned value.
+pub fn notValidPanelName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not an valid panel name.\n", .{name});
+}
+
+// Screen Tab.
+
+/// notNewTabName returns not a new tab name message.
+/// The caller controls the returned value.
+pub fn notNewTabName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a new tab name.\n", .{name});
+}
+
+/// notUniqueTabName retusn a not unique tab name message.
+/// The caller controls the returned value.
+pub fn notUniqueTabName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a unique tab name.\n", .{name});
+}
+
+/// notValidScreenTabName returns a not current tab name message.
+/// The caller controls the returned value.
+pub fn notValidScreenTabName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a valid name for a tab using screen content.\nA tab using screen content must have the same name as the panel-screen providing the content.\nThe panel-screen providing the content must already exist.\n", .{name});
 }

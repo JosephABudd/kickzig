@@ -22,18 +22,11 @@ pub fn screenAddedBook(allocator: std.mem.Allocator, screen_name: []const u8) ![
     return try std.fmt.allocPrint(allocator, "Added the front-end «{s}» Book screen at {s}:1:1:\n", .{ screen_name, full_path });
 }
 
-pub fn screenAddedHTab(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {
+pub fn screenAddedTab(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {
     const folders: *paths.FolderPaths = try paths.folders();
-    const params = [3][]const u8{ folders.root_src_this_frontend_screen_htab.?, screen_name, filenames.screen_screen_file_name };
+    const params = [3][]const u8{ folders.root_src_this_frontend_screen_tab.?, screen_name, filenames.screen_screen_file_name };
     const full_path = try fspath.join(allocator, &params);
-    return try std.fmt.allocPrint(allocator, "Added the front-end «{s}» Horizontal Tab screen at {s}:1:1:\n", .{ screen_name, full_path });
-}
-
-pub fn screenAddedVTab(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {
-    const folders: *paths.FolderPaths = try paths.folders();
-    const params = [3][]const u8{ folders.root_src_this_frontend_screen_vtab.?, screen_name, filenames.screen_screen_file_name };
-    const full_path = try fspath.join(allocator, &params);
-    return try std.fmt.allocPrint(allocator, "Added the front-end «{s}» Vertical Tab screen at {s}:1:1:\n", .{ screen_name, full_path });
+    return try std.fmt.allocPrint(allocator, "Added the front-end «{s}» Tab screen at {s}:1:1:\n", .{ screen_name, full_path });
 }
 
 pub fn screenAddedPanel(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {
@@ -41,6 +34,13 @@ pub fn screenAddedPanel(allocator: std.mem.Allocator, screen_name: []const u8) !
     const params = [3][]const u8{ folders.root_src_this_frontend_screen_panel.?, screen_name, filenames.screen_screen_file_name };
     const full_path = try fspath.join(allocator, &params);
     return try std.fmt.allocPrint(allocator, "Added the front-end «{s}» Panel screen at {s}:1:1:\n", .{ screen_name, full_path });
+}
+
+pub fn screenAddedContent(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {
+    const folders: *paths.FolderPaths = try paths.folders();
+    const params = [3][]const u8{ folders.root_src_this_frontend_screen_panel.?, screen_name, filenames.screen_screen_file_name };
+    const full_path = try fspath.join(allocator, &params);
+    return try std.fmt.allocPrint(allocator, "Added the front-end «{s}» Content screen at {s}:1:1:\n", .{ screen_name, full_path });
 }
 
 pub fn screenAddedModal(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {

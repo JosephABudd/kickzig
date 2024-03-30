@@ -14,18 +14,10 @@ pub fn create(allocator: std.mem.Allocator) !void {
 
 // rebuild builds api.zig and screen_tags.zig.
 pub fn rebuild(allocator: std.mem.Allocator) !void {
-    var htab_folder_names: [][]const u8 = undefined;
     var panel_folder_names: [][]const u8 = undefined;
-    var vtab_folder_names: [][]const u8 = undefined;
+    var tab_folder_names: [][]const u8 = undefined;
     var modal_folder_names: [][]const u8 = undefined;
 
-    htab_folder_names = try _filenames_.frontend.allHTabFolders(allocator);
-    defer {
-        for (htab_folder_names) |folder_name| {
-            allocator.free(folder_name);
-        }
-        allocator.free(htab_folder_names);
-    }
     panel_folder_names = try _filenames_.frontend.allPanelFolders(allocator);
     defer {
         for (panel_folder_names) |folder_name| {
@@ -33,12 +25,12 @@ pub fn rebuild(allocator: std.mem.Allocator) !void {
         }
         allocator.free(panel_folder_names);
     }
-    vtab_folder_names = try _filenames_.frontend.allVTabFolders(allocator);
+    tab_folder_names = try _filenames_.frontend.allTabFolders(allocator);
     defer {
-        for (vtab_folder_names) |folder_name| {
+        for (tab_folder_names) |folder_name| {
             allocator.free(folder_name);
         }
-        allocator.free(vtab_folder_names);
+        allocator.free(tab_folder_names);
     }
     modal_folder_names = try _filenames_.frontend.allModalFolders(allocator);
     defer {
@@ -50,15 +42,13 @@ pub fn rebuild(allocator: std.mem.Allocator) !void {
 
     try buildApiZig(
         allocator,
-        htab_folder_names,
-        vtab_folder_names,
+        tab_folder_names,
         panel_folder_names,
         modal_folder_names,
     );
     try buildScreenTagsZig(
         allocator,
-        htab_folder_names,
-        vtab_folder_names,
+        tab_folder_names,
         panel_folder_names,
         modal_folder_names,
     );
@@ -66,21 +56,17 @@ pub fn rebuild(allocator: std.mem.Allocator) !void {
 
 fn buildScreenTagsZig(
     allocator: std.mem.Allocator,
-    htab_folder_names: [][]const u8,
-    vtab_folder_names: [][]const u8,
+    tab_folder_names: [][]const u8,
     panel_folder_names: [][]const u8,
     modal_folder_names: [][]const u8,
 ) !void {
     var template: *_screen_tags_template_.Template = try _screen_tags_template_.Template.init(allocator);
-    for (htab_folder_names) |folder_name| {
-        try template.addScreenName(folder_name);
-    }
     // Panel folders.
     for (panel_folder_names) |folder_name| {
         try template.addScreenName(folder_name);
     }
-    // VTab folders.
-    for (vtab_folder_names) |folder_name| {
+    // Tab folders.
+    for (tab_folder_names) |folder_name| {
         try template.addScreenName(folder_name);
     }
     // Modal folders.
@@ -103,22 +89,18 @@ fn buildScreenTagsZig(
 
 fn buildApiZig(
     allocator: std.mem.Allocator,
-    htab_folder_names: [][]const u8,
-    vtab_folder_names: [][]const u8,
+    tab_folder_names: [][]const u8,
     panel_folder_names: [][]const u8,
     modal_folder_names: [][]const u8,
 ) !void {
     // Content.
     var template: *_api_template_.Template = try _api_template_.Template.init(allocator);
-    for (htab_folder_names) |folder_name| {
-        try template.addNotModalScreenName(folder_name);
-    }
     // Panel folders.
     for (panel_folder_names) |folder_name| {
         try template.addNotModalScreenName(folder_name);
     }
-    // VTab folders.
-    for (vtab_folder_names) |folder_name| {
+    // Tab folders.
+    for (tab_folder_names) |folder_name| {
         try template.addNotModalScreenName(folder_name);
     }
     // Modal folders.

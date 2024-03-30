@@ -97,30 +97,56 @@ pub const Template = struct {
         defer lines.deinit();
 
         // Build the content.
-        try lines.appendSlice(line1);
+        try lines.appendSlice(line_import);
 
+        // fn show.
+        try lines.appendSlice(line_show_start);
         // Tag each screen.
         if (not_modal_names) |names| {
             for (names) |name| {
-                // Replace {{ screen_name }} with the message name.
-                const replacement_size: usize = std.mem.replacementSize(u8, line1_not_modal, "{{ screen_name }}", name);
+                // Replace {{ screen_name }} with the screen_name.
+                const replacement_size: usize = std.mem.replacementSize(u8, line_show_not_modal, "{{ screen_name }}", name);
                 line = try self.allocator.alloc(u8, replacement_size);
                 defer self.allocator.free(line);
-                _ = std.mem.replace(u8, line1_not_modal, "{{ screen_name }}", name, line);
+                _ = std.mem.replace(u8, line_show_not_modal, "{{ screen_name }}", name, line);
                 try lines.appendSlice(line);
             }
         }
+        try lines.appendSlice(line_show_end);
 
-        try lines.appendSlice(line2);
+        // fn refresh.
+        try lines.appendSlice(line_refresh_start);
+        // Tag each screen.
+        if (not_modal_names) |names| {
+            for (names) |name| {
+                // Replace {{ screen_name }} with the screen_name.
+                const replacement_size: usize = std.mem.replacementSize(u8, line_refresh_screen_tag, "{{ screen_name }}", name);
+                line = try self.allocator.alloc(u8, replacement_size);
+                defer self.allocator.free(line);
+                _ = std.mem.replace(u8, line_refresh_screen_tag, "{{ screen_name }}", name, line);
+                try lines.appendSlice(line);
+            }
+        }
+        if (modal_names) |names| {
+            for (names) |name| {
+                // Replace {{ screen_name }} with the screen_name.
+                const replacement_size: usize = std.mem.replacementSize(u8, line_refresh_screen_tag, "{{ screen_name }}", name);
+                line = try self.allocator.alloc(u8, replacement_size);
+                defer self.allocator.free(line);
+                _ = std.mem.replace(u8, line_refresh_screen_tag, "{{ screen_name }}", name, line);
+                try lines.appendSlice(line);
+            }
+        }
+        try lines.appendSlice(line_refresh_end);
 
         // Show funcs for not modal screens.
         if (not_modal_names) |names| {
             for (names) |name| {
-                // Replace {{ screen_name }} with the message name.
-                const replacement_size: usize = std.mem.replacementSize(u8, line2_not_modal, "{{ screen_name }}", name);
+                // Replace {{ screen_name }} with the screen_name.
+                const replacement_size: usize = std.mem.replacementSize(u8, line_show_refresh_not_modal, "{{ screen_name }}", name);
                 line = try self.allocator.alloc(u8, replacement_size);
                 defer self.allocator.free(line);
-                _ = std.mem.replace(u8, line2_not_modal, "{{ screen_name }}", name, line);
+                _ = std.mem.replace(u8, line_show_refresh_not_modal, "{{ screen_name }}", name, line);
                 try lines.appendSlice(line);
             }
         }
@@ -128,11 +154,11 @@ pub const Template = struct {
         // Show funcs for modal screens.
         if (modal_names) |names| {
             for (names) |name| {
-                // Replace {{ screen_name }} with the message name.
-                const replacement_size: usize = std.mem.replacementSize(u8, line2_modal, "{{ screen_name }}", name);
+                // Replace {{ screen_name }} with the screen_name.
+                const replacement_size: usize = std.mem.replacementSize(u8, line_show_hide_refresh_modal, "{{ screen_name }}", name);
                 line = try self.allocator.alloc(u8, replacement_size);
                 defer self.allocator.free(line);
-                _ = std.mem.replace(u8, line2_modal, "{{ screen_name }}", name, line);
+                _ = std.mem.replace(u8, line_show_hide_refresh_modal, "{{ screen_name }}", name, line);
                 try lines.appendSlice(line);
             }
         }
@@ -146,7 +172,7 @@ pub const Template = struct {
     }
 };
 
-const line1 =
+const line_import =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
@@ -191,25 +217,6 @@ const line1 =
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    pub fn show(self: *MainView, screen: ScreenTags) !void {
-    \\        self.lock.lock();
-    \\        defer self.lock.unlock();
-    \\
-    \\        // Only show if not a modal screen.
-    \\        return switch (screen) {
-    \\
-;
-
-const line1_not_modal =
-    \\            .{{ screen_name }} => self.show{{ screen_name }}(),
-    \\
-;
-
-const line2 =
-    \\            else => error.CantShowModalScreen,
-    \\        };
-    \\    }
-    \\
     \\    pub fn isModal(self: *MainView) bool {
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
@@ -244,7 +251,52 @@ const line2 =
     \\
 ;
 
-const line2_not_modal =
+const line_show_start =
+    \\
+    \\    pub fn show(self: *MainView, screen: ScreenTags) !void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        // Only show if not a modal screen.
+    \\        return switch (screen) {
+    \\
+;
+
+const line_show_not_modal =
+    \\            .{{ screen_name }} => self.show{{ screen_name }}(),
+    \\
+;
+
+const line_show_end =
+    \\            else => error.CantShowModalScreen,
+    \\        };
+    \\    }
+    \\
+;
+
+const line_refresh_start =
+    \\
+    \\    pub fn refresh(self: *MainView, screen: ScreenTags) void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        switch (screen) {
+    \\
+;
+
+const line_refresh_screen_tag =
+    \\            .{{ screen_name }} => self.refresh{{ screen_name }}(),
+    \\
+;
+
+const line_refresh_end =
+    \\            else => {}, // EOJ.
+    \\        }
+    \\    }
+    \\
+;
+
+const line_show_refresh_not_modal =
     \\
     \\    // The {{ screen_name }} screen.
     \\
@@ -275,7 +327,7 @@ const line2_not_modal =
     \\
 ;
 
-const line2_modal =
+const line_show_hide_refresh_modal =
     \\    // The {{ screen_name }} modal screen.
     \\
     \\    /// show{{ screen_name }} starts the {{ screen_name }} modal screen.

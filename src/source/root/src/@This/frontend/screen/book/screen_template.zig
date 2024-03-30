@@ -141,6 +141,8 @@ const line1 =
     \\const _panels_ = @import("panels.zig");
     \\const _messenger_ = @import("messenger.zig");
     \\const _startup_ = @import("startup");
+    \\const _various_ = @import("various");
+    \\const MainView = @import("framers").MainView;
     \\
     \\/// Define each tab's enum.
     \\/// Always include none.
@@ -167,19 +169,41 @@ const line3 =
     \\const Screen = struct {{
     \\    allocator: std.mem.Allocator,
     \\    all_screens: *_framers_.Screens,
-    \\    all_panels: *_panels_.Panels,
+    \\    all_panels: ?*_panels_.Panels,
+    \\    messenger: ?*_messenger_.Messenger,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
+    \\    container: ?*_various_.Container,
     \\
     \\    selected_menu_item: menu_items,
     \\
     \\    pub fn deinit(self: *Screen) void {{
-    \\        self.all_panels.deinit();
+    \\        if (self.container) |member| {{
+    \\            member.deinit();
+    \\        }}
+    \\        if (self.messenger) |member| {{
+    \\            member.deinit();
+    \\        }}
+    \\        if (self.all_panels) |member| {{
+    \\            member.deinit();
+    \\        }}
     \\        self.allocator.destroy(self);
+    \\    }}
+    \\
+    \\    pub fn setContainer(self: *Screen, container: *_various_.Container) void {{
+    \\        self.container = container;
+    \\        self.all_panels.?.setContainer(container);
+    \\    }}
+    \\
+    \\    /// KICKZIG TODO: If you need to, add your own logic here.
+    \\    /// Otherwise this screen alway shows when framed.
+    \\    pub fn willFrame(self: *Screen) bool {{
+    \\        return true;
     \\    }}
     \\
     \\    /// The caller does not own the returned value.
     \\    /// KICKZIG TODO: You may want to edit the returned label.
+    \\    /// The label is displayed in the main menu only.
     \\    pub fn label(_: *Screen) []const u8 {{
     \\        return "{0s}";
     \\    }}
@@ -251,7 +275,7 @@ const line5 =
 ;
 const line6local =
     \\                .{0s} => {{
-    \\                    try self.all_panels.{0s}.?.frame(arena);
+    \\                    try self.all_panels.?.{0s}.?.frame(arena);
     \\                }},
     \\
 ;
@@ -279,32 +303,32 @@ const line7 =
     \\/// init constructs this screen, subscribes it to all_screens and returns the error.
     \\pub fn init(startup: _startup_.Frontend) !void {
     \\    var screen: *Screen = try startup.allocator.create(Screen);
-    \\    screen.allocator = startup.allocator;
-    \\    screen.all_screens = startup.all_screens;
-    \\    screen.receive_channels = startup.receive_channels;
-    \\    screen.send_channels = startup.send_channels;
+    \\    self.allocator = startup.allocator;
+    \\    self.all_screens = startup.all_screens;
+    \\    self.receive_channels = startup.receive_channels;
+    \\    self.send_channels = startup.send_channels;
+    \\    self.container = null;
     \\
     \\
 ;
 const line8 =
     \\    // The {1s} tab is selected by default.
-    \\    screen.selected_menu_item = menu_items.{1s};
+    \\    self.selected_menu_item = menu_items.{1s};
     \\
     \\    // The messenger.
-    \\    var messenger: *_messenger_.Messenger = try _messenger_.init(startup.allocator, startup.all_screens, startup.send_channels, startup.receive_channels, startup.exit);
+    \\    self.messenger = try _messenger_.init(startup.allocator, startup.all_screens, startup.send_channels, startup.receive_channels, startup.exit);
     \\    errdefer {{
-    \\        screen.deinit();
+    \\        self.deinit();
     \\    }}
     \\
     \\    // All of the panels.
-    \\    screen.all_panels = try _panels_.init(startup.allocator, startup.all_screens, messenger, startup.exit, startup.window);
+    \\    self.all_panels = try _panels_.init(startup.allocator, startup.all_screens, self.messenger.?, startup.exit, startup.window);
     \\    errdefer {{
-    \\        messenger.deinit();
-    \\        screen.deinit();
+    \\        self.deinit();
     \\    }}
-    \\    messenger.all_panels = screen.all_panels;
+    \\    self.messenger.?.all_panels = self.all_panels.?;
     \\
     \\    // Subscribe to all screens.
-    \\    screen.all_screens.{0s} = screen;
+    \\    self.all_screens.{0s} = screen;
     \\    // screen is now owned by startup.all_screens.
 ;

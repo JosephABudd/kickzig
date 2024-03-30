@@ -123,7 +123,7 @@ pub fn isNewBackendMesssageHandlerName(allocator: std.mem.Allocator, new_name: [
 /// isValidTabName returns if the message name is valid.
 pub fn isValidTabName(name: []const u8) bool {
     var tab_name: []const u8 = undefined;
-    if (name[0] == '+') {
+    if (name[0] == '*') {
         tab_name = name[1..];
     } else {
         tab_name = name;

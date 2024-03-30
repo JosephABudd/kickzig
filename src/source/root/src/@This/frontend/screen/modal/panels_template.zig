@@ -234,12 +234,12 @@ const line3_panel_deinit =
     \\        if (self.{{ panel_name }}) |member| {
     \\            member.deinit();
     \\        }
+    \\
 ;
 
 const line_end_deinit_start_frameCurrent =
     \\        self.allocator.destroy(self);
     \\    }
-    \\
     \\
     \\    pub fn frameCurrent(self: *Panels, allocator: std.mem.Allocator) !void {
     \\        const result = switch (self.current_panel_tag) {
@@ -256,6 +256,7 @@ const line_frame_none =
     \\        };
     \\        return result;
     \\    }
+    \\
 ;
 
 const line_set_current_to =
@@ -263,6 +264,7 @@ const line_set_current_to =
     \\    pub fn setCurrentTo{{ panel_name }}(self: *Panels) void {
     \\        self.current_panel_tag = PanelTags.{{ panel_name }};
     \\    }
+    \\
 ;
 
 // const line_preset_modal_init =
@@ -303,6 +305,7 @@ const line_panel_init_with_messenger =
     \\    errdefer {
     \\        panels.deinit();
     \\    }
+    \\
 ;
 
 const line_panel_init_without_messenger =
@@ -311,6 +314,7 @@ const line_panel_init_without_messenger =
     \\    errdefer {
     \\        panels.deinit();
     \\    }
+    \\
 ;
 
 const line_last =

@@ -15,6 +15,7 @@ pub const content: []const u8 =
     \\            job.deinit();
     \\        }
     \\        self.allocator.free(self.jobs);
+    \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    pub fn init(allocator: std.mem.Allocator) !*Jobs {

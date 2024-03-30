@@ -15,6 +15,7 @@ const folder_name_modal_params: []const u8 = "modal_params";
 const folder_name_startup: []const u8 = "startup";
 const folder_name_various: []const u8 = "various";
 const folder_name_widget: []const u8 = "widget";
+const folder_name_tabbar: []const u8 = "tabbar";
 pub const folder_name_backtofront: []const u8 = "backtofront";
 pub const folder_name_fronttoback: []const u8 = "fronttoback";
 // pub const folder_name_root: []const u8 = "root";
@@ -141,6 +142,14 @@ pub fn pathVariousFolder(allocator: std.mem.Allocator) ![]const u8 {
 /// The caller owns the returned value.
 pub fn pathWidgetFolder(allocator: std.mem.Allocator) ![]const u8 {
     const params = [2][]const u8{ folder_name_deps, folder_name_widget };
+    const path = try fspath.join(allocator, &params);
+    return path;
+}
+
+/// returns the deps/widget/ path.
+/// The caller owns the returned value.
+pub fn pathWidgetTabbarFolder(allocator: std.mem.Allocator) ![]const u8 {
+    const params = [3][]const u8{ folder_name_deps, folder_name_widget, folder_name_tabbar };
     const path = try fspath.join(allocator, &params);
     return path;
 }

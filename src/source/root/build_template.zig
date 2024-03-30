@@ -3,14 +3,6 @@ pub const content =
     \\const Pkg = std.build.Pkg;
     \\const Compile = std.Build.Step.Compile;
     \\
-    \\const Packages = struct {
-    \\    // Declared here because submodule may not be cloned at the time build.zig runs.
-    \\    const zmath = std.build.Pkg{
-    \\        .name = "zmath",
-    \\        .source = .{ .path = "libs/zmath/src/zmath.zig" },
-    \\    };
-    \\};
-    \\
     \\pub fn build(b: *std.build.Builder) !void {
     \\    const target = b.standardTargetOptions(.{});
     \\    const optimize = b.standardOptimizeOption(.{});
@@ -21,8 +13,9 @@ pub const content =
     \\        .name = "dvui_libs",
     \\        .target = target,
     \\        .optimize = optimize,
-    \\        .link_libc = true,
     \\    });
+    \\    lib_bundle.addCSourceFile(.{ .file = .{ .path = "src/vendor/dvui/src/stb/stb_image_impl.c" }, .flags = &.{} });
+    \\    lib_bundle.addCSourceFile(.{ .file = .{ .path = "src/vendor/dvui/src/stb/stb_truetype_impl.c" }, .flags = &.{} });
     \\    link_deps(b, lib_bundle);
     \\    b.installArtifact(lib_bundle);
     \\
@@ -30,6 +23,7 @@ pub const content =
     \\        .source_file = .{ .path = "src/vendor/dvui/src/dvui.zig" },
     \\        .dependencies = &.{},
     \\    });
+    \\
     \\    const sdl_mod = b.addModule("SDLBackend", .{
     \\        .source_file = .{ .path = "src/vendor/dvui/src/backends/SDLBackend.zig" },
     \\        .dependencies = &.{
@@ -138,6 +132,7 @@ pub const content =
     \\    // Dependencies for message_mod. A framework deps/ module.
     \\    try message_mod.dependencies.put("counter", counter_mod);
     \\    try message_mod.dependencies.put("closedownjobs", closedownjobs_mod);
+    \\    try message_mod.dependencies.put("framers", framers_mod);
     \\    try message_mod.dependencies.put("various", various_mod);
     \\
     \\    // Dependencies for modal_params_mod. A framework deps/ module.
@@ -168,6 +163,10 @@ pub const content =
     \\
     \\    // Dependencies for widget_mod. A framework deps/ module.
     \\    try widget_mod.dependencies.put("dvui", dvui_mod);
+    \\    try widget_mod.dependencies.put("lock", lock_mod);
+    \\    try widget_mod.dependencies.put("framers", framers_mod);
+    \\    try widget_mod.dependencies.put("startup", startup_mod);
+    \\    try widget_mod.dependencies.put("various", various_mod);
     \\
     \\    const examples = [_][]const u8{
     \\        "standalone-sdl",
@@ -222,18 +221,9 @@ pub const content =
     \\    });
     \\    exe.linkLibrary(freetype_dep.artifact("freetype"));
     \\
-    \\    // TODO: remove this part about stb_image once either:
-    \\    // - zig can successfully cimport stb_image.h
-    \\    // - zig can have a module depend on a c file
-    \\    const stbi_dep = b.dependency("stb_image", .{
-    \\        .target = exe.target,
-    \\        .optimize = exe.optimize,
-    \\    });
-    \\    exe.linkLibrary(stbi_dep.artifact("stb_image"));
-    \\
-    \\    exe.linkLibC();
-    \\
-    \\    if (exe.target.isWindows()) {
+    \\    if (exe.target.cpu_arch == .wasm32) {
+    \\        // nothing
+    \\    } else if (exe.target.isWindows()) {
     \\        const sdl_dep = b.dependency("sdl", .{
     \\            .target = exe.target,
     \\            .optimize = exe.optimize,
@@ -292,7 +282,8 @@ pub const content =
     \\
     \\/// prefix: library prefix. e.g. "dvui."
     \\pub fn add_include_paths(b: *std.Build, exe: *std.Build.CompileStep) void {
-    \\    exe.addIncludePath(.{ .path = b.fmt("{s}{s}", .{ get_dependency_build_root(b.dep_prefix, "freetype"), "/include" }) });
     \\    exe.addIncludePath(.{ .path = b.fmt("{s}{s}", .{ get_dependency_build_root(b.dep_prefix, "stb_image"), "/include" }) });
+    \\    exe.addIncludePath(.{ .path = b.fmt("{s}{s}", .{ get_dependency_build_root(b.dep_prefix, "freetype"), "/include" }) });
+    \\    exe.addIncludePath(.{ .path = b.fmt("{s}/src/stb", .{b.build_root.path.?}) });
     \\}
 ;

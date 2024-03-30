@@ -13,8 +13,8 @@ const _src_this_deps_ = @import("source").deps;
 pub const command: []const u8 = "screen";
 pub const verb_help: []const u8 = "help";
 pub const verb_add_panel: []const u8 = "add-panel";
-pub const verb_add_vtab: []const u8 = "add-vtab";
-pub const verb_add_htab: []const u8 = "add-htab";
+pub const verb_add_content: []const u8 = "add-content";
+pub const verb_add_tab: []const u8 = "add-tab";
 pub const verb_add_book: []const u8 = "add-book";
 pub const verb_add_modal: []const u8 = "add-modal";
 pub const verb_remove: []const u8 = "remove";
@@ -67,10 +67,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                     break :blk;
                 }
                 var removed: bool = false;
-                removed = try _src_this_frontend_.removeVTabScreen(allocator, app_name, screen_name);
-                if (!removed) {
-                    removed = try _src_this_frontend_.removeHTabScreen(allocator, app_name, screen_name);
-                }
+                removed = try _src_this_frontend_.removeTabScreen(allocator, app_name, screen_name);
                 if (!removed) {
                     removed = try _src_this_frontend_.removePanelScreen(allocator, app_name, screen_name);
                 }
@@ -81,7 +78,8 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                     removed = try _src_this_frontend_.removeBookScreen(allocator, app_name, screen_name);
                 }
                 if (!removed) {
-                    const msg: []const u8 = try std.fmt.allocPrint(allocator, "Oops! The screen «{s}» was not found.\n", .{remaining_args[1]});
+                    // This should never happen.
+                    const msg: []const u8 = try _warning_.notExistingScreenName(allocator, remaining_args[1]);
                     defer allocator.free(msg);
                     try _stdout_.print(msg);
                     break :blk;
@@ -100,16 +98,19 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
         },
         else => blk: {
             // The user input can be:
+            // , only_frame_in_container: bool
+            // "screen add-content Edit Select Edit"
             // "screen add-panel Edit Select Edit"
-            // "screen add-vtab Contacts +Add Edit Remove"
-            // "screen add-htab Contacts +Add Edit Remove"
+            // "screen add-tab Contacts +Add Edit Remove"
             // "screen add-book Story +Cover +Chapter1 +Chapter2 +Chapter3 +Chapter4 +Appendix"
             // "screen add-modal YesNo YesNo"
             // "screen 💩 💩 💩..."
             var is_valid: bool = false;
             const verb: []const u8 = remaining_args[0];
             const screen_name: []const u8 = remaining_args[1];
-            if (std.mem.eql(u8, verb, verb_add_panel)) {
+            const adding_panel_screen: bool = std.mem.eql(u8, verb, verb_add_panel);
+            const adding_content_screen: bool = std.mem.eql(u8, verb, verb_add_content);
+            if (adding_panel_screen or adding_content_screen) {
                 // User input is "screen add-panel Edit Select Edit".
                 // The screen name must be valid.
                 is_valid = expectValidScreenName(allocator, screen_name) catch |err| {
@@ -142,19 +143,24 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the panel screen.
-                try _src_this_frontend_.addPanelScreen(allocator, app_name, screen_name, panel_names);
+                try _src_this_frontend_.addPanelScreen(allocator, app_name, screen_name, panel_names, adding_content_screen);
 
                 // Rebuild deps/framers/api.zig
                 try _src_this_deps_.rebuildForUpdatedScreens(allocator);
 
                 // Inform the user.
-                const msg: []const u8 = try _success_.screenAddedPanel(allocator, screen_name);
+                var msg: []const u8 = undefined;
+                if (adding_panel_screen) {
+                    msg = try _success_.screenAddedPanel(allocator, screen_name);
+                } else {
+                    msg = try _success_.screenAddedContent(allocator, screen_name);
+                }
                 defer allocator.free(msg);
                 try _stdout_.print(msg);
                 break :blk;
             }
-            if (std.mem.eql(u8, verb, verb_add_vtab)) {
-                // User input is "screen add-vtab Contacts +Add Edit Remove".
+            if (std.mem.eql(u8, verb, verb_add_tab)) {
+                // User input is "screen add-tab Contacts +Add Edit Remove".
                 // The screen name must be valid.
                 is_valid = expectValidScreenName(allocator, screen_name) catch |err| {
                     break :blk err;
@@ -162,7 +168,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 if (!is_valid) {
                     break :blk;
                 }
-                // The named screen must already exist.
+                // The named screen must not exist.
                 is_valid = expectNewScreenName(allocator, screen_name) catch |err| {
                     break :blk err;
                 };
@@ -173,8 +179,14 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 // The tab names must be valid.
                 is_valid = true;
                 for (tab_names) |tab_name| {
-                    if (!try expectValidTabName(allocator, tab_name)) {
-                        is_valid = false;
+                    if (tab_name[0] == '*') {
+                        if (!try expectValidTabName(allocator, tab_name[1..])) {
+                            is_valid = false;
+                        }
+                    } else {
+                        if (!try expectValidTabName(allocator, tab_name)) {
+                            is_valid = false;
+                        }
                     }
                 }
                 if (!is_valid) {
@@ -184,15 +196,29 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 if (!try expectUniqueTabNames(allocator, tab_names)) {
                     break :blk;
                 }
+                // A tab name beginning with '*' use a panel-screen for content.
+                // There fore it must be a panel-screen name.
+                // The panel-screen must already exist.
+                is_valid = true;
+                for (tab_names) |tab_name| {
+                    if (tab_name[0] == '*') {
+                        if (!try expectTabNameIsExistingPanelScreenName(allocator, tab_name[1..])) {
+                            is_valid = false;
+                        }
+                    }
+                }
+                if (!is_valid) {
+                    break :blk;
+                }
                 // The user input is valid.
-                // Add the vtab screen.
-                try _src_this_frontend_.addVTabScreen(allocator, app_name, screen_name, tab_names);
+                // Add the tab screen.
+                try _src_this_frontend_.addTabScreen(allocator, app_name, screen_name, tab_names);
 
                 // Rebuild deps/framers/api.zig
                 try _src_this_deps_.rebuildForUpdatedScreens(allocator);
 
                 // Inform the user.
-                const msg: []const u8 = try _success_.screenAddedVTab(allocator, screen_name);
+                const msg: []const u8 = try _success_.screenAddedTab(allocator, screen_name);
                 defer allocator.free(msg);
                 try _stdout_.print(msg);
                 break :blk;
@@ -237,50 +263,6 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
 
                 // Inform the user.
                 const msg: []const u8 = try _success_.screenAddedBook(allocator, screen_name);
-                defer allocator.free(msg);
-                try _stdout_.print(msg);
-                break :blk;
-            }
-            if (std.mem.eql(u8, verb, verb_add_htab)) {
-                // User input is "screen add-htab Contacts +Add Edit Remove".
-                // The screen name must be valid.
-                is_valid = expectValidScreenName(allocator, screen_name) catch |err| {
-                    break :blk err;
-                };
-                if (!is_valid) {
-                    break :blk;
-                }
-                // The named screen must not already exist.
-                is_valid = expectNewScreenName(allocator, screen_name) catch |err| {
-                    break :blk err;
-                };
-                if (!is_valid) {
-                    break :blk;
-                }
-                const tab_names: [][]const u8 = remaining_args[2..];
-                // The tab names must be valid.
-                is_valid = true;
-                for (tab_names) |tab_name| {
-                    if (!try expectValidTabName(allocator, tab_name)) {
-                        is_valid = false;
-                    }
-                }
-                if (!is_valid) {
-                    break :blk;
-                }
-                // The tab names must be unique.
-                if (!try expectUniqueTabNames(allocator, tab_names)) {
-                    break :blk;
-                }
-                // The user input is valid.
-                // Add the htab screen.
-                try _src_this_frontend_.addHTabScreen(allocator, app_name, screen_name, tab_names);
-
-                // Rebuild deps/framers/api.zig
-                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
-
-                // Inform the user.
-                const msg: []const u8 = try _success_.screenAddedHTab(allocator, screen_name);
                 defer allocator.free(msg);
                 try _stdout_.print(msg);
                 break :blk;
@@ -370,7 +352,7 @@ fn expectUniquePanelNames(allocator: std.mem.Allocator, names: [][]const u8) !bo
         for (i + 1..last) |j| {
             if (std.mem.eql(u8, name, names[j])) {
                 is_valid = false;
-                const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is not a unique panel name.\n", .{name});
+                const msg: []const u8 = try _warning_.notUniqueScreenName(allocator, name);
                 defer allocator.free(msg);
                 try _stdout_.print(msg);
             }
@@ -382,13 +364,13 @@ fn expectUniquePanelNames(allocator: std.mem.Allocator, names: [][]const u8) !bo
 fn expectValidScreenName(allocator: std.mem.Allocator, screen_name: []const u8) !bool {
     var is_valid: bool = _strings_.isValid(screen_name);
     if (!is_valid) {
-        const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is not a valid screen name.\n", .{screen_name});
+        const msg: []const u8 = try _warning_.notValidScreenName(allocator, screen_name);
         defer allocator.free(msg);
         try _stdout_.print(msg);
     }
     is_valid = !_filenames_.isFrameworkScreenName(screen_name);
     if (!is_valid) {
-        const msg: []const u8 = try std.fmt.allocPrint(allocator, "The «{s}» screen is part of the framework and cannot be removed.\n", .{screen_name});
+        const msg: []const u8 = try _warning_.partOfFrameworkScreenName(allocator, screen_name);
         defer allocator.free(msg);
         try _stdout_.print(msg);
     }
@@ -398,7 +380,7 @@ fn expectValidScreenName(allocator: std.mem.Allocator, screen_name: []const u8) 
 fn expectValidPanelName(allocator: std.mem.Allocator, panel_name: []const u8) !bool {
     const is_valid: bool = _strings_.isValid(panel_name);
     if (!is_valid) {
-        const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is not a valid panel name.\n", .{panel_name});
+        const msg: []const u8 = try _warning_.notValidPanelName(allocator, panel_name);
         defer allocator.free(msg);
         try _stdout_.print(msg);
     }
@@ -418,8 +400,8 @@ fn expectExistingScreenName(allocator: std.mem.Allocator, screen_name: []const u
             return true;
         }
     }
-    // Error: New screen name.
-    const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is not an existing screen name.\n", .{screen_name});
+    // Error: This is a new screen name.
+    const msg: []const u8 = try _warning_.notExistingScreenName(allocator, screen_name);
     defer allocator.free(msg);
     try _stdout_.print(msg);
     return false;
@@ -441,8 +423,8 @@ fn expectNewScreenName(allocator: std.mem.Allocator, screen_name: []const u8) !b
         }
     }
     if (!is_new) {
-        // Error: An existing screen.
-        const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is an existing screen name.\n", .{screen_name});
+        // Error: This is a current screen.
+        const msg: []const u8 = try _warning_.notNewScreenName(allocator, screen_name);
         defer allocator.free(msg);
         try _stdout_.print(msg);
     }
@@ -452,7 +434,7 @@ fn expectNewScreenName(allocator: std.mem.Allocator, screen_name: []const u8) !b
 fn expectValidTabName(allocator: std.mem.Allocator, tab_name: []const u8) !bool {
     const is_valid: bool = _verify_.isValidTabName(tab_name);
     if (!is_valid) {
-        const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is not a valid tab name.\n", .{tab_name});
+        const msg: []const u8 = try _warning_.notValidScreenTabName(allocator, tab_name);
         defer allocator.free(msg);
         try _stdout_.print(msg);
     }
@@ -469,14 +451,15 @@ fn expectUniqueTabNames(allocator: std.mem.Allocator, names: [][]const u8) !bool
         }
         for (i + 1..last) |j| {
             if (std.mem.eql(u8, name, names[j])) {
+                // This is a duplicate tab name.
                 is_valid = false;
                 var tab_name: []const u8 = undefined;
-                if (name[0] == '+') {
+                if (name[0] == '*') {
                     tab_name = name[1..];
                 } else {
                     tab_name = name;
                 }
-                const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is not a unique tab name.\n", .{tab_name});
+                const msg: []const u8 = try _warning_.notUniqueTabName(allocator, tab_name);
                 defer allocator.free(msg);
                 try _stdout_.print(msg);
             }
@@ -485,29 +468,23 @@ fn expectUniqueTabNames(allocator: std.mem.Allocator, names: [][]const u8) !bool
     return is_valid;
 }
 
-fn expectNewTabName(allocator: std.mem.Allocator, screen_name: []const u8, tab_name: []const u8) !bool {
-    var fixed_tab_name: []const u8 = undefined;
-    if (tab_name[0] == '+') {
-        fixed_tab_name = tab_name[1..];
-    } else {
-        fixed_tab_name = tab_name;
-    }
-    const panel_names: [][]const u8 = try _filenames_.allFrontendVTabScreenPanelNames(allocator, screen_name, tab_name);
+fn expectTabNameIsExistingPanelScreenName(allocator: std.mem.Allocator, tab_name: []const u8) !bool {
+    const panel_screen_names: [][]const u8 = try _filenames_.allFrontendPanelScreenNames(allocator);
     defer {
-        for (panel_names) |panel_name| {
-            allocator.free(panel_name);
+        for (panel_screen_names) |panel_screen_name| {
+            allocator.free(panel_screen_name);
         }
-        allocator.free(panel_names);
+        allocator.free(panel_screen_names);
     }
-    // In a vtab and htab, a panel has the same name as its tab.
-    for (panel_names) |panel_name| {
-        if (std.mem.eql(u8, panel_name, fixed_tab_name)) {
-            // The tab name is not a new tab name.
-            const msg: []const u8 = try std.fmt.allocPrint(allocator, "«{s}» is not a unique tab name.\n", .{fixed_tab_name});
-            defer allocator.free(msg);
-            try _stdout_.print(msg);
-            return false;
+    // In a tab, a screen-tab name must be an existing panel-screen name.
+    for (panel_screen_names) |panel_screen_name| {
+        if (std.mem.eql(u8, panel_screen_name, tab_name)) {
+            return true;
         }
     }
-    return true;
+    // The tab name is not a panel-screen name.
+    const msg: []const u8 = try _warning_.notValidScreenTabName(allocator, tab_name);
+    defer allocator.free(msg);
+    try _stdout_.print(msg);
+    return false;
 }

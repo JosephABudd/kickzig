@@ -37,9 +37,15 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
 
     {
         // build.zon.zig
+        // Build the data for the template.
+        var template: *_build_zon_template_.Template = try _build_zon_template_.Template.init(allocator, app_name);
+        defer template.deinit();
+        const content: []const u8 = try template.content();
+        defer allocator.free(content);
+
         ofile = try root_dir.createFile(_filenames_.build_zon_file_name, .{});
         defer ofile.close();
-        try ofile.writeAll(_build_zon_template_.content);
+        try ofile.writeAll(content);
     }
 
     {

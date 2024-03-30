@@ -12,8 +12,7 @@ const _main_menu_template_ = @import("main_menu_template.zig");
 const _stdout_ = @import("stdout");
 const _src_this_frontend_screen_ = @import("screen/framework.zig");
 const _src_this_frontend_panel_screen_ = @import("screen/panel/framework.zig");
-const _src_this_frontend_vtab_screen_ = @import("screen/vtab/framework.zig");
-const _src_this_frontend_htab_screen_ = @import("screen/htab/framework.zig");
+const _src_this_frontend_tab_screen_ = @import("screen/tab/framework.zig");
 const _src_this_frontend_book_screen_ = @import("screen/book/framework.zig");
 const _src_this_frontend_modal_screen_ = @import("screen/modal/framework.zig");
 const _src_this_deps_modal_params_ = @import("source_deps").modal_params;
@@ -61,21 +60,13 @@ fn rebuild(allocator: std.mem.Allocator, app_name: []const u8) !void {
         }
         allocator.free(panel_screen_names);
     }
-    // Add the names of each vtab screen.
-    const vtab_screen_names: [][]const u8 = try _filenames_.frontend.allVTabFolders(allocator);
+    // Add the names of each tab screen.
+    const tab_screen_names: [][]const u8 = try _filenames_.frontend.allTabFolders(allocator);
     defer {
-        for (vtab_screen_names) |vtab_screen_name| {
-            allocator.free(vtab_screen_name);
+        for (tab_screen_names) |tab_screen_name| {
+            allocator.free(tab_screen_name);
         }
-        allocator.free(vtab_screen_names);
-    }
-    // Add the names of each htab screen.
-    const htab_screen_names: [][]const u8 = try _filenames_.frontend.allHTabFolders(allocator);
-    defer {
-        for (htab_screen_names) |htab_screen_name| {
-            allocator.free(htab_screen_name);
-        }
-        allocator.free(htab_screen_names);
+        allocator.free(tab_screen_names);
     }
     // Add the names of each book screen.
     const book_screen_names: [][]const u8 = try _filenames_.frontend.allBookFolders(allocator);
@@ -98,8 +89,7 @@ fn rebuild(allocator: std.mem.Allocator, app_name: []const u8) !void {
         allocator,
         app_name,
         panel_screen_names,
-        vtab_screen_names,
-        htab_screen_names,
+        tab_screen_names,
         book_screen_names,
         modal_screen_names,
     );
@@ -107,8 +97,7 @@ fn rebuild(allocator: std.mem.Allocator, app_name: []const u8) !void {
         allocator,
         app_name,
         panel_screen_names,
-        vtab_screen_names,
-        htab_screen_names,
+        tab_screen_names,
         book_screen_names,
         modal_screen_names,
     );
@@ -119,8 +108,7 @@ fn rebuildApiZig(
     allocator: std.mem.Allocator,
     app_name: []const u8,
     panel_screen_names: [][]const u8,
-    vtab_screen_names: [][]const u8,
-    htab_screen_names: [][]const u8,
+    tab_screen_names: [][]const u8,
     book_screen_names: [][]const u8,
     modal_screen_names: [][]const u8,
 ) !void {
@@ -131,11 +119,8 @@ fn rebuildApiZig(
     for (panel_screen_names) |panel_screen_name| {
         try template.addPanelScreenName(panel_screen_name);
     }
-    for (vtab_screen_names) |vtab_screen_name| {
-        try template.addVTabScreenName(vtab_screen_name);
-    }
-    for (htab_screen_names) |htab_screen_name| {
-        try template.addHTabScreenName(htab_screen_name);
+    for (tab_screen_names) |tab_screen_name| {
+        try template.addTabScreenName(tab_screen_name);
     }
     for (book_screen_names) |book_screen_name| {
         try template.addBookScreenName(book_screen_name);
@@ -164,8 +149,7 @@ fn rebuildScreenPointersZig(
     allocator: std.mem.Allocator,
     app_name: []const u8,
     panel_screen_names: [][]const u8,
-    vtab_screen_names: [][]const u8,
-    htab_screen_names: [][]const u8,
+    tab_screen_names: [][]const u8,
     book_screen_names: [][]const u8,
     modal_screen_names: [][]const u8,
 ) !void {
@@ -176,11 +160,8 @@ fn rebuildScreenPointersZig(
     for (panel_screen_names) |panel_screen_name| {
         try template.addPanelScreenName(panel_screen_name);
     }
-    for (vtab_screen_names) |vtab_screen_name| {
-        try template.addVTabScreenName(vtab_screen_name);
-    }
-    for (htab_screen_names) |htab_screen_name| {
-        try template.addHTabScreenName(htab_screen_name);
+    for (tab_screen_names) |tab_screen_name| {
+        try template.addTabScreenName(tab_screen_name);
     }
     for (book_screen_names) |book_screen_name| {
         try template.addBookScreenName(book_screen_name);
@@ -207,8 +188,8 @@ fn rebuildScreenPointersZig(
 // Add or remove panel screens.
 
 /// addPanelScreen creates a panel screen and adds rebuilds api.zig.
-pub fn addPanelScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, panel_names: [][]const u8) !void {
-    try _src_this_frontend_panel_screen_.createAnyPackage(allocator, screen_name, panel_names);
+pub fn addPanelScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, panel_names: [][]const u8, only_frame_in_container: bool) !void {
+    try _src_this_frontend_panel_screen_.createAnyPackage(allocator, screen_name, panel_names, only_frame_in_container);
     try rebuild(allocator, app_name);
 }
 
@@ -226,30 +207,15 @@ pub fn removePanelScreen(allocator: std.mem.Allocator, app_name: []const u8, scr
     return removed;
 }
 
-// Add or remove vtab screens.
+// Add or remove tab screens.
 
-pub fn addVTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, tab_names: [][]const u8) !void {
-    try _src_this_frontend_vtab_screen_.add(allocator, screen_name, tab_names);
+pub fn addTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, tab_names: [][]const u8) !void {
+    try _src_this_frontend_tab_screen_.add(allocator, screen_name, tab_names);
     try rebuild(allocator, app_name);
 }
 
-pub fn removeVTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
-    const removed: bool = try _src_this_frontend_vtab_screen_.remove(screen_name);
-    if (removed) {
-        try rebuild(allocator, app_name);
-    }
-    return removed;
-}
-
-// Add or remove htab screens.
-
-pub fn addHTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, tab_names: [][]const u8) !void {
-    try _src_this_frontend_htab_screen_.add(allocator, screen_name, tab_names);
-    try rebuild(allocator, app_name);
-}
-
-pub fn removeHTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
-    const removed: bool = try _src_this_frontend_htab_screen_.remove(screen_name);
+pub fn removeTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
+    const removed: bool = try _src_this_frontend_tab_screen_.remove(screen_name);
     if (removed) {
         try rebuild(allocator, app_name);
     }

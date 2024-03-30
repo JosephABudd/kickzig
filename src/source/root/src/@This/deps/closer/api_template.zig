@@ -18,7 +18,7 @@ pub const content: []const u8 =
     \\
     \\var _allocator: std.mem.Allocator = undefined;
     \\var lock: *_lock_.ThreadLock = undefined;
-    \\var screens: *MainView = undefined;
+    \\var _main_view: *MainView = undefined;
     \\var state: Context = .none;
     \\var modal_params: ?*Params = null;
     \\var window: *dvui.Window = undefined;
@@ -30,22 +30,24 @@ pub const content: []const u8 =
     \\    defer lock.unlock();
     \\
     \\    state = .completed;
+    \\    dvui.refresh(window, @src(), null);
     \\}
     \\
     \\pub fn init(allocator: std.mem.Allocator, jobs: *_jobs_.Jobs, win: *dvui.Window) !ExitFn {
     \\    lock = try _lock_.init(allocator);
     \\    _allocator = allocator;
-    \\    screens = undefined;
+    \\    _main_view = undefined;
     \\    modal_params = try Params.init(allocator, jobs);
     \\    window = win;
     \\    return &exit;
     \\}
     \\
     \\pub fn set_screens(main_view: *MainView) void {
-    \\    screens = main_view;
+    \\    _main_view = main_view;
     \\}
     \\
     \\pub fn deinit() void {
+    \\    lock.deinit();
     \\    if (modal_params) |params| {
     \\        params.deinit();
     \\    }
@@ -87,7 +89,7 @@ pub const content: []const u8 =
     \\    modal_params.?.setHeading("Closing");
     \\    modal_params.?.setMessage(user_message);
     \\
-    \\    if (screens.isModal()) {
+    \\    if (_main_view.isModal()) {
     \\        if (ok_to_force) {
     \\            // Force this modal screen to close.
     \\            state = .forced;
@@ -111,7 +113,7 @@ pub const content: []const u8 =
     \\        return;
     \\    }
     \\
-    \\    if (!screens.isModal()) {
+    \\    if (!_main_view.isModal()) {
     \\        state = .started;
     \\        log_close();
     \\    }
@@ -138,7 +140,7 @@ pub const content: []const u8 =
     \\        std.log.debug("{s}:{d}:{d}: {s}: {s}", .{ src.file, src.line, src.column, @errorName(source_error), modal_params.?.message.? });
     \\    }
     \\
-    \\    _ = screens.showEOJ(modal_params.?);
+    \\    _ = _main_view.showEOJ(modal_params.?);
     \\    // The modal params are always owned by the modal screen.
     \\    modal_params = null;
     \\}
@@ -151,7 +153,7 @@ pub const content: []const u8 =
     \\        std.log.debug("{s}:{d}:{d}: {s}: {s}", .{ src.file, src.line, src.column, @errorName(source_error), modal_params.?.message.? });
     \\    }
     \\
-    \\    _ = screens.forceEOJ(modal_params.?);
+    \\    _ = _main_view.forceEOJ(modal_params.?);
     \\    // The modal params are always owned by the modal screen.
     \\    modal_params = null;
     \\}

@@ -28,7 +28,7 @@ pub fn create(allocator: std.mem.Allocator) !void {
     try _message_.create(allocator);
     try _modal_params_.create(allocator);
     try _startup_.create();
-    try _widget_.create(allocator);
+    try _widget_.create();
     try _closer_.create();
     try _closedownjobs_.create();
     try _various_.create();

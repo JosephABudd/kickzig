@@ -5,14 +5,12 @@ const strings = @import("strings");
 pub const Template = struct {
     allocator: std.mem.Allocator,
 
-    _htab_screen_names: [][]const u8,
-    _vtab_screen_names: [][]const u8,
+    _tab_screen_names: [][]const u8,
     _panel_screen_names: [][]const u8,
     _modal_screen_names: [][]const u8,
     _book_screen_names: [][]const u8,
 
-    _htab_screen_names_index: usize,
-    _vtab_screen_names_index: usize,
+    _tab_screen_names_index: usize,
     _panel_screen_names_index: usize,
     _modal_screen_names_index: usize,
     _book_screen_names_index: usize,
@@ -20,21 +18,13 @@ pub const Template = struct {
     _app_name: []const u8,
 
     pub fn deinit(self: *Template) void {
-        for (self._htab_screen_names, 0..) |name, i| {
-            if (i == self._htab_screen_names_index) {
+        for (self._tab_screen_names, 0..) |name, i| {
+            if (i == self._tab_screen_names_index) {
                 break;
             }
             self.allocator.free(name);
         }
-        self.allocator.free(self._htab_screen_names);
-
-        for (self._vtab_screen_names, 0..) |name, i| {
-            if (i == self._vtab_screen_names_index) {
-                break;
-            }
-            self.allocator.free(name);
-        }
-        self.allocator.free(self._vtab_screen_names);
+        self.allocator.free(self._tab_screen_names);
 
         for (self._panel_screen_names, 0..) |name, i| {
             if (i == self._panel_screen_names_index) {
@@ -64,36 +54,20 @@ pub const Template = struct {
         self.allocator.destroy(self);
     }
 
-    pub fn addVTabScreenName(self: *Template, new_screen_name: []const u8) !void {
-        if (self._vtab_screen_names_index == self._vtab_screen_names.len) {
+    pub fn addTabScreenName(self: *Template, new_screen_name: []const u8) !void {
+        if (self._tab_screen_names_index == self._tab_screen_names.len) {
             // Full list so create a new bigger one.
-            var new_screen_names: [][]const u8 = try self.allocator.alloc([]const u8, (self._vtab_screen_names.len + 5));
-            for (self._vtab_screen_names, 0..) |vtab_screen_name, i| {
-                new_screen_names[i] = vtab_screen_name;
+            var new_screen_names: [][]const u8 = try self.allocator.alloc([]const u8, (self._tab_screen_names.len + 5));
+            for (self._tab_screen_names, 0..) |tab_screen_name, i| {
+                new_screen_names[i] = tab_screen_name;
             }
             // Replace the old list with the new bigger one.
-            self.allocator.free(self._vtab_screen_names);
-            self._vtab_screen_names = new_screen_names;
+            self.allocator.free(self._tab_screen_names);
+            self._tab_screen_names = new_screen_names;
         }
-        self._vtab_screen_names[self._vtab_screen_names_index] = try self.allocator.alloc(u8, new_screen_name.len);
-        @memcpy(@constCast(self._vtab_screen_names[self._vtab_screen_names_index]), new_screen_name);
-        self._vtab_screen_names_index += 1;
-    }
-
-    pub fn addHTabScreenName(self: *Template, new_screen_name: []const u8) !void {
-        if (self._htab_screen_names_index == self._htab_screen_names.len) {
-            // Full list so create a new bigger one.
-            var new_screen_names: [][]const u8 = try self.allocator.alloc([]const u8, (self._htab_screen_names.len + 5));
-            for (self._htab_screen_names, 0..) |htab_screen_name, i| {
-                new_screen_names[i] = htab_screen_name;
-            }
-            // Replace the old list with the new bigger one.
-            self.allocator.free(self._htab_screen_names);
-            self._htab_screen_names = new_screen_names;
-        }
-        self._htab_screen_names[self._htab_screen_names_index] = try self.allocator.alloc(u8, new_screen_name.len);
-        @memcpy(@constCast(self._htab_screen_names[self._htab_screen_names_index]), new_screen_name);
-        self._htab_screen_names_index += 1;
+        self._tab_screen_names[self._tab_screen_names_index] = try self.allocator.alloc(u8, new_screen_name.len);
+        @memcpy(@constCast(self._tab_screen_names[self._tab_screen_names_index]), new_screen_name);
+        self._tab_screen_names_index += 1;
     }
 
     pub fn addPanelScreenName(self: *Template, new_screen_name: []const u8) !void {
@@ -152,16 +126,9 @@ pub const Template = struct {
         try lines.appendSlice(line1);
         var line: []u8 = undefined;
 
-        // vtab screens.
-        const vtab_screen_names: [][]const u8 = self._vtab_screen_names[0..self._vtab_screen_names_index];
-        for (vtab_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line1_not_modal, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
-        // htab screens.
-        const htab_screen_names: [][]const u8 = self._htab_screen_names[0..self._htab_screen_names_index];
-        for (htab_screen_names) |name| {
+        // tab screens.
+        const tab_screen_names: [][]const u8 = self._tab_screen_names[0..self._tab_screen_names_index];
+        for (tab_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, line1_not_modal, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
@@ -188,16 +155,31 @@ pub const Template = struct {
             try lines.appendSlice(line);
         }
 
-        try lines.appendSlice(line2);
-
-        // vtab screens.
-        for (vtab_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line2_label, .{name});
+        try lines.appendSlice(line2a);
+        // All non modal screens: tab screens.
+        // Will frame is a tab screen option.
+        for (tab_screen_names) |name| {
+            line = try fmt.allocPrint(self.allocator, line2_not_modal_will_frame, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-        // htab screens.
-        for (htab_screen_names) |name| {
+        // All non modal screens: panel screens.
+        // Will frame is a panel screen option.
+        for (panel_screen_names) |name| {
+            line = try fmt.allocPrint(self.allocator, line2_not_modal_will_frame, .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
+        }
+        // All non modal screens: book screens.
+        // Will frame is a book screen option.
+        for (book_screen_names) |name| {
+            line = try fmt.allocPrint(self.allocator, line2_not_modal_will_frame, .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
+        }
+        try lines.appendSlice(line2b);
+        // tab screens.
+        for (tab_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, line2_label, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
@@ -223,14 +205,8 @@ pub const Template = struct {
 
         try lines.appendSlice(line3);
 
-        // vtab screens.
-        for (vtab_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line3_not_modal, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
-        // htab screens.
-        for (htab_screen_names) |name| {
+        // tab screens.
+        for (tab_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, line3_not_modal, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
@@ -265,13 +241,11 @@ pub fn init(allocator: std.mem.Allocator, app_name: []const u8) !*Template {
     }
     @memcpy(@constCast(self._app_name), app_name);
     self.allocator = allocator;
-    self._htab_screen_names = try allocator.alloc([]const u8, 5);
-    self._vtab_screen_names = try allocator.alloc([]const u8, 5);
+    self._tab_screen_names = try allocator.alloc([]const u8, 5);
     self._panel_screen_names = try allocator.alloc([]const u8, 5);
     self._modal_screen_names = try allocator.alloc([]const u8, 5);
     self._book_screen_names = try allocator.alloc([]const u8, 5);
-    self._htab_screen_names_index = 0;
-    self._vtab_screen_names_index = 0;
+    self._tab_screen_names_index = 0;
     self._panel_screen_names_index = 0;
     self._modal_screen_names_index = 0;
     self._book_screen_names_index = 0;
@@ -297,7 +271,6 @@ const line1 =
     \\    allocator = startup.allocator;
     \\    main_view = startup.main_view;
     \\    screen_pointers = try ScreenPointers.init(startup.*);
-    \\    // screen_pointers = try startup.allocator.create(ScreenPointers);
     \\    startup.screen_pointers = screen_pointers;
     \\    try screen_pointers.init_screens(startup.*);
     \\
@@ -323,11 +296,29 @@ const line1 =
 
 const line1_not_modal =
     \\            .{0s} => {{
-    \\                try frame_main_menu();
-    \\                try screen_pointers.{0s}.?.frame(arena);
+    \\                if (screen_pointers.{0s}.?.willFrame()) {{
+    \\                    // The tab screen will frame.
+    \\                    try frame_main_menu();
+    \\                    try screen_pointers.{0s}.?.frame(arena);
+    \\                }} else {{
+    \\                    // This tab screen will not frame.
+    \\                    // Switch back to the startup screen.
+    \\                    if (_main_menu_.startup_screen_tag != .{0s}) {{
+    \\                        try main_view.show(_main_menu_.startup_screen_tag);
+    \\                        try frame(arena);
+    \\                    }}
+    \\                }}
     \\            }},
     \\
 ;
+
+// const line1_not_modal =
+//     \\            .{0s} => {{
+//     \\                try frame_main_menu();
+//     \\                try screen_pointers.{0s}.?.frame(arena);
+//     \\            }},
+//     \\
+// ;
 
 const line1_modal =
     \\            .{0s} => {{
@@ -351,7 +342,7 @@ const line1_modal =
 //     try screen_pointers.YesNo.?.frame(arena);
 // },
 
-const line2 =
+const line2a =
     \\        }
     \\    }
     \\}
@@ -369,10 +360,28 @@ const line2 =
     \\        defer fw.deinit();
     \\
     \\        for (_main_menu_.sorted_main_menu_screen_tags, 0..) |screen_tag, id_extra| {
+    \\            const will_frame: bool = switch (screen_tag) {
+    \\
+;
+const line2_not_modal_will_frame =
+    \\                .{0s} => blk: {{
+    \\                    if (screen_pointers.{0s}) |screen| {{
+    \\                        break :blk screen.willFrame();
+    \\                    }} else {{
+    \\                        break :blk false;
+    \\                    }}
+    \\                }},
+;
+const line2b =
+    \\                else => false,
+    \\            };
+    \\            if (!will_frame) {
+    \\                continue;
+    \\            }
+    \\
     \\            const label: []const u8 = switch (screen_tag) {
     \\
 ;
-
 const line2_label =
     \\                .{0s} => screen_pointers.{0s}.?.label(),
     \\

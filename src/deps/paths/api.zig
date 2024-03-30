@@ -26,8 +26,7 @@ pub const FolderPaths = struct {
     root_src_this_frontend: ?[]const u8,
     root_src_this_frontend_screen: ?[]const u8,
     root_src_this_frontend_screen_panel: ?[]const u8,
-    root_src_this_frontend_screen_htab: ?[]const u8,
-    root_src_this_frontend_screen_vtab: ?[]const u8,
+    root_src_this_frontend_screen_tab: ?[]const u8,
     root_src_this_frontend_screen_book: ?[]const u8,
     root_src_this_frontend_screen_modal: ?[]const u8,
     root_src_this_frontend_screen_modal_ok: ?[]const u8,
@@ -44,6 +43,7 @@ pub const FolderPaths = struct {
     root_src_this_deps_closedownjobs: ?[]const u8,
     root_src_this_deps_modal_params: ?[]const u8,
     root_src_this_deps_widget: ?[]const u8,
+    root_src_this_deps_widget_tabbar: ?[]const u8,
     root_src_this_deps_startup: ?[]const u8,
     root_src_this_deps_various: ?[]const u8,
 
@@ -73,10 +73,7 @@ pub const FolderPaths = struct {
         if (self.root_src_this_frontend_screen_panel) |member| {
             allocator.free(member);
         }
-        if (self.root_src_this_frontend_screen_htab) |member| {
-            allocator.free(member);
-        }
-        if (self.root_src_this_frontend_screen_vtab) |member| {
+        if (self.root_src_this_frontend_screen_tab) |member| {
             allocator.free(member);
         }
         if (self.root_src_this_frontend_screen_book) |member| {
@@ -128,6 +125,9 @@ pub const FolderPaths = struct {
             allocator.free(member);
         }
         if (self.root_src_this_deps_widget) |member| {
+            allocator.free(member);
+        }
+        if (self.root_src_this_deps_widget_tabbar) |member| {
             allocator.free(member);
         }
         if (self.root_src_this_deps_startup) |member| {
@@ -200,12 +200,8 @@ pub const FolderPaths = struct {
         temp = try frontend.pathScreenPanelFolder(self.allocator);
         try this_dir.makePath(temp);
         self.allocator.free(temp);
-        // frontend/screen/htab/
-        temp = try frontend.pathScreenHTabFolder(self.allocator);
-        try this_dir.makePath(temp);
-        self.allocator.free(temp);
-        // frontend/screen/vtab/
-        temp = try frontend.pathScreenVTabFolder(self.allocator);
+        // frontend/screen/tab/
+        temp = try frontend.pathScreenTabFolder(self.allocator);
         try this_dir.makePath(temp);
         self.allocator.free(temp);
         // frontend/screen/book/
@@ -273,6 +269,10 @@ pub const FolderPaths = struct {
         self.allocator.free(temp);
         // deps/widget/
         temp = try deps.pathWidgetFolder(self.allocator);
+        try this_dir.makePath(temp);
+        self.allocator.free(temp);
+        // deps/widget/tabbar/
+        temp = try deps.pathWidgetTabbarFolder(self.allocator);
         try this_dir.makePath(temp);
         self.allocator.free(temp);
         // deps/startup/
@@ -397,26 +397,13 @@ pub fn folders() !*FolderPaths {
     }
     gpa.free(temp);
 
-    // /src/@This/frontend/screen/htab/ path.
-    temp = try frontend.pathScreenHTabFolder(gpa);
+    // /src/@This/frontend/screen/tab/ path.
+    temp = try frontend.pathScreenTabFolder(gpa);
     errdefer {
         folder_paths.deinit();
     }
     params2[1] = temp;
-    folder_paths.root_src_this_frontend_screen_htab = try fspath.join(gpa, params2);
-    errdefer {
-        gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
-
-    // /src/@This/frontend/screen/vtab/ path.
-    temp = try frontend.pathScreenVTabFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_frontend_screen_vtab = try fspath.join(gpa, params2);
+    folder_paths.root_src_this_frontend_screen_tab = try fspath.join(gpa, params2);
     errdefer {
         gpa.free(temp);
         folder_paths.deinit();
@@ -632,6 +619,19 @@ pub fn folders() !*FolderPaths {
     }
     params2[1] = temp;
     folder_paths.root_src_this_deps_widget = try fspath.join(gpa, params2);
+    errdefer {
+        gpa.free(temp);
+        folder_paths.deinit();
+    }
+    gpa.free(temp);
+
+    // /src/@This/deps/widget/tabbar/ path.
+    temp = try deps.pathWidgetTabbarFolder(gpa);
+    errdefer {
+        folder_paths.deinit();
+    }
+    params2[1] = temp;
+    folder_paths.root_src_this_deps_widget_tabbar = try fspath.join(gpa, params2);
     errdefer {
         gpa.free(temp);
         folder_paths.deinit();

@@ -4,9 +4,8 @@ const fspath = std.fs.path;
 pub const folder_name_frontend: []const u8 = "frontend";
 const folder_name_screen: []const u8 = "screen";
 const folder_name_panel: []const u8 = "panel";
-const folder_name_vtab: []const u8 = "vtab";
 const folder_name_book: []const u8 = "book";
-const folder_name_htab: []const u8 = "htab";
+const folder_name_tab: []const u8 = "tab";
 const folder_name_modal: []const u8 = "modal";
 const folder_name_setup: []const u8 = "setup";
 pub const folder_name_ok: []const u8 = "OK";
@@ -29,18 +28,10 @@ pub fn pathScreenPanelFolder(allocator: std.mem.Allocator) ![]const u8 {
     return path;
 }
 
-/// returns the frontend/screen/htab/ path.
+/// returns the frontend/screen/tab/ path.
 /// The caller owns the returned value.
-pub fn pathScreenHTabFolder(allocator: std.mem.Allocator) ![]const u8 {
-    const params = [3][]const u8{ folder_name_frontend, folder_name_screen, folder_name_htab };
-    const path = try fspath.join(allocator, &params);
-    return path;
-}
-
-/// returns the frontend/screen/vtab/ path.
-/// The caller owns the returned value.
-pub fn pathScreenVTabFolder(allocator: std.mem.Allocator) ![]const u8 {
-    const params = [3][]const u8{ folder_name_frontend, folder_name_screen, folder_name_vtab };
+pub fn pathScreenTabFolder(allocator: std.mem.Allocator) ![]const u8 {
+    const params = [3][]const u8{ folder_name_frontend, folder_name_screen, folder_name_tab };
     const path = try fspath.join(allocator, &params);
     return path;
 }

@@ -4,28 +4,36 @@
 
 _Whenever I begin working with a new language I like to rewrite certain programs with that new language. So here I am rewriting my kick program which was previously written in GO._
 
-As I started learning zig, I found and started using [Dave Vanderson's dvui project](https://github.com/david-vanderson/dvui). Dvui is a very nice graphics framework that is young, easy to use and just keeps getting better.
+As I started learning zig, I found and started using [Dave Vanderson's dvui project](https://github.com/david-vanderson/dvui). Dvui is an excellent graphics framework that is young, very easy to use and just keeps getting better.
 
 As I continue to learn and appreciate zig and dvui, I am recreating my kick code generator to work with zig and dvui.
 
-## March 14, 2024
+## April 1, 2024
 
+Still a work in progress.
+
+* Added some missing CLI responses.
 * The main menu is optional.
 * The front-end screens are simpler and easier to use.
 * The closing down process logs the error info if there is an error.
-* Added missing CLI responses.
+* Added the **content panel** which is only used as content for a tab.
+* Started new Tab-bars:
+  * Each Tab is a type. So there can be multiple instances of each Tab.
+  * For content, a Tab can use it's own panel or it can use a separate panel-screen or content-screen (same thing).
+  * Tabs can be added to and removed from tab-bars.
+  * Tab-bar Options:
+    * .direction: can be .vertical or .horizontal.
+    * .toggle_direction: if true then the user can toggle the direction.
 
 ### To do. The next big steps are
 
-* The wiki needs to be redone.
-* Spawned tabs. Tabs which can be added and removed.
+* The wiki needs to be updated. After the update I want to add to the wiki as additions are made kickzig.
 * Review the closing down process.
-* Review responses when `kickzig message` and `kickzig screen` commands are used before the `kickzig framework` command.
-
-### More to do
-
-* review CLI error and success responses.
-* review source code documentation,
+* Review kickzig responses when `kickzig message` and `kickzig screen` commands are used before the `kickzig framework` command.
+* Review source code documentation.
+* Review my zig coding styles.
+* Add a way to move and close tabs.
+* This new version of tabs can be reworked for other navigation-layouts.
 
 ## kickzig is a framework code generator
 
@@ -54,15 +62,15 @@ The command `kickzig framework` generates the source code for a framework that i
 
 #### The opening. Hello World
 
-![The app's kickzig panel example.](images/open.png)
+![The app's kickzig panel example.](images/myapp_start.png)
 
 #### The OK modal screen
 
-![The app's OK modal screen.](images/modal.png)
+![The app's OK modal screen.](images/myapp_ok.png)
 
 #### The YesNo modal screen
 
-![The app's YesNo modal screen.](images/yesno_modal.png)
+![The app's YesNo modal screen.](images/myapp_yes_no.png)
 
 ### kickzig for the front-end
 
@@ -70,47 +78,71 @@ kickzig is mostly a tool for the application's front-end. The framework's front-
 
 #### Screens
 
-A screen is a collection of panels. Panels are displayed one at a time. A screen also has it's own messenger which communicates with the back-end.
+A screen is a collection of panels and has it's own messenger which communicates with the back-end.
 
 Whenever you add any type of screen with kickzig, it functions perfectly.
-
-1. A screen can be accessed from the main menu if you add it's tag ( name ) to the main menu list.
-1. A screen can be content for a tab in a vertical tabbar screen. (See **Vertical tab-bar screens** below.)
-1. A screen can be content for a tab in a horizontal tabbar screen. (See **Horizontal tab-bar screens** below.)
 
 ##### Panel screens
 
 A Panel screen is the simplest type of screen. It only displays one of it's panels at any one time. Panel screens always function when you create them although the panels display the screen name and panel name by default.
 
-`kickzig screen add-panel Edit Select Edit` creates a panel screen named **Edit** with a default panel named **Select** and another panel named **Edit**. By default the Select and Edit panels each display their screen and panel name.
+##### Content screens
 
-`kickzig screen add-panel Remove Select Confirm` creates a panel screen named **Remove** with a default panel named **Select** and another panel named **Confirm**. By default the Select and Confirm panels each display their screen and panel name.
+A Content screen is really just another Panel screen. That's why it's in the panel/ folder with the other panel-screens. The difference is that a content screen is only going to be used for a tab's content.
 
-##### Vertical tab-bar screens
+##### The differences between panel screens and content screens
 
-Vertical tab-bar screens have a vertical tab-bar left of where the selected tab's content is displayed. A tab's content can be one of the screen's own panels or a tab's content can be another screen.
+1. **Implementation**
+   * A **content screen** implementation:
+     1. is initialized by the tab that uses the screen for content.
+   * A **panel screen** implementation:
+     1. is initialized by the app at startup and should there fore, be added to the main menu or linked to some other way.
+     1. can also be initialized by a tab that is using the screen for content.
+1. **Framing**
+   * A **content screen** frames:
+     1. in a tab's content area.
+   * A **panel screen** frames:
+     1. in the app's main view.
+     1. in a tab's content area.
 
-Vertical tab-bar screens always function when you create them as long as each tab which uses an external screen is using an already existing screen. If a screen does not exist for any tab, then you need to create it before the vertical tab-bar screen will function.
+##### Examples
 
-`kickzig screen add-vtab ContactsV +Add Edit Remove` creates a vertical tab screen named **ContactsV** with 3 tabs. The **Add** tab has it's own panel in the screen package because I prefixed the name **Add** with **+**. The **Edit** tab uses the **Edit** screen which I created before creating this screen. The **Remove** tab uses the **Remove** screen which I created before creating this screen.
+`kickzig screen add-panel Edit Select Edit` creates a panel screen named **Edit** in the panel/ folder. The default panel is named **Select** and another panel is named **Edit**. By default the Select and Edit panels each display their screen and panel name.
 
-Below is the ContactsV screen with the **Edit** tab selected. Notice that the **Edit** tab is displaying the **Edit** panel-screen.
+`kickzig screen add-content Remove Select Confirm` creates a content screen named **Remove** in the panel/ folder. The default panel is named **Select** and another panel named **Confirm**. By default the Select and Confirm panels each display their screen and panel name.
 
-![The app's vertical tab bar screen.](images/vtab_screen.png)
+#### tab-bar screens
 
-##### Horizontal tab-bar screens
+##### Example
 
-Horizontal tab-bar screens have a horizontal tab-bar above where the selected tab's content is displayed. A tab's content can be one of the screen's own panels or a tab's content can be another screen.
+`kickzig screen add-tab Contacts Add *Edit *Remove` creates a tab screen named **Contacts** with 3 tab types ( Add, Edit, Remove ) and 1 instance of each tab running in the tab-bar as an example.
 
-Horizontal tab-bar screens always function when you create them as long as each tab which uses an external screen is using an already existing screen. If a screen does not exist for any tab, then you need to create it before the horizontal tab-bar screen will function.
+* The **Add** tab type gets it's content from the Add panel in the screen package.
+* I prefixed the **Edit** tab name with **\*** because it uses, the **Edit** screen in the panel/ folder, for content.
+* I prefixed the **Remove** tab name with **\*** because it uses, the **Remove** screen in the panel/ folder, for content.
 
-`kickzig screen add-htab ContactsH +Add Edit Remove` creates a horizontal tab screen named **Contacts** with 3 tabs. The **Add** tab has it's own panel in the screen package because I prefixed the name **Add** with **+**. The **Edit** tab uses the **Edit** screen which I created before creating this screen. The **Remove** tab uses the **Remove** screen which I created before creating this screen.
+##### A tab-bar screen
 
-Below is the ContactsH screen with the **Remove** tab selected. Notice that the **Remove** tab is displaying the **Remove** panel-screen.
+1. always functions when you create it.
+1. contains one example tab for each tab that you named.
+1. defaults to a .horizontal bar direction with `.direction = .horizontal`. You can switch that to .vertical.
+1. defaults to a dynamic layout with `.toggle_direction = true,` by default. You can switch that to a static layout, with `.toggle_direction = false,`. A dynamic layout allows the user to switch between horizontal and vertical.
 
-![The app's horizontal tab bar screen.](images/htab_screen.png)
+Horizontal tab-bar screens have a horizontal tab-bar above where the selected tab's content is displayed.
 
-##### Modal screens
+Vertical tab-bar screens have a vertical tab-bar left of where the selected tab's content is displayed.
+
+A tab's content can be one of the screen's own panels or a tab's content can be any screen in the panel/ folder.
+
+Below is the Contacts screen with the horizontal layout. Notice that the **Remove** tab is selected and is displaying the **Remove** content-screen.
+
+![The app's horizontal tab bar screen.](images/myapp_horizontal_tab.png)
+
+Below is the Contacts screen with the vertical layout. Notice that the **Edit** tab is selected and is displaying the **Edit** panel-screen.
+
+![The app's vertical tab bar screen.](images/myapp_vertical_tab.png)
+
+#### Modal screens
 
 Modal screens are the framework's dialogs. They are the same as panel screens where one panel is displayed at a time.
 
@@ -122,7 +154,7 @@ The **EOJ** modal screen is also part of the framework. It is only used in the s
 
 `kickzig screen add-modal YesNoMaybe YesNoMaybe` creates a modal screen named **YesNoMaybe** with a panel named **YesNoMaybe**. It also creates a **YesNoMaybe** modal parameter for passing information to the screen's setState function.
 
-##### Removing an unwanted screen
+#### Removing an unwanted screen
 
 `kickzig screen remove YesNoMaybe` removes the screen named **YesNoMaybe**.
 
@@ -133,7 +165,7 @@ The **EOJ** modal screen is also part of the framework. It is only used in the s
 1. The developer can turn the above menu items off by setting `pub const show_developer_menu_items: bool = false;` in **src/@This/frontent/api.zig**.
 1. **The DVUI source code.** The src code is cloned in **src/vendor/dvui/** so that it is immediately available for review.
 
-![The app's main menu.](images/main_menu.png)
+![The app's main menu.](images/myapp_main_menu.png)
 
 ### kickzig for messages
 
@@ -166,11 +198,11 @@ Removing a message also removes the back-end's messenger at src/@This/backend/me
 
 ### Closing down the application
 
-![The app's closing screen.](images/close.png)
+![The app's closing screen.](images/myapp_closing.png)
 
 #### Startup parameters
 
-1. The startup parameter `finish_up_jobs: *_closedownjobs_.Jobs` allows modules to add their shut down call back to be executed during the closing down process.
+1. The startup parameter `close_down_jobs: *_closedownjobs_.Jobs` allows modules to add their shut down call back to be executed during the closing down process.
 1. The startup parameter `exit: ExitFn` is the function called only when there is a fatal error. It starts the shut down process with an error message.
 
 #### 2 Ways to start the shut down process
