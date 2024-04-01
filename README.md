@@ -17,13 +17,18 @@ Still a work in progress.
 * The front-end screens are simpler and easier to use.
 * The closing down process logs the error info if there is an error.
 * Added the **content panel** which is only used as content for a tab.
-* Started new Tab-bars:
+* Completed new Tab-bars:
   * Each Tab is a type. So there can be multiple instances of each Tab.
   * For content, a Tab can use it's own panel or it can use a separate panel-screen or content-screen (same thing).
   * Tabs can be added to and removed from tab-bars.
   * Tab-bar Options:
-    * .direction: can be .vertical or .horizontal.
-    * .toggle_direction: if true then the user can toggle the direction.
+    * .direction: can be .vertical or .horizontal. Default is .horizontal.
+    * .toggle_direction: if true then the user can toggle the direction. Default is true.
+    * .tabs_movable: if true the user can move tabs around. Default is true.
+    * .tabs_closable: if true the user can close tabs. Default is true.
+  * Tab options:
+    * .movable: If set overrides the Tab-bar setting. Default is unset.
+    * .closable: If set overrides the Tab-bar setting. Default is unset.
 
 ### To do. The next big steps are
 
@@ -32,7 +37,6 @@ Still a work in progress.
 * Review kickzig responses when `kickzig message` and `kickzig screen` commands are used before the `kickzig framework` command.
 * Review source code documentation.
 * Review my zig coding styles.
-* Add a way to move and close tabs.
 * This new version of tabs can be reworked for other navigation-layouts.
 
 ## kickzig is a framework code generator
@@ -60,15 +64,15 @@ The command `kickzig framework` generates the source code for a framework that i
 ＄ ./zig-out/bin/standalone-sdl
 ```
 
-#### The opening. Hello World
+#### The opening. Hello World screen
 
 ![The app's kickzig panel example.](images/myapp_start.png)
 
-#### The OK modal screen
+#### The OK modal screen popped from the opening Hello world screen
 
 ![The app's OK modal screen.](images/myapp_ok.png)
 
-#### The YesNo modal screen
+#### The YesNo modal screen popped from the opening Hello world screen
 
 ![The app's YesNo modal screen.](images/myapp_yes_no.png)
 
@@ -123,10 +127,12 @@ A Content screen is really just another Panel screen. That's why it's in the pan
 
 ##### A tab-bar screen
 
-1. always functions when you create it.
-1. contains one example tab for each tab that you named.
-1. defaults to a .horizontal bar direction with `.direction = .horizontal`. You can switch that to .vertical.
-1. defaults to a dynamic layout with `.toggle_direction = true,` by default. You can switch that to a static layout, with `.toggle_direction = false,`. A dynamic layout allows the user to switch between horizontal and vertical.
+1. Always functions when you create it.
+1. Contains one example tab for each tab that you named.
+1. Defaults to:
+   * A .horizontal bar direction that the user can toggle between .horizontal and .vertical.
+   * User closable tabs.
+   * User movable tabs.
 
 Horizontal tab-bar screens have a horizontal tab-bar above where the selected tab's content is displayed.
 
@@ -174,7 +180,7 @@ The front-end and back-end communicate asynchronously using messages. Messages a
 #### Adding a message
 
 * The command `kickzig message add-bf «message_name»` will add a 1 way message which the back-end «message_name» messenger sends to the front-end when triggered from anywhere in the back-end.
-* The command `kickzig message add-fbf «message_name»` will add a 2 way message, that begins with amy front-end screen's messenger sending the message and expecting a response from the back-end «message_name» messenger.
+* The command `kickzig message add-fbf «message_name»` will add a 2 way message, that begins with any front-end screen's messenger sending the message and expecting a response from the back-end «message_name» messenger.
 * The command `kickzig message add-bf-fbf «message_name»` will add a message that is both 1 way and 2 way:
 
 When you add a message you also add with it:

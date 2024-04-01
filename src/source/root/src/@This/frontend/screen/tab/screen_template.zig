@@ -214,6 +214,12 @@ const line_add_panel_tab =
     \\            _{1s}_.Panel.deinitFn,
     \\            @intFromEnum(_panels_.PanelTags.{1s}),
     \\            .{0s},
+    \\            .{{
+    \\                // KICKZIG TODO:
+    \\                // You can override the Tabs options for the {0s} tab.
+    \\                //.closable = true,
+    \\                //.movable = true,
+    \\            }},
     \\        );
     \\        errdefer {{
     \\            panel_state.deinit();
@@ -246,6 +252,12 @@ const line_add_screen_tab =
     \\            _screen_pointers_.{0s}.refreshFn,
     \\            _screen_pointers_.{0s}.deinitFn,
     \\            .{0s},
+    \\            .{{
+    \\                // KICKZIG TODO:
+    \\                // You can override the Tabs options for the {0s} tab.
+    \\                //.closable = true,
+    \\                //.movable = true,
+    \\            }},
     \\        );
     \\        errdefer {{
     \\            screen.deinit();
@@ -270,7 +282,17 @@ const line_struct_init =
     \\    /// init constructs this screen, subscribes it to all_screens and returns the error.
     \\    pub fn init(startup: _startup_.Frontend) !*Screen {
     \\        var self: *Screen = try startup.allocator.create(Screen);
-    \\        self.tabs = try Tabs.init(startup, .{ .direction = .horizontal, .toggle_direction = true });
+    \\        self.tabs = try Tabs.init(
+    \\            startup,
+    \\            .{
+    \\                // KICKZIG TODO:
+    \\                // Set your own Tabs options for the {0s} tab.
+    \\                .direction = .horizontal,
+    \\                .toggle_direction = true,
+    \\                .tabs_movable = true,
+    \\                .tabs_closable = true,
+    \\            },
+    \\        );
     \\        errdefer self.deinit();
     \\        self.allocator = startup.allocator;
     \\        self.main_view = startup.main_view;

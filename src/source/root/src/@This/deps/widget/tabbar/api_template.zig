@@ -18,6 +18,8 @@ pub const content =
     \\pub const Tab = struct {
     \\    allocator: std.mem.Allocator,
     \\    main_view: *MainView,
+    \\    movable: bool,
+    \\    closable: bool,
     \\    id: usize,
     \\    tabs: *Tabs,
     \\    implementor: *anyopaque,
@@ -28,6 +30,11 @@ pub const content =
     \\    deinitFn: *const fn (implementor: *anyopaque) void,
     \\    container_screen_tag: ScreenTags,
     \\    panel_tag_as_int: usize, // Used for panel tabs only.
+    \\
+    \\    const Options = struct {
+    \\        movable: ?bool = null,
+    \\        closable: ?bool = null,
+    \\    };
     \\
     \\    pub fn asContainer(self: *Tab) !*_various_.Container {
     \\        return _various_.Container.init(
@@ -49,6 +56,7 @@ pub const content =
     \\        deinitFn: *const fn (implementor: *anyopaque) void,
     \\        panel_tag_as_int: usize,
     \\        container_screen_tag: ScreenTags,
+    \\        options: Options,
     \\    ) !*Tab {
     \\        var self = try tabs.allocator.create(Tab);
     \\        self.allocator = tabs.allocator;
@@ -62,6 +70,17 @@ pub const content =
     \\        self.deinitFn = deinitFn;
     \\        self.container_screen_tag = container_screen_tag;
     \\        self.panel_tag_as_int = panel_tag_as_int; // Used for panel tabs only.
+    \\        // The tabs options for each tab can be overridden with the init options.
+    \\        if (options.closable) |closable| {
+    \\            self.closable = closable;
+    \\        } else {
+    \\            self.closable = tabs.tabs_closable;
+    \\        }
+    \\        if (options.movable) |movable| {
+    \\            self.movable = movable;
+    \\        } else {
+    \\            self.movable = tabs.tabs_movable;
+    \\        }
     \\        return self;
     \\    }
     \\
@@ -74,6 +93,7 @@ pub const content =
     \\        refreshFn: *const fn (implementor: *anyopaque) void,
     \\        deinitFn: *const fn (implementor: *anyopaque) void,
     \\        container_screen_tag: ScreenTags,
+    \\        options: Options,
     \\    ) !*Tab {
     \\        var self = try tabs.allocator.create(Tab);
     \\        self.allocator = tabs.allocator;
@@ -87,6 +107,17 @@ pub const content =
     \\        self.deinitFn = deinitFn;
     \\        self.container_screen_tag = container_screen_tag;
     \\        self.panel_tag_as_int = 0; // Not used for screens.
+    \\        // The tabs options for each tab can be overridden with the init options.
+    \\        if (options.closable) |closable| {
+    \\            self.closable = closable;
+    \\        } else {
+    \\            self.closable = tabs.tabs_closable;
+    \\        }
+    \\        if (options.movable) |movable| {
+    \\            self.movable = movable;
+    \\        } else {
+    \\            self.movable = tabs.tabs_movable;
+    \\        }
     \\        return self;
     \\    }
     \\
@@ -103,7 +134,7 @@ pub const content =
     \\        return self.panel_tag_as_int;
     \\    }
     \\
-    \\    pub fn label(self: *Tab) ![]const u8 {
+    \\    pub fn label(self: *const Tab) ![]const u8 {
     \\        return self.labelFn(self.implementor);
     \\    }
     \\
@@ -122,6 +153,10 @@ pub const content =
     \\        self.allocator.destroy(self);
     \\    }
     \\
+    \\    pub fn close(self: *const Tab) void {
+    \\        self.tabs.removeTab(self);
+    \\    }
+    \\
     \\    // Container functions.
     \\
     \\    pub fn containerRefreshFn(implementor: *anyopaque) void {
@@ -131,7 +166,7 @@ pub const content =
     \\
     \\    pub fn containerCloseFn(implementor: *anyopaque) void {
     \\        var self: *Tab = @alignCast(@ptrCast(implementor));
-    \\        self.tabs.removeTab(self);
+    \\        self.close();
     \\    }
     \\};
     \\
@@ -140,6 +175,8 @@ pub const content =
     \\    lock: *_lock_.ThreadLock,
     \\    main_view: *MainView,
     \\    direction: Direction,
+    \\    tabs_movable: bool,
+    \\    tabs_closable: bool,
     \\    toggle_direction: bool,
     \\    tabs: std.ArrayList(*Tab),
     \\    selected_tab: ?*const Tab,
@@ -148,6 +185,8 @@ pub const content =
     \\    const Options = struct {
     \\        direction: ?Direction = null,
     \\        toggle_direction: ?bool = null,
+    \\        tabs_movable: ?bool = null,
+    \\        tabs_closable: ?bool = null,
     \\    };
     \\
     \\    // Used by the screen implementing this Tabs.
@@ -200,7 +239,7 @@ pub const content =
     \\        }
     \\    }
     \\
-    \\    pub fn removeTab(self: *Tabs, tab: *Tab) void {
+    \\    pub fn removeTab(self: *Tabs, tab: *const Tab) void {
     \\        self.to_be_removed = tab;
     \\    }
     \\
@@ -267,6 +306,16 @@ pub const content =
     \\        } else {
     \\            self.toggle_direction = false;
     \\        }
+    \\        if (options.tabs_movable) |tabs_movable| {
+    \\            self.tabs_movable = tabs_movable;
+    \\        } else {
+    \\            self.tabs_movable = false;
+    \\        }
+    \\        if (options.tabs_closable) |tabs_closable| {
+    \\            self.tabs_closable = tabs_closable;
+    \\        } else {
+    \\            self.tabs_closable = false;
+    \\        }
     \\        return self;
     \\    }
     \\
@@ -280,6 +329,14 @@ pub const content =
     \\        for (tabs) |tab| {
     \\            tab.deinit();
     \\        }
+    \\    }
+    \\
+    \\    pub fn moveTab(self: *Tabs, to: usize, from: usize) !void {
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        const tab: *const Tab = self.tabs.orderedRemove(from);
+    \\        try self.tabs.insert(to, @constCast(tab));
     \\    }
     \\
     \\    pub fn frame(self: *Tabs, arena: std.mem.Allocator) !void {
@@ -313,10 +370,91 @@ pub const content =
     \\            defer tabbar.deinit();
     \\
     \\            const tabs: []*const Tab = try self.slice();
-    \\            for (tabs, 0..) |tab, id_extra| {
+    \\            const last: usize = tabs.len - 1;
+    \\            var had_context: bool = false;
+    \\            for (tabs, 0..) |tab, i| {
     \\                const selected: bool = self.selected_tab == tab;
+    \\                // The context area around the menu item.
+    \\                var context_options: dvui.Options = undefined;
+    \\                if (selected) {
+    \\                    context_options = _TabBarItemWidget_.verticalSelectedContextOptions();
+    \\                } else {
+    \\                    context_options = _TabBarItemWidget_.verticalContextOptions();
+    \\                }
+    \\                context_options.id_extra = i;
+    \\                const context = try dvui.context(@src(), context_options);
+    \\                defer context.deinit();
+    \\
+    \\                if (context.activePoint()) |cp| {
+    \\                    had_context = true;
+    \\                    if (had_context and (tab.movable or tab.closable)) {
+    \\                        const tab_label: []const u8 = try tab.label();
+    \\                        var context_menu = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(cp), .{ .id_extra = i });
+    \\                        defer context_menu.deinit();
+    \\
+    \\                        if (tab.movable) {
+    \\                            if (i > 0) {
+    \\                                // Go left label.
+    \\                                if (try dvui.menuItemLabel(@src(), "Move Tab Above", .{ .submenu = true }, .{ .expand = .horizontal })) |r| {
+    \\                                    var move_left = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+    \\                                    defer move_left.deinit();
+    \\                                    var j: usize = i - 1;
+    \\                                    while (j >= 0) : (j -= 1) {
+    \\                                        const left_tab: *const Tab = tabs[j];
+    \\                                        const left_tab_label: []const u8 = try left_tab.label();
+    \\                                        if ((try dvui.menuItemLabel(@src(), left_tab_label, .{ .submenu = false }, .{ .expand = .vertical, .id_extra = j })) != null) {
+    \\                                            try self.moveTab(j, i);
+    \\                                            dvui.menuGet().?.close();
+    \\                                        }
+    \\
+    \\                                        if (j == 0) {
+    \\                                            break;
+    \\                                        }
+    \\                                    }
+    \\                                }
+    \\                            }
+    \\
+    \\                            if (i < last) {
+    \\                                // Go right label.
+    \\                                if (try dvui.menuItemLabel(@src(), "Move Tab Below", .{ .submenu = true }, .{ .expand = .horizontal })) |r| {
+    \\                                    var move_right = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+    \\                                    defer move_right.deinit();
+    \\                                    var j: usize = i + 1;
+    \\                                    while (j <= last) : (j += 1) {
+    \\                                        const right_tab: *const Tab = tabs[j];
+    \\                                        const right_tab_label: []const u8 = try right_tab.label();
+    \\                                        if ((try dvui.menuItemLabel(@src(), right_tab_label, .{ .submenu = false }, .{ .expand = .vertical, .id_extra = j })) != null) {
+    \\                                            try self.moveTab(j, i);
+    \\                                            dvui.menuGet().?.close();
+    \\                                        }
+    \\                                    }
+    \\                                }
+    \\                            }
+    \\                        }
+    \\
+    \\                        if (try dvui.menuItemIcon(@src(), "close", dvui.entypo.align_top, .{ .submenu = false }, .{ .expand = .vertical }) != null) {
+    \\                            dvui.menuGet().?.close();
+    \\                            return;
+    \\                        }
+    \\
+    \\                        if (tab.closable) {
+    \\                            // Close tab.
+    \\                            const close_label: []const u8 = try std.fmt.allocPrint(self.allocator, "Close this {s} tab.", .{tab_label});
+    \\                            if ((try dvui.menuItemLabel(@src(), close_label, .{ .submenu = false }, .{ .expand = .vertical, .color_text = .{ .color = dvui.Color{ .r = 0xff, .g = 0x00, .b = 0x00 } } })) != null) {
+    \\                                tab.close();
+    \\                                dvui.menuGet().?.close();
+    \\                            }
+    \\                        }
+    \\                    }
+    \\                }
+    \\
     \\                const tab_label: []const u8 = try tab.labelFn(tab.implementor);
-    \\                if (try _TabBarItemWidget_.verticalTabBarItemLabel(@src(), tab_label, .{ .selected = selected, .id_extra = id_extra })) |_| {
+    \\                if (try _TabBarItemWidget_.verticalTabBarItemLabel(@src(), tab_label, .{ .selected = selected, .id_extra = i })) |_| {
+    \\                    if (had_context) {
+    \\                        // Right mouse button click.
+    \\                        return;
+    \\                    }
+    \\                    // Left mouse click.
     \\                    // The user selected this tab.
     \\                    if (!selected) {
     \\                        self.selected_tab = tab;
@@ -363,10 +501,83 @@ pub const content =
     \\            defer tabbar.deinit();
     \\
     \\            const tabs: []*const Tab = try self.slice();
-    \\            for (tabs, 0..) |tab, id_extra| {
+    \\            const last: usize = tabs.len - 1;
+    \\            var had_context: bool = false;
+    \\            for (tabs, 0..) |tab, i| {
+    \\                const context = try dvui.context(@src(), .{ .id_extra = i });
+    \\                defer context.deinit();
+    \\
+    \\                if (context.activePoint()) |cp| {
+    \\                    had_context = true;
+    \\                    if (tab.movable or tab.closable) {
+    \\                        var context_menu = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(cp), .{ .id_extra = i });
+    \\                        defer context_menu.deinit();
+    \\
+    \\                        if (tab.movable) {
+    \\                            if (i > 0) {
+    \\                                // Go left label.
+    \\                                if (try dvui.menuItemLabel(@src(), "Move Left Of", .{ .submenu = true }, .{ .expand = .horizontal })) |r| {
+    \\                                    var move_left = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+    \\                                    defer move_left.deinit();
+    \\                                    var j: usize = i - 1;
+    \\                                    while (j >= 0) : (j -= 1) {
+    \\                                        const left_tab: *const Tab = tabs[j];
+    \\                                        const left_tab_label: []const u8 = try left_tab.label();
+    \\                                        if ((try dvui.menuItemLabel(@src(), left_tab_label, .{ .submenu = false }, .{ .expand = .vertical, .id_extra = j })) != null) {
+    \\                                            try self.moveTab(j, i);
+    \\                                            dvui.menuGet().?.close();
+    \\                                        }
+    \\
+    \\                                        if (j == 0) {
+    \\                                            break;
+    \\                                        }
+    \\                                    }
+    \\                                }
+    \\                            }
+    \\
+    \\                            if (i < last) {
+    \\                                // Go right label.
+    \\                                if (try dvui.menuItemLabel(@src(), "Move Right Of", .{ .submenu = true }, .{ .expand = .horizontal })) |r| {
+    \\                                    var move_right = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+    \\                                    defer move_right.deinit();
+    \\                                    var j: usize = i + 1;
+    \\                                    while (j <= last) : (j += 1) {
+    \\                                        const right_tab: *const Tab = tabs[j];
+    \\                                        const right_tab_label: []const u8 = try right_tab.label();
+    \\                                        if ((try dvui.menuItemLabel(@src(), right_tab_label, .{ .submenu = false }, .{ .expand = .vertical, .id_extra = j })) != null) {
+    \\                                            try self.moveTab(j, i);
+    \\                                            dvui.menuGet().?.close();
+    \\                                        }
+    \\                                    }
+    \\                                }
+    \\                            }
+    \\                        }
+    \\
+    \\                        if (try dvui.menuItemIcon(@src(), "close", dvui.entypo.align_top, .{ .submenu = false }, .{ .expand = .horizontal }) != null) {
+    \\                            dvui.menuGet().?.close();
+    \\                            return;
+    \\                        }
+    \\
+    \\                        if (tab.closable) {
+    \\                            // Close tab.
+    \\                            const tab_label: []const u8 = try tab.label();
+    \\                            const close_label: []const u8 = try std.fmt.allocPrint(self.allocator, "Close this {s} tab.", .{tab_label});
+    \\                            if ((try dvui.menuItemLabel(@src(), close_label, .{ .submenu = false }, .{ .expand = .horizontal, .color_text = .{ .color = dvui.Color{ .r = 0xff, .g = 0x00, .b = 0x00 } } })) != null) {
+    \\                                tab.close();
+    \\                                dvui.menuGet().?.close();
+    \\                            }
+    \\                        }
+    \\                    }
+    \\                }
+    \\
     \\                const selected: bool = self.selected_tab == tab;
     \\                const tab_label: []const u8 = try tab.labelFn(tab.implementor);
-    \\                if (try _TabBarItemWidget_.horizontalTabBarItemLabel(@src(), tab_label, .{ .selected = selected, .id_extra = id_extra })) |_| {
+    \\                if (try _TabBarItemWidget_.horizontalTabBarItemLabel(@src(), tab_label, .{ .selected = selected, .id_extra = i })) |_| {
+    \\                    if (had_context) {
+    \\                        // Right mouse button click.
+    \\                        return;
+    \\                    }
+    \\                    // Left mouse click.
     \\                    // The user selected this tab.
     \\                    if (!selected) {
     \\                        self.selected_tab = tab;

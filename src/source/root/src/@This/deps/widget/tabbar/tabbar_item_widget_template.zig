@@ -73,12 +73,27 @@ pub const content =
     \\        .margin = .{ .x = 1, .y = 4, .w = 6, .h = 0 },
     \\        .expand = .horizontal,
     \\        .font_style = .body,
+    \\        .gravity_x = 1.0,
     \\    };
     \\    var hover: dvui.Color = dvui.themeGet().color_fill_hover;
     \\    var darken: dvui.Color = dvui.Color.darken(hover, 0.5);
     \\    defaults.color_border = .{ .color = darken };
     \\    return defaults;
     \\}
+    \\
+    \\pub fn verticalContextOptions() dvui.Options {
+    \\    return .{
+    \\        .name = "VerticalContext",
+    \\        .corner_radius = .{ .x = 2, .y = 0, .w = 0, .h = 2 },
+    \\        .padding = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
+    \\        .border = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
+    \\        .margin = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
+    \\        .expand = .horizontal,
+    \\        .gravity_x = 1.0,
+    \\        .background = false,
+    \\    };
+    \\}
+    \\
     \\fn verticalDefaultSelectedOptions() dvui.Options {
     \\    var bg: dvui.Color = dvui.themeGet().color_fill_window;
     \\    var defaults = verticalDefaultOptions();
@@ -86,6 +101,11 @@ pub const content =
     \\    defaults.color_border = .{ .name = .accent };
     \\    defaults.margin = .{ .x = 7, .y = 4, .w = 0, .h = 0 };
     \\    return defaults;
+    \\}
+    \\
+    \\pub fn verticalSelectedContextOptions() dvui.Options {
+    \\    var options: dvui.Options = verticalContextOptions();
+    \\    return options;
     \\}
     \\
     \\pub fn verticalTabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, init_opts: InitOptions) !?dvui.Rect {
