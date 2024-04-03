@@ -47,7 +47,7 @@ pub const content =
     \\    // Below is an example of a receive function.
     \\    // // receiveFubar receives the Fubar message.
     \\    // // This fn implements the behavior required by receive_channels.Fubar.
-    \\    // pub fn receiveFubar(self: *Messenger, implementor: *anyopaque, message: *_message_.Fubar.Message) ?anyerror {
+    \\    // pub fn receiveFubar(self: *Messenger, implementor: *anyopaque, message: *_message_.Fubar.Message) anyerror!void {
     \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\    //     defer message.deinit();
     \\    //     _ = self;
@@ -87,9 +87,6 @@ pub const content =
     \\    //             };
     \\    //         },
     \\    //     }
-    \\    //
-    \\    //     // No error so return null;
-    \\    //     return null;
     \\    // }
     \\};
     \\

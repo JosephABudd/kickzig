@@ -35,7 +35,7 @@ pub const content =
     \\    // receiveFubar is provided as an example.
     \\    // It receives the Fubar message.
     \\    // It implements a behavior required by receive_channels.Fubar.
-    \\    // pub fn receiveFubar(implementor: *anyopaque, message: *_message_.Fubar.Message) ?anyerror {
+    \\    // pub fn receiveFubar(implementor: *anyopaque, message: *_message_.Fubar.Message) anyerror!void {
     \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\    //     defer message.deinit();
     \\    //     _ = self;
@@ -52,7 +52,7 @@ pub const content =
     \\    //         // So do not deinit the ok_args.
     \\    //         self.main_view.showOK(ok_args)
     \\    //         // This was only a user error not a fatal error.
-    \\    //         return null;
+    \\    //         return;
     \\    //     }
     \\    //     // No user error.
     \\    //     // Pass on the information contained in the message to panels.
@@ -62,8 +62,6 @@ pub const content =
     \\    //         self.exit(@src(), err, "self.panels.HelloWorld.setHeading(message.BackendPayload.something)");
     \\    //         return err;
     \\    //     };
-    \\    //     // No error so return null;
-    \\    //     return null;
     \\    // }
     \\};
     \\

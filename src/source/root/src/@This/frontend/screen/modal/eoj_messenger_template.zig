@@ -40,12 +40,11 @@ pub const content =
     \\
     \\    // receiveCloseDownJobs receives the CloseDownJobs message from the back-end.
     \\    // It passes the information to the EOJ panel.
-    \\    pub fn receiveCloseDownJobs(implementor: *anyopaque, message: *_message_.CloseDownJobs.Message) ?anyerror {
+    \\    pub fn receiveCloseDownJobs(implementor: *anyopaque, message: *_message_.CloseDownJobs.Message) anyerror!void {
     \\        defer message.deinit();
     \\
     \\        var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\        self.all_panels.EOJ.?.update(message.backend_payload.status_update, message.backend_payload.completed, message.backend_payload.progress);
-    \\        return null;
     \\    }
     \\};
     \\

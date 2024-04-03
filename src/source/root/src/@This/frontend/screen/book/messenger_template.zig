@@ -25,13 +25,10 @@ pub const content =
     \\    // // receiveGetBook is provided as an example.
     \\    // // It receives the GetBook message.
     \\    // // It implements a behavior required by receive_channels.GetBook.
-    \\    // pub fn receiveGetBook(implementor: *anyopaque, message: *_message_.GetBook.Message) ?anyerror {
+    \\    // pub fn receiveGetBook(implementor: *anyopaque, message: *_message_.GetBook.Message) anyerror!void {
     \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\    //     defer message.deinit();
     \\    //     _ = self;
-    \\    //
-    \\    //     // No error so return null;
-    \\    //     return null;
     \\    // }
     \\};
     \\

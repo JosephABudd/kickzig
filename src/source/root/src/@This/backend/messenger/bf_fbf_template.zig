@@ -60,7 +60,7 @@ const template =
     \\    /// receive{{ message_name }}Fn receives the "{{ message_name }}" message from the front-end.
     \\    /// It implements _channel_.FrontendToBackend.{{ message_name }}.Behavior.receiveFn found in deps/channel/fronttoback/{{ message_name }}.zig.
     \\    /// The receive{{ message_name }}Fn owns the message it receives.
-    \\    pub fn receive{{ message_name }}Fn(implementor: *anyopaque, message: *_message_.{{ message_name }}.Message) ?anyerror {
+    \\    pub fn receive{{ message_name }}Fn(implementor: *anyopaque, message: *_message_.{{ message_name }}.Message) anyerror!void {
     \\        var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\        defer message.deinit();
     \\
@@ -75,14 +75,11 @@ const template =
     \\            self.exit(@src(), err, "self.send_channels.{{ message_name }}.send(message)");
     \\            return err;
     \\        };
-    \\
-    \\        // No errors so return null;
-    \\        return null;
     \\    }
     \\
     \\    /// trigger{{ message_name }}Fn builds and sends the "{{ message_name }}" message to the front-end.
     \\    /// It implements _channel_.trigger.{{ message_name }}.Behavior.triggerFn found in deps/channel/trigger/{{ message_name }}.zig.
-    \\    pub fn trigger{{ message_name }}Fn(implementor: *anyopaque) ?anyerror {
+    \\    pub fn trigger{{ message_name }}Fn(implementor: *anyopaque) anyerror!void {
     \\        var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\
     \\        var message: *_message_.{{ message_name }}.Message = self.triggerJob() catch |err| {
@@ -97,8 +94,6 @@ const template =
     \\            self.exit(@src(), err, "self.send_channels.{{ message_name }}.send(message)");
     \\            return err;
     \\        };
-    \\        // No errors so return null;
-    \\        return null;
     \\    }
     \\
     \\    /// triggerJob creates message to send to the front-end.

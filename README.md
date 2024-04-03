@@ -8,9 +8,13 @@ As I started learning zig, I found and started using [Dave Vanderson's dvui proj
 
 As I continue to learn and appreciate zig and dvui, I am recreating my kick code generator to work with zig and dvui.
 
-## April 1, 2024
+## April 3, 2024
 
 Still a work in progress.
+
+* Updated crud.
+* Updated wiki.
+* Some code and documentation as I brought the crud and wiki up to date.
 
 * Added some missing CLI responses.
 * The main menu is optional.
@@ -32,7 +36,8 @@ Still a work in progress.
 
 ### To do. The next big steps are
 
-* The wiki needs to be updated. After the update I want to add to the wiki as additions are made kickzig.
+* kickzig is not switching to the root folder if used in a sub folder.
+* Review tabs.
 * Review the closing down process.
 * Review kickzig responses when `kickzig message` and `kickzig screen` commands are used before the `kickzig framework` command.
 * Review source code documentation.

@@ -15,8 +15,8 @@ pub const content =
     \\// Remember. Defers happen in reverse order.
     \\// When updating panel state.
     \\//     self.lock();
-    \\//     defer self.refresh(); // 2nd defer: Refreshes the main view.
-    \\//     defer self.unlock(); //  1st defer: Unlocks.
+    \\//     defer self.unlock(); //  2nd defer: Unlocks.
+    \\//     defer self.refresh(); // 1st defer: Refreshes the main view.
     \\//     // DO THE UPDATES.
     \\
     \\pub const Panel = struct {

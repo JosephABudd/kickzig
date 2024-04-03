@@ -208,7 +208,7 @@ const line3 =
     \\        return "{0s}";
     \\    }}
     \\
-    \\    pub fn frame(self: *Screen, arena: std.mem.Allocator) ?anyerror {{
+    \\    pub fn frame(self: *Screen, arena: std.mem.Allocator) anyerror!void {{
     \\        var layout = try dvui.box(@src(), .horizontal, .{{ .expand = .both }});
     \\        defer layout.deinit();
     \\

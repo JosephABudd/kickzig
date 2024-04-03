@@ -24,7 +24,7 @@ pub const content =
     \\    /// receiveCloseDownJobsFn receives the "CloseDownJobs" message from the front-end.
     \\    /// It implements _channel_.FrontendToBackend.CloseDownJobs.Behavior.receiveFn found in deps/channel/fronttoback/CloseDownJobs.zig.
     \\    /// The receiveCloseDownJobsFn owns the message it receives.
-    \\    pub fn receiveCloseDownJobsFn(implementor: *anyopaque, message: *_message_.CloseDownJobs.Message) ?anyerror {
+    \\    pub fn receiveCloseDownJobsFn(implementor: *anyopaque, message: *_message_.CloseDownJobs.Message) anyerror!void {
     \\        var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\        defer message.deinit();
     \\
@@ -33,9 +33,6 @@ pub const content =
     \\            std.log.debug("BE CloseDownJobs messenger.receiveCloseDownJobsFn receiveJob: {s}", .{@errorName(err)});
     \\            return err;
     \\        };
-    \\
-    \\        // No errors so return null;
-    \\        return null;
     \\    }
     \\
     \\    /// do fullfills the front-end's request.

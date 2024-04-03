@@ -46,7 +46,7 @@ const template =
     \\/// .receiveFn receives a {{ channel_name }} message from the front-end.
     \\pub const Behavior = struct {
     \\    implementor: *anyopaque,
-    \\    receiveFn: *const fn (implementor: *anyopaque, message: *_message_.Message) ?anyerror,
+    \\    receiveFn: *const fn (implementor: *anyopaque, message: *_message_.Message) anyerror!void,
     \\};
     \\
     \\pub const Group = struct {
@@ -114,10 +114,12 @@ const template =
     \\                self.exit(@src(), err, "message.copy()");
     \\                return;
     \\            };
-    \\            if (behavior.receiveFn(behavior.implementor, receiver_copy)) |_| {
+    \\            // The receiveFn must handle it's own error.
+    \\            // If the receiveFn returns an error then stop.
+    \\            catch behavior.receiveFn(behavior.implementor, receiver_copy) {
     \\                // Error: Stop dispatching.
-    \\                break;
-    \\            }
+    \\                return;
+    \\            };
     \\        }
     \\    }
     \\};

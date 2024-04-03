@@ -9,6 +9,7 @@ pub const content =
     \\
     \\    // VENDOR MODULES.
     \\
+    \\    // vendor/dvui/
     \\    const lib_bundle = b.addStaticLibrary(.{
     \\        .name = "dvui_libs",
     \\        .target = target,
@@ -33,18 +34,6 @@ pub const content =
     \\
     \\    // FRAMEWORK MODULES.
     \\
-    \\    // screen_pointers_mod. A framework frontend/ module.
-    \\    const screen_pointers_mod = b.addModule("screen_pointers", .{
-    \\        .source_file = .{ .path = "src/@This/frontend/screen_pointers.zig" },
-    \\        .dependencies = &.{},
-    \\    });
-    \\
-    \\    // counter_mod. A framework deps/ module.
-    \\    const counter_mod = b.addModule("counter", .{
-    \\        .source_file = .{ .path = "src/@This/deps/counter/api.zig" },
-    \\        .dependencies = &.{},
-    \\    });
-    \\
     \\    // channel_mod. A framework deps/ module.
     \\    const channel_mod = b.addModule("channel", .{
     \\        .source_file = .{ .path = "src/@This/deps/channel/api.zig" },
@@ -60,6 +49,12 @@ pub const content =
     \\    // closer_mod. A framework deps/ module.
     \\    const closer_mod = b.addModule("closer", .{
     \\        .source_file = .{ .path = "src/@This/deps/closer/api.zig" },
+    \\        .dependencies = &.{},
+    \\    });
+    \\
+    \\    // counter_mod. A framework deps/ module.
+    \\    const counter_mod = b.addModule("counter", .{
+    \\        .source_file = .{ .path = "src/@This/deps/counter/api.zig" },
     \\        .dependencies = &.{},
     \\    });
     \\
@@ -84,6 +79,12 @@ pub const content =
     \\    // modal_params_mod. A framework deps/ module.
     \\    const modal_params_mod = b.addModule("modal_params", .{
     \\        .source_file = .{ .path = "src/@This/deps/modal_params/api.zig" },
+    \\        .dependencies = &.{},
+    \\    });
+    \\
+    \\    // screen_pointers_mod. A framework frontend/ module.
+    \\    const screen_pointers_mod = b.addModule("screen_pointers", .{
+    \\        .source_file = .{ .path = "src/@This/frontend/screen_pointers.zig" },
     \\        .dependencies = &.{},
     \\    });
     \\

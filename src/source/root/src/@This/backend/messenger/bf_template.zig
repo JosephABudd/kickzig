@@ -58,7 +58,7 @@ const template =
     \\    /// It implements _channel_.FrontendToBackend.{{ message_name }}.Behavior.triggerFn found in deps/channel/frontend/bf/{{ message_name }}.zig.
     \\    /// The front-end must not send a response back with this message.
     \\    /// This messenger is not able to receive a {{ message_name }} message.
-    \\    pub fn trigger{{ message_name }}Fn(implementor: *anyopaque) ?anyerror {
+    \\    pub fn trigger{{ message_name }}Fn(implementor: *anyopaque) anyerror!void {
     \\        var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\
     \\        var message: *_message_.{{ message_name }}.Message = self.triggerJob() catch |err| {
@@ -73,8 +73,6 @@ const template =
     \\            self.exit(@src(), err, "self.send_channels.{{ message_name }}.send(message)");
     \\            return err;
     \\        };
-    \\        // No errors so return null;
-    \\        return null;
     \\    }
     \\
     \\    /// triggerJob creates message to send to the front-end.

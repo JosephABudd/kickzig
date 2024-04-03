@@ -59,13 +59,10 @@ const template =
     \\    // // receiveAddContact is provided as an example.
     \\    // // It receives the AddContact message.
     \\    // // It implements a behavior required by receive_channels.AddContact.
-    \\    // pub fn receiveAddContact(implementor: *anyopaque, message: *_message_.AddContact.Message) ?anyerror {
+    \\    // pub fn receiveAddContact(implementor: *anyopaque, message: *_message_.AddContact.Message) anyerror!void {
     \\    //     var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\    //     defer message.deinit();
     \\    //     _ = self;
-    \\    //
-    \\    //     // No error so return null;
-    \\    //     return null;
     \\    // }
     \\};
     \\

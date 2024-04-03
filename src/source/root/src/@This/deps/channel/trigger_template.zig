@@ -44,7 +44,7 @@ const template =
     \\/// .triggerFn sends a default {{ channel_name }} message to the front-end.
     \\pub const Behavior = struct {
     \\    implementor: *anyopaque,
-    \\    triggerFn: *const fn (implementor: *anyopaque) ?anyerror,
+    \\    triggerFn: *const fn (implementor: *anyopaque) anyerror!void,
     \\};
     \\
     \\pub const Group = struct {
@@ -101,10 +101,12 @@ const template =
     \\        var iterator = self.members.iterator();
     \\        while (iterator.next()) |entry| {
     \\            var behavior: *Behavior = entry.value_ptr.*;
-    \\            if (behavior.triggerFn(behavior.implementor)) |_| {
+    \\            // The triggerFn must handle it's own error.
+    \\            // If the triggerFn returns an error then stop.
+    \\            behavior.triggerFn(behavior.implementor) catch {
     \\                // Error: Stop dispatching.
-    \\                break;
-    \\            }
+    \\                return;
+    \\            };
     \\        }
     \\    }
     \\};
