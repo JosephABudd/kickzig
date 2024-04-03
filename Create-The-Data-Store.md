@@ -1,6 +1,3 @@
-## Data stores are not a part of the kickzig framework
-
-### I will add a local sqlite data-store
 
 I will use 1 data store which is a local sqlite file. It will be located in the OS's data storage folder as defined by the zig's **std.fs** package. In that data storage folder, I'll add a "crud" folder where I will create my "store.sqlite" file.
 

@@ -1,12 +1,13 @@
 
 ## The vendor/ folder
 
-### The sqlite-zig package
+### The zig-sqlite package
 
-[LeRoyce Pearson's sqlite-zig package](https://github.com/leroycep/sqlite-zig.git)
+[
+Vincent Rischmann's zig-sqlite package](https://github.com/vrischmann/zig-sqlite.git)
 
 ```shell
-＄ git clone https://github.com/leroycep/sqlite-zig.git  src/vendor/sqlite-zig/
+＄ git clone https://github.com/vrischmann/zig-sqlite.git  src/vendor/zig-sqlite/
 ```
 
 ## The cruds build.zig file

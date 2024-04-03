@@ -2,9 +2,9 @@
 
 The back-end code begins at **src/@This/backend/api.zig. The file contains a fn kickStart() which starts the back-end after the front-end is up and running.
 
-I want the app's contact list to load when the app starts so it happens in the only line I added.
+I want the app's contact list to load when the app starts.
 
-* line 17. gave functionality to fn kickStart().
+* lines 17 & 18. build the contact list in fn kickStart().
 
 ```zig
   1 ⎥ /// This is the back-end's API.
@@ -23,18 +23,23 @@ I want the app's contact list to load when the app starts so it happens in the o
  14 ⎥ /// kickStart the backend.
  15 ⎥ /// Trigger messengers to send their startup messages to the front-end.
  16 ⎥ pub fn kickStart() !void {
- 17 ⎥     try triggers.RebuildContactList.trigger();
- 18 ⎥ }
- 19 ⎥ 
- 20 ⎥ pub fn init(startup: _startup_.Backend) !void {
- 21 ⎥     messenger = try _messenger_.init(startup);
- 22 ⎥     triggers = startup.triggers;
- 23 ⎥ }
- 24 ⎥ 
- 25 ⎥ pub fn deinit() void {
- 26 ⎥     if (messenger) |msngr| {
- 27 ⎥         msngr.deinit();
- 28 ⎥     }
- 29 ⎥ }
- 30 ⎥ 
+ 17 ⎥     // Build the contact list.
+ 18 ⎥     return triggers.RebuildContactList.trigger();
+ 19 ⎥ }
+ 20 ⎥ 
+ 21 ⎥ pub fn init(startup: _startup_.Backend) !void {
+ 22 ⎥     messenger = try _messenger_.init(startup);
+ 23 ⎥     triggers = startup.triggers;
+ 24 ⎥ }
+ 25 ⎥ 
+ 26 ⎥ pub fn deinit() void {
+ 27 ⎥     if (messenger) |msngr| {
+ 28 ⎥         msngr.deinit();
+ 29 ⎥     }
+ 30 ⎥ }
+ 31 ⎥ 
 ```
+
+## Next
+
+[[Create The Choice Modal Screen.|Create-The-Choice-Modal-Screen]]

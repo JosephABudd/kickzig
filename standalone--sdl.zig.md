@@ -3,9 +3,9 @@ The local sqlite store is initialized in standalone-sdl.zig and then added to th
 
 ## Additions related to Store
 
-* line 17
-* lines 62 - 73
-* line 100
+* line 18
+* lines 71 - 82
+* line 112
 
 ```zig
   1 ⎥ /// This is where the application starts.
@@ -20,168 +20,196 @@ The local sqlite store is initialized in standalone-sdl.zig and then added to th
  10 ⎥ const _channel_ = @import("channel");
  11 ⎥ const _closer_ = @import("closer");
  12 ⎥ const _closedownjobs_ = @import("closedownjobs");
- 13 ⎥ const _framers_ = @import("framers");
- 14 ⎥ const _frontend_ = @import("src/@This/frontend/api.zig");
- 15 ⎥ const _modal_params_ = @import("modal_params");
- 16 ⎥ const _startup_ = @import("startup");
- 17 ⎥ const Store = @import("store").Store;
- 18 ⎥ 
- 19 ⎥ const window_icon_png = @embedFile("src/vendor/dvui/src/zig-favicon.png");
- 20 ⎥ 
- 21 ⎥ // General Purpose Allocator for frontend-state, backend and channels.
- 22 ⎥ var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
- 23 ⎥ const gpa = gpa_instance.allocator();
- 24 ⎥ 
- 25 ⎥ const vsync = true;
- 26 ⎥ var show_dialog_outside_frame: bool = false;
- 27 ⎥ 
- 28 ⎥ /// This example shows how to use the dvui for a normal application:
- 29 ⎥ /// - dvui renders the whole application
- 30 ⎥ /// - render frames only when needed
- 31 ⎥ pub fn main() !void {
- 32 ⎥     // init SDL gui_backend (creates OS window)
- 33 ⎥     var gui_backend = try SDLBackend.init(.{
- 34 ⎥         .size = .{ .w = 500.0, .h = 200.0 },
- 35 ⎥         // .min_size = .{ .w = 500.0, .h = 400.0 },
- 36 ⎥         .vsync = vsync,
- 37 ⎥         .title = "crud",
- 38 ⎥         .icon = window_icon_png, // can also call setIconFromFileContent()
- 39 ⎥     });
- 40 ⎥     defer gui_backend.deinit();
- 41 ⎥ 
- 42 ⎥     // init dvui Window (maps onto a single OS window)
- 43 ⎥     var win = try dvui.Window.init(@src(), 0, gpa, gui_backend.backend());
- 44 ⎥     win.content_scale = gui_backend.initial_scale * 1.5;
- 45 ⎥     defer win.deinit();
- 46 ⎥ 
- 47 ⎥     var all_screens: *_framers_.Group = undefined;
- 48 ⎥     var finish_up_jobs: *_closedownjobs_.Jobs = undefined;
- 49 ⎥     // init the finish_up_jobs.
- 50 ⎥     finish_up_jobs = try _closedownjobs_.Jobs.init(gpa);
- 51 ⎥     defer finish_up_jobs.deinit();
- 52 ⎥     const exit: *const fn (user_message: []const u8) void = try _closer_.init(gpa, finish_up_jobs);
- 53 ⎥     defer _closer_.deinit();
- 54 ⎥ 
- 55 ⎥     // The channels between the front and back ends.
- 56 ⎥     const backToFront: *_channel_.BackendToFrontend = try _channel_.BackendToFrontend.init(gpa, exit);
- 57 ⎥     defer backToFront.deinit();
- 58 ⎥     const frontToBack: *_channel_.FrontendToBackend = try _channel_.FrontendToBackend.init(gpa, exit);
- 59 ⎥     defer frontToBack.deinit();
- 60 ⎥     const triggers: *_channel_.Trigger = try _channel_.Trigger.init(backToFront, exit);
- 61 ⎥ 
- 62 ⎥     // The store.
- 63 ⎥     var app_data_path: []const u8 = try std.fs.getAppDataDir(gpa, "crud");
- 64 ⎥     defer gpa.free(app_data_path);
- 65 ⎥     std.fs.makeDirAbsolute(app_data_path) catch |err| {
- 66 ⎥         if (err != error.PathAlreadyExists) {
- 67 ⎥             return;
- 68 ⎥         }
- 69 ⎥     };
- 70 ⎥     var params = [2][]const u8{ app_data_path, "store.sqlite" };
- 71 ⎥     var store_pathZ: [:0]const u8 = try std.fs.path.joinZ(gpa, &params);
- 72 ⎥     var store: *Store = try Store.init(gpa, store_pathZ);
- 73 ⎥     defer store.deinit();
- 74 ⎥ 
- 75 ⎥     // Initialize the front end.
- 76 ⎥     // See src/@This/deps/startup/api.zig
- 77 ⎥     var startup_frontend: *_startup_.Frontend = try _startup_.Frontend.init(
- 78 ⎥         gpa,
- 79 ⎥         &win,
- 80 ⎥         frontToBack,
- 81 ⎥         backToFront,
- 82 ⎥         finish_up_jobs,
- 83 ⎥         exit,
- 84 ⎥     );
- 85 ⎥     all_screens = try _framers_.init(gpa, exit);
- 86 ⎥     defer all_screens.deinit();
- 87 ⎥     _closer_.set_screens(all_screens);
- 88 ⎥     startup_frontend.setAllScreens(all_screens);
- 89 ⎥     try _frontend_.init(startup_frontend.*);
- 90 ⎥ 
- 91 ⎥     // Initialize and kick-start the back end.
- 92 ⎥     try _backend_.init(
- 93 ⎥         .{
- 94 ⎥             .allocator = gpa,
- 95 ⎥             .send_channels = backToFront,
- 96 ⎥             .receive_channels = frontToBack,
- 97 ⎥             .finish_up_jobs = finish_up_jobs,
- 98 ⎥             .triggers = triggers,
- 99 ⎥             .exit = exit,
-100 ⎥             .store = store,
-101 ⎥         },
-102 ⎥     );
-103 ⎥     defer _backend_.deinit();
-104 ⎥ 
-105 ⎥     // KICKZIG TODO: See backend.kickStart();
-106 ⎥     try _backend_.kickStart();
-107 ⎥ 
-108 ⎥     var theme_set: bool = false;
-109 ⎥     main_loop: while (true) {
-110 ⎥ 
-111 ⎥         // Arena allocator for the frontend frame functions.
-112 ⎥         var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-113 ⎥         defer arena_allocator.deinit();
-114 ⎥         var arena = arena_allocator.allocator();
-115 ⎥ 
-116 ⎥         // beginWait coordinates with waitTime below to run frames only when needed
-117 ⎥         var nstime = win.beginWait(gui_backend.hasEvent());
-118 ⎥ 
-119 ⎥         // marks the beginning of a frame for dvui, can call dvui functions after this
-120 ⎥         try win.begin(nstime);
-121 ⎥ 
-122 ⎥         // set the theme.
-123 ⎥         if (!theme_set) {
-124 ⎥             theme_set = true;
-125 ⎥             const dark_theme = &dvui.Adwaita.dark;
-126 ⎥             dvui.themeSet(dark_theme);
-127 ⎥         }
+ 13 ⎥ const _frontend_ = @import("src/@This/frontend/api.zig");
+ 14 ⎥ const _modal_params_ = @import("modal_params");
+ 15 ⎥ const _startup_ = @import("startup");
+ 16 ⎥ const ExitFn = @import("various").ExitFn;
+ 17 ⎥ const MainView = @import("framers").MainView;
+ 18 ⎥ const Store = @import("store").Store;
+ 19 ⎥ 
+ 20 ⎥ const window_icon_png = @embedFile("src/vendor/dvui/src/zig-favicon.png");
+ 21 ⎥ 
+ 22 ⎥ // KICKZIG TODO:
+ 23 ⎥ // When the user clicks the window's X:
+ 24 ⎥ // - If a modal screen is not shown:
+ 25 ⎥ //   * then the app will just close.
+ 26 ⎥ // - If a modal screen is shown:
+ 27 ⎥ //   * If force_close == true: then the app will just close.
+ 28 ⎥ //   * If force_close == false: then the app will not close until after the modal screen is hidden (closes).
+ 29 ⎥ const force_close: bool = true;
+ 30 ⎥ 
+ 31 ⎥ // General Purpose Allocator for frontend-state, backend and channels.
+ 32 ⎥ var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+ 33 ⎥ const gpa = gpa_instance.allocator();
+ 34 ⎥ 
+ 35 ⎥ const vsync = true;
+ 36 ⎥ var show_dialog_outside_frame: bool = false;
+ 37 ⎥ 
+ 38 ⎥ /// This example shows how to use the dvui for a normal application:
+ 39 ⎥ /// - dvui renders the whole application
+ 40 ⎥ /// - render frames only when needed
+ 41 ⎥ pub fn main() !void {
+ 42 ⎥     // init SDL sdl_backend (creates OS window)
+ 43 ⎥     var sdl_backend = try SDLBackend.init(.{
+ 44 ⎥         .size = .{ .w = 500.0, .h = 400.0 },
+ 45 ⎥         // .min_size = .{ .w = 500.0, .h = 400.0 },
+ 46 ⎥         .vsync = vsync,
+ 47 ⎥         .title = "crud",
+ 48 ⎥         .icon = window_icon_png, // can also call setIconFromFileContent()
+ 49 ⎥     });
+ 50 ⎥     defer sdl_backend.deinit();
+ 51 ⎥ 
+ 52 ⎥     // init dvui Window (maps onto a single OS window)
+ 53 ⎥     var win = try dvui.Window.init(@src(), 0, gpa, sdl_backend.backend());
+ 54 ⎥     // win.content_scale = sdl_backend.initial_scale * 1.5;
+ 55 ⎥     defer win.deinit();
+ 56 ⎥ 
+ 57 ⎥     var main_view: *MainView = undefined;
+ 58 ⎥     var close_down_jobs: *_closedownjobs_.Jobs = try _closedownjobs_.Jobs.init(gpa);
+ 59 ⎥     defer close_down_jobs.deinit();
+ 60 ⎥     const exit: ExitFn = try _closer_.init(gpa, close_down_jobs, &win);
+ 61 ⎥     defer _closer_.deinit();
+ 62 ⎥ 
+ 63 ⎥     // The channels between the front and back ends.
+ 64 ⎥     const back_to_front_channels: *_channel_.BackendToFrontend = try _channel_.BackendToFrontend.init(gpa, exit);
+ 65 ⎥     defer back_to_front_channels.deinit();
+ 66 ⎥     const front_to_back_channels: *_channel_.FrontendToBackend = try _channel_.FrontendToBackend.init(gpa, exit);
+ 67 ⎥     defer front_to_back_channels.deinit();
+ 68 ⎥     const triggers: *_channel_.Trigger = try _channel_.Trigger.init(back_to_front_channels, exit);
+ 69 ⎥     defer triggers.deinit();
+ 70 ⎥ 
+ 71 ⎥     // The store.
+ 72 ⎥     var app_data_path: []const u8 = try std.fs.getAppDataDir(gpa, "crud");
+ 73 ⎥     defer gpa.free(app_data_path);
+ 74 ⎥     std.fs.makeDirAbsolute(app_data_path) catch |err| {
+ 75 ⎥         if (err != error.PathAlreadyExists) {
+ 76 ⎥             return;
+ 77 ⎥         }
+ 78 ⎥     };
+ 79 ⎥     var params = [2][]const u8{ app_data_path, "store.sqlite" };
+ 80 ⎥     var store_pathZ: [:0]const u8 = try std.fs.path.joinZ(gpa, &params);
+ 81 ⎥     var store: *Store = try Store.init(gpa, store_pathZ);
+ 82 ⎥     defer store.deinit();
+ 83 ⎥ 
+ 84 ⎥     // Initialize the front end.
+ 85 ⎥     // See src/@This/deps/startup/api.zig
+ 86 ⎥     var startup_frontend: _startup_.Frontend = _startup_.Frontend{
+ 87 ⎥         .allocator = gpa,
+ 88 ⎥         .window = &win,
+ 89 ⎥         .send_channels = front_to_back_channels,
+ 90 ⎥         .receive_channels = back_to_front_channels,
+ 91 ⎥         .main_view = undefined,
+ 92 ⎥         .close_down_jobs = close_down_jobs,
+ 93 ⎥         .exit = exit,
+ 94 ⎥         .screen_pointers = undefined,
+ 95 ⎥     };
+ 96 ⎥     main_view = try MainView.init(startup_frontend);
+ 97 ⎥     defer main_view.deinit();
+ 98 ⎥     startup_frontend.setMainView(main_view);
+ 99 ⎥     try _frontend_.init(&startup_frontend);
+100 ⎥     defer _frontend_.deinit();
+101 ⎥     _closer_.set_screens(main_view);
+102 ⎥ 
+103 ⎥     // Initialize and kick-start the back end.
+104 ⎥     try _backend_.init(
+105 ⎥         .{
+106 ⎥             .allocator = gpa,
+107 ⎥             .send_channels = back_to_front_channels,
+108 ⎥             .receive_channels = front_to_back_channels,
+109 ⎥             .close_down_jobs = close_down_jobs,
+110 ⎥             .triggers = triggers,
+111 ⎥             .exit = exit,
+112 ⎥             .store = store,
+113 ⎥         },
+114 ⎥     );
+115 ⎥     defer _backend_.deinit();
+116 ⎥ 
+117 ⎥     // KICKZIG TODO: See backend.kickStart();
+118 ⎥     try _backend_.kickStart();
+119 ⎥ 
+120 ⎥     var theme_set: bool = false;
+121 ⎥     main_loop: while (true) {
+122 ⎥ 
+123 ⎥         // beginWait coordinates with waitTime below to run frames only when needed
+124 ⎥         var nstime = win.beginWait(sdl_backend.hasEvent());
+125 ⎥ 
+126 ⎥         // marks the beginning of a frame for dvui, can call dvui functions after this
+127 ⎥         try win.begin(nstime);
 128 ⎥ 
-129 ⎥         // send all SDL events to dvui for processing
-130 ⎥         const quit = try gui_backend.addAllEvents(&win);
-131 ⎥         const state = _closer_.context();
-132 ⎥         switch (state) {
-133 ⎥             .none => blk: {
-134 ⎥                 if (quit) {
-135 ⎥                     _closer_.close("Bye-bye.");
-136 ⎥                 }
-137 ⎥                 break :blk;
-138 ⎥             },
-139 ⎥             .started => blk: {
-140 ⎥                 // already quitting so ignore quit.
-141 ⎥                 break :blk;
-142 ⎥             },
-143 ⎥             .completed => {
-144 ⎥                 std.log.debug("break :main_loop;", .{});
-145 ⎥                 break :main_loop;
-146 ⎥             },
-147 ⎥         }
-148 ⎥ 
-149 ⎥         // if dvui widgets might not cover the whole window, then need to clear
-150 ⎥         // the previous frame's render
-151 ⎥         gui_backend.clear();
-152 ⎥ 
-153 ⎥         try _frontend_.frame(arena, all_screens);
-154 ⎥ 
-155 ⎥         // marks end of dvui frame, don't call dvui functions after this
-156 ⎥         // - sends all dvui stuff to gui_backend for rendering, must be called before renderPresent()
-157 ⎥         const end_micros = try win.end(.{});
-158 ⎥ 
-159 ⎥         // cursor management
-160 ⎥         gui_backend.setCursor(win.cursorRequested());
-161 ⎥ 
-162 ⎥         // render frame to OS
-163 ⎥         gui_backend.renderPresent();
-164 ⎥ 
-165 ⎥         // waitTime and beginWait combine to achieve variable framerates
-166 ⎥         const wait_event_micros = win.waitTime(end_micros, null);
-167 ⎥         gui_backend.waitEventTimeout(wait_event_micros);
-168 ⎥ 
-169 ⎥         // Example of how to show a dialog from another thread (outside of win.begin/win.end)
-170 ⎥         if (show_dialog_outside_frame) {
-171 ⎥             show_dialog_outside_frame = false;
-172 ⎥             try dvui.dialog(@src(), .{ .window = &win, .modal = false, .title = "Dialog from Outside", .message = "This is a non modal dialog that was created outside win.begin()/win.end(), usually from another thread." });
-173 ⎥         }
-174 ⎥     }
-175 ⎥ }
-176 ⎥ 
+129 ⎥         // set the theme.
+130 ⎥         if (!theme_set) {
+131 ⎥             theme_set = true;
+132 ⎥             const dark_theme = &dvui.Adwaita.dark;
+133 ⎥             dvui.themeSet(dark_theme);
+134 ⎥         }
+135 ⎥ 
+136 ⎥         // send all SDL events to dvui for processing
+137 ⎥         const quit = try sdl_backend.addAllEvents(&win);
+138 ⎥         // The state of the app's closer.
+139 ⎥         switch (_closer_.context()) {
+140 ⎥             .none => {
+141 ⎥                 if (quit) {
+142 ⎥                     // User clicked window's X to close the window.
+143 ⎥                     // Start the closing process.
+144 ⎥                     _closer_.close("Bye-bye.", force_close);
+145 ⎥                 } else {
+146 ⎥                     // Not closing.
+147 ⎥                     // Continue running the app.
+148 ⎥                 }
+149 ⎥             },
+150 ⎥             .forced => {
+151 ⎥                 // The previous frame set closer_state to .forced.
+152 ⎥                 // So on this frame, force the close.
+153 ⎥                 // Start the closing process.
+154 ⎥                 _closer_.forced();
+155 ⎥             },
+156 ⎥             .started => {
+157 ⎥                 // The close process has already started.
+158 ⎥                 // The close process is now running.
+159 ⎥             },
+160 ⎥             .completed => {
+161 ⎥                 // The close process has completed.
+162 ⎥                 // Stop framing.
+163 ⎥                 break :main_loop;
+164 ⎥             },
+165 ⎥             .waiting => {
+166 ⎥                 // The close process is now waiting for the current modal screen to close.
+167 ⎥                 // When that modal screen closes, the closing state will switch to .started.
+168 ⎥                 _closer_.waiting();
+169 ⎥             },
+170 ⎥         }
+171 ⎥ 
+172 ⎥         // if dvui widgets might not cover the whole window, then need to clear
+173 ⎥         // the previous frame's render
+174 ⎥         sdl_backend.clear();
+175 ⎥ 
+176 ⎥         {
+177 ⎥             // Frame the front-end.
+178 ⎥             var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+179 ⎥             defer arena_allocator.deinit();
+180 ⎥             try _frontend_.frame(arena_allocator.allocator());
+181 ⎥         }
+182 ⎥ 
+183 ⎥         // marks end of dvui frame, don't call dvui functions after this
+184 ⎥         // - sends all dvui stuff to backend for rendering, must be called before renderPresent()
+185 ⎥         const end_micros = try win.end(.{});
+186 ⎥ 
+187 ⎥         // cursor management
+188 ⎥         sdl_backend.setCursor(win.cursorRequested());
+189 ⎥ 
+190 ⎥         // render frame to OS
+191 ⎥         sdl_backend.renderPresent();
+192 ⎥ 
+193 ⎥         // waitTime and beginWait combine to achieve variable framerates
+194 ⎥         const wait_event_micros = win.waitTime(end_micros, null);
+195 ⎥         sdl_backend.waitEventTimeout(wait_event_micros);
+196 ⎥ 
+197 ⎥         // Example of how to show a dialog from another thread (outside of win.begin/win.end)
+198 ⎥         if (show_dialog_outside_frame) {
+199 ⎥             show_dialog_outside_frame = false;
+200 ⎥             try dvui.dialog(@src(), .{ .window = &win, .modal = false, .title = "Dialog from Outside", .message = "This is a non modal dialog that was created outside win.begin()/win.end(), usually from another thread." });
+201 ⎥         }
+202 ⎥     }
+203 ⎥ }
+204 ⎥ 
 ```

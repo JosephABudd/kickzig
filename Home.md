@@ -2,8 +2,6 @@
 
 ## Step by step. Building a CRUD with kickzig
 
-This is a work in progress.
+## April 3, 2024
 
-## Feb 12, 2024
-
-After rebuilding a lot of kickzig, I updated this wiki. Its not done yet.
+After rebuilding parts of the front-end of kickzig, I updated this wiki.
