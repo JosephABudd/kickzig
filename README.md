@@ -12,9 +12,9 @@ As I continue to learn and appreciate zig and dvui, I am recreating my kick code
 
 Still a work in progress.
 
-* Updated crud.
-* Updated wiki.
-* Some code and documentation as I brought the crud and wiki up to date.
+* Completed the crud.
+* Completed the wiki.
+* Fixed some code and documentation as I brought the crud and wiki up to date.
 
 * Added some missing CLI responses.
 * The main menu is optional.
