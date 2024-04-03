@@ -116,7 +116,7 @@ const template =
     \\            };
     \\            // The receiveFn must handle it's own error.
     \\            // If the receiveFn returns an error then stop.
-    \\            catch behavior.receiveFn(behavior.implementor, receiver_copy) {
+    \\            behavior.receiveFn(behavior.implementor, receiver_copy) catch {
     \\                // Error: Stop dispatching.
     \\                return;
     \\            };
