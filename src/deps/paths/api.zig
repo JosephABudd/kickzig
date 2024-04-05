@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 pub const backend = @import("backend.zig");
 const frontend = @import("frontend.zig");
 pub const deps = @import("deps.zig");
@@ -12,6 +13,150 @@ pub const folder_name_counter: []const u8 = "counter";
 pub const modal_folder_name_ok = frontend.folder_name_ok;
 pub const modal_folder_name_yesno = frontend.folder_name_yesno;
 pub const modal_folder_name_eoj = frontend.folder_name_eoj;
+
+pub const Error = error{NotFrameworkPath};
+
+pub var app_name: ?[]const u8 = null;
+pub var root_path: ?[]const u8 = undefined;
+var gpa: std.mem.Allocator = undefined;
+
+/// init stores the root path, and allocator.
+/// whoever calls init must eventually call deinit();
+pub fn init(allocator: std.mem.Allocator) !void {
+    gpa = allocator;
+    try initRootAppName();
+}
+
+pub fn deinit() void {
+    if (app_name) |member| {
+        gpa.free(member);
+    }
+    if (root_path) |member| {
+        gpa.free(member);
+    }
+}
+
+fn setRootPath(disk: ?[]const u8, folder_names: []const []const u8) !void {
+    // Build the root path.
+    const path: []const u8 = try fspath.join(gpa, folder_names);
+    if (disk) |d| {
+        defer gpa.free(path);
+        const parts: [2][]const u8 = [2][]const u8{ d, path };
+        root_path = try std.mem.join(gpa, "", &parts);
+        // root_path = try fspath.join(gpa, &parts);
+    } else {
+        root_path = path;
+    }
+    // Return if the root path is in the user's path.
+    if (!src_this_path_exists()) {
+        return error.NotFrameworkPath;
+    }
+}
+
+fn isRootPath() bool {}
+
+fn setAppName(name: []const u8) !void {
+    app_name = try gpa.alloc(u8, name.len);
+    @memcpy(@constCast(app_name.?), name);
+}
+
+fn initRootAppName() !void {
+    return switch (builtin.target.os.tag) {
+        .windows => initRootAppNameWindows(),
+        else => initRootAppNameLinux(),
+    };
+}
+
+fn initRootAppNameLinux() !void {
+    var cwd_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    const ptr_buffer: []const u8 = try std.os.getcwd(&cwd_buffer);
+    var disk_designator: ?[]const u8 = null;
+    var path_buffer: []const u8 = undefined;
+    if (ptr_buffer[0] == std.fs.path.sep) {
+        disk_designator = ptr_buffer[0..1];
+        path_buffer = ptr_buffer[1..];
+    } else {
+        path_buffer = ptr_buffer;
+    }
+    var iterator = std.mem.splitScalar(
+        u8,
+        path_buffer,
+        std.fs.path.sep,
+    );
+    var parts_list = std.ArrayList([]const u8).init(gpa);
+    while (iterator.next()) |folder| {
+        try parts_list.append(folder);
+    }
+    const parts: []const []const u8 = try parts_list.toOwnedSlice();
+    return build_app_name_root_path(disk_designator, parts);
+}
+
+fn initRootAppNameWindows() !void {
+    var cwd_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    const ptr_buffer: []const u8 = try std.os.getcwd(&cwd_buffer);
+    var disk_designator: ?[]const u8 = try std.fs.path.diskDesignatorWindows(ptr_buffer);
+    const path_buffer: []const u8 = ptr_buffer[disk_designator.len..];
+    if (disk_designator) |disk| {
+        if (disk.len == 0) {
+            disk_designator = null;
+        }
+    }
+    var iterator = std.mem.splitScalar(
+        u8,
+        path_buffer,
+        std.fs.path.sep,
+    );
+    var parts_list = std.ArrayList([]const u8).init(gpa);
+    while (iterator.next()) |folder| {
+        try parts_list.append(folder);
+    }
+    const parts: []const []const u8 = try parts_list.toOwnedSlice();
+    return build_app_name_root_path(disk_designator, parts);
+}
+
+fn build_app_name_root_path(disk_designator: ?[]const u8, parts: []const []const u8) !void {
+    if (parts.len <= 1) {
+        return error.NotFrameworkPath;
+    }
+    // Figure it out.
+    var i: usize = parts.len - 1;
+    var src_i: usize = parts.len;
+    var this_i: usize = parts.len;
+    while (i >= 0) {
+        if (std.mem.eql(u8, parts[i], folder_name_this)) {
+            this_i = i;
+        } else if (std.mem.eql(u8, parts[i], folder_name_src)) {
+            src_i = i;
+        }
+        if (i == 0) {
+            break;
+        } else {
+            i -= 1;
+        }
+    }
+    if ((this_i < parts.len and this_i >= 2) and src_i == this_i - 1) {
+        try setAppName(parts[src_i - 1]);
+        // Have app_name/@This/
+        try setRootPath(disk_designator, parts[0..src_i]);
+        return;
+    }
+    if (this_i == parts.len and src_i < parts.len) {
+        if (src_i == 0) {
+            return error.RootIsSrc;
+        }
+        try setAppName(parts[src_i - 1]);
+        // Have app_name/@This/
+        try setRootPath(disk_designator, parts[0..src_i]);
+        return;
+    }
+    if (this_i == parts.len and src_i == parts.len) {
+        try setAppName(parts[parts.len - 1]);
+        // No @This folder. So maybe this is the root folder.
+        try setRootPath(disk_designator, parts[0..]);
+        return;
+    }
+    return error.NotFrameworkPath;
+}
 
 /// FolderPaths is each of the application's folder paths.
 pub const FolderPaths = struct {
@@ -141,7 +286,7 @@ pub const FolderPaths = struct {
 
     // unBuild removes the root/src/@This/ folder.
     fn unBuild(self: *FolderPaths) !void {
-        if (!paths_exist()) {
+        if (!src_this_path_exists()) {
             // root/src/@This/ does not exist.
             return;
         }
@@ -154,7 +299,7 @@ pub const FolderPaths = struct {
     // isBuilt returns if the frame work is already built.
     pub fn isBuilt(self: *FolderPaths) bool {
         _ = self;
-        return paths_exist();
+        return src_this_path_exists();
     }
 
     // reBuild only rebuilds root/src/@This/.
@@ -286,370 +431,366 @@ pub const FolderPaths = struct {
     }
 };
 
-var root_path: []u8 = undefined;
-var gpa: std.mem.Allocator = undefined;
-
-/// init stores the root path, and allocator.
-/// whoever calls init must eventually call deinit();
-pub fn init(allocator: std.mem.Allocator, app_root_path: []const u8) !void {
-    gpa = allocator;
-
-    // App folder paths.
-    root_path = try allocator.alloc(u8, app_root_path.len);
-    @memcpy(root_path, app_root_path);
-}
-
-fn paths_exist() bool {
-    const folder_paths: *FolderPaths = folders() catch {
+fn src_this_path_exists() bool {
+    var dir: std.fs.Dir = std.fs.openDirAbsolute(root_path.?, .{}) catch {
         return false;
     };
-    var dir: std.fs.Dir = std.fs.openDirAbsolute(folder_paths.root_src_this.?, .{}) catch {
+    defer dir.close();
+    var src_dir: std.fs.Dir = dir.openDir(folder_name_src, .{}) catch {
         return false;
     };
-    dir.close();
+    defer src_dir.close();
+    var src_this_dir: std.fs.Dir = src_dir.openDir(folder_name_this, .{}) catch {
+        return false;
+    };
+    src_this_dir.close();
     return true;
 }
 
 /// folders returns the folder paths or an error.
 /// The caller owns the returned value.
 pub fn folders() !*FolderPaths {
-    var folder_paths: *FolderPaths = try gpa.create(FolderPaths);
-    folder_paths.root = try gpa.alloc(u8, root_path.len);
-    errdefer folder_paths.deinit();
-    folder_paths.allocator = gpa;
+    if (root_path) |root| {
+        var folder_paths: *FolderPaths = try gpa.create(FolderPaths);
+        folder_paths.allocator = gpa;
 
-    // The root folder path.
-    @memcpy(@constCast(folder_paths.root.?), root_path);
+        // The root folder path.
+        folder_paths.root = try gpa.alloc(u8, root.len);
+        errdefer folder_paths.deinit();
+        @memcpy(@constCast(folder_paths.root.?), root);
 
-    // The root/src/ folder path.
-    var params2: [][]const u8 = try gpa.alloc([]const u8, 2);
-    defer gpa.free(params2);
-    params2[0] = folder_paths.root.?;
-    params2[1] = folder_name_src;
-    folder_paths.root_src = try fspath.join(gpa, params2);
-    errdefer folder_paths.deinit();
+        // The root/src/ folder path.
+        var params2: [][]const u8 = try gpa.alloc([]const u8, 2);
+        defer gpa.free(params2);
+        params2[0] = folder_paths.root.?;
+        params2[1] = folder_name_src;
+        folder_paths.root_src = try fspath.join(gpa, params2);
+        errdefer folder_paths.deinit();
 
-    // The root/src/vendor/ folder path.
-    params2[0] = folder_paths.root_src.?;
-    params2[1] = folder_name_vendor;
-    folder_paths.root_src_vendor = try fspath.join(gpa, params2);
-    errdefer folder_paths.deinit();
+        // The root/src/vendor/ folder path.
+        params2[0] = folder_paths.root_src.?;
+        params2[1] = folder_name_vendor;
+        folder_paths.root_src_vendor = try fspath.join(gpa, params2);
+        errdefer folder_paths.deinit();
 
-    // The root/src/@This/ folder path.
-    params2[1] = folder_name_this;
-    folder_paths.root_src_this = try fspath.join(gpa, params2);
-    errdefer folder_paths.deinit();
+        // The root/src/@This/ folder path.
+        params2[1] = folder_name_this;
+        folder_paths.root_src_this = try fspath.join(gpa, params2);
+        errdefer folder_paths.deinit();
 
-    // This application's folder path. /src/@This/
-    params2[0] = folder_paths.root_src_this.?;
-    folder_paths.root_src_this_backend = try fspath.join(gpa, params2[0..0]);
-    errdefer folder_paths.deinit();
+        // This application's folder path. /src/@This/
+        params2[0] = folder_paths.root_src_this.?;
+        folder_paths.root_src_this_backend = try fspath.join(gpa, params2[0..0]);
+        errdefer folder_paths.deinit();
 
-    // /src/@This/backend/ path.
-    params2[1] = backend.folder_name_backend;
-    folder_paths.root_src_this_backend = try fspath.join(gpa, params2);
-    errdefer folder_paths.deinit();
+        // /src/@This/backend/ path.
+        params2[1] = backend.folder_name_backend;
+        folder_paths.root_src_this_backend = try fspath.join(gpa, params2);
+        errdefer folder_paths.deinit();
 
-    // /src/@This/backend/messenger/ path.
-    var temp: []const u8 = undefined;
-    temp = try backend.pathMessengerFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_backend_messenger = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/backend/messenger/ path.
+        var temp: []const u8 = undefined;
+        temp = try backend.pathMessengerFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_backend_messenger = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/frontend/ path.
-    params2[1] = frontend.folder_name_frontend;
-    folder_paths.root_src_this_frontend = try fspath.join(gpa, params2);
-    errdefer {
-        folder_paths.deinit();
-    }
+        // /src/@This/frontend/ path.
+        params2[1] = frontend.folder_name_frontend;
+        folder_paths.root_src_this_frontend = try fspath.join(gpa, params2);
+        errdefer {
+            folder_paths.deinit();
+        }
 
-    // /src/@This/frontend/screen/ path.
-    temp = try frontend.pathScreenFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_frontend_screen = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/frontend/screen/ path.
+        temp = try frontend.pathScreenFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_frontend_screen = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/frontend/screen/panel/ path.
-    temp = try frontend.pathScreenPanelFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_frontend_screen_panel = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/frontend/screen/panel/ path.
+        temp = try frontend.pathScreenPanelFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_frontend_screen_panel = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/frontend/screen/tab/ path.
-    temp = try frontend.pathScreenTabFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_frontend_screen_tab = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/frontend/screen/tab/ path.
+        temp = try frontend.pathScreenTabFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_frontend_screen_tab = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/frontend/screen/book/ path.
-    temp = try frontend.pathScreenBookFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_frontend_screen_book = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/frontend/screen/book/ path.
+        temp = try frontend.pathScreenBookFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_frontend_screen_book = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/frontend/screen/modal/ path.
-    temp = try frontend.pathScreenModalFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_frontend_screen_modal = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/frontend/screen/modal/ path.
+        temp = try frontend.pathScreenModalFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_frontend_screen_modal = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/frontend/screen/modal/OK/ path.
-    temp = try frontend.pathScreenModalOKFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_frontend_screen_modal_ok = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/frontend/screen/modal/OK/ path.
+        temp = try frontend.pathScreenModalOKFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_frontend_screen_modal_ok = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/ path.
-    params2[1] = deps.folder_name_deps;
-    folder_paths.root_src_this_deps = try fspath.join(gpa, params2);
-    errdefer {
-        folder_paths.deinit();
-    }
+        // /src/@This/deps/ path.
+        params2[1] = deps.folder_name_deps;
+        folder_paths.root_src_this_deps = try fspath.join(gpa, params2);
+        errdefer {
+            folder_paths.deinit();
+        }
 
-    // /src/@This/deps/channel/ path.
-    temp = try deps.pathChannelFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_channel = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/channel/ path.
+        temp = try deps.pathChannelFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_channel = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/channel/fronttoback/ path.
-    temp = try deps.pathChannelFrontToBackFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_channel_fronttoback = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/channel/fronttoback/ path.
+        temp = try deps.pathChannelFrontToBackFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_channel_fronttoback = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/channel/backtofront/ path.
-    temp = try deps.pathChannelBackToFrontFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_channel_backtofront = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/channel/backtofront/ path.
+        temp = try deps.pathChannelBackToFrontFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_channel_backtofront = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/channel/trigger/ path.
-    temp = try deps.pathChannelTriggerFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_channel_trigger = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/channel/trigger/ path.
+        temp = try deps.pathChannelTriggerFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_channel_trigger = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/closer/ path.
-    temp = try deps.pathCloserFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_closer = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/closer/ path.
+        temp = try deps.pathCloserFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_closer = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/counter/ path.
-    temp = try deps.pathCounterFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_counter = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/counter/ path.
+        temp = try deps.pathCounterFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_counter = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/closedownjobs/ path.
-    temp = try deps.pathCloseDownJobsFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_closedownjobs = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/closedownjobs/ path.
+        temp = try deps.pathCloseDownJobsFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_closedownjobs = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/framers/ path.
-    temp = try deps.pathFramersFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_framers = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/framers/ path.
+        temp = try deps.pathFramersFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_framers = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/lock/ path.
-    temp = try deps.pathLockFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_lock = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/lock/ path.
+        temp = try deps.pathLockFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_lock = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/message/ path.
-    temp = try deps.pathMessageFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_message = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/message/ path.
+        temp = try deps.pathMessageFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_message = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/modal_params/ path.
-    temp = try deps.pathModalParamsFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_modal_params = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/modal_params/ path.
+        temp = try deps.pathModalParamsFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_modal_params = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/startup/ path.
-    temp = try deps.pathStartupFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_startup = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/startup/ path.
+        temp = try deps.pathStartupFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_startup = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/widget/ path.
-    temp = try deps.pathWidgetFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_widget = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/widget/ path.
+        temp = try deps.pathWidgetFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_widget = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/widget/tabbar/ path.
-    temp = try deps.pathWidgetTabbarFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_widget_tabbar = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/widget/tabbar/ path.
+        temp = try deps.pathWidgetTabbarFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_widget_tabbar = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    // /src/@This/deps/various/ path.
-    temp = try deps.pathVariousFolder(gpa);
-    errdefer {
-        folder_paths.deinit();
-    }
-    params2[1] = temp;
-    folder_paths.root_src_this_deps_various = try fspath.join(gpa, params2);
-    errdefer {
+        // /src/@This/deps/various/ path.
+        temp = try deps.pathVariousFolder(gpa);
+        errdefer {
+            folder_paths.deinit();
+        }
+        params2[1] = temp;
+        folder_paths.root_src_this_deps_various = try fspath.join(gpa, params2);
+        errdefer {
+            gpa.free(temp);
+            folder_paths.deinit();
+        }
         gpa.free(temp);
-        folder_paths.deinit();
-    }
-    gpa.free(temp);
 
-    return folder_paths;
+        return folder_paths;
+    } else {
+        return error.NullRootPath;
+    }
 }

@@ -20,7 +20,7 @@ pub const verb_add_modal: []const u8 = "add-modal";
 pub const verb_remove: []const u8 = "remove";
 pub const verb_list: []const u8 = "list";
 
-pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_name: []const u8, remaining_args: [][]const u8) !void {
+pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]const u8) !void {
     var folder_paths: *_paths_.FolderPaths = try _paths_.folders();
     defer folder_paths.deinit();
     return switch (remaining_args.len) {
@@ -67,15 +67,15 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                     break :blk;
                 }
                 var removed: bool = false;
-                removed = try _src_this_frontend_.removeTabScreen(allocator, app_name, screen_name);
+                removed = try _src_this_frontend_.removeTabScreen(allocator, _paths_.app_name.?, screen_name);
                 if (!removed) {
-                    removed = try _src_this_frontend_.removePanelScreen(allocator, app_name, screen_name);
+                    removed = try _src_this_frontend_.removePanelScreen(allocator, _paths_.app_name.?, screen_name);
                 }
                 if (!removed) {
-                    removed = try _src_this_frontend_.removeModalScreen(allocator, app_name, screen_name);
+                    removed = try _src_this_frontend_.removeModalScreen(allocator, _paths_.app_name.?, screen_name);
                 }
                 if (!removed) {
-                    removed = try _src_this_frontend_.removeBookScreen(allocator, app_name, screen_name);
+                    removed = try _src_this_frontend_.removeBookScreen(allocator, _paths_.app_name.?, screen_name);
                 }
                 if (!removed) {
                     // This should never happen.
@@ -143,7 +143,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the panel screen.
-                try _src_this_frontend_.addPanelScreen(allocator, app_name, screen_name, panel_names, adding_content_screen);
+                try _src_this_frontend_.addPanelScreen(allocator, _paths_.app_name.?, screen_name, panel_names, adding_content_screen);
 
                 // Rebuild deps/framers/api.zig
                 try _src_this_deps_.rebuildForUpdatedScreens(allocator);
@@ -212,7 +212,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the tab screen.
-                try _src_this_frontend_.addTabScreen(allocator, app_name, screen_name, tab_names);
+                try _src_this_frontend_.addTabScreen(allocator, _paths_.app_name.?, screen_name, tab_names);
 
                 // Rebuild deps/framers/api.zig
                 try _src_this_deps_.rebuildForUpdatedScreens(allocator);
@@ -256,7 +256,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the book screen.
-                try _src_this_frontend_.addBookScreen(allocator, app_name, screen_name, menu_item_names);
+                try _src_this_frontend_.addBookScreen(allocator, _paths_.app_name.?, screen_name, menu_item_names);
 
                 // Rebuild deps/framers/api.zig
                 try _src_this_deps_.rebuildForUpdatedScreens(allocator);
@@ -300,7 +300,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 }
                 // The user input is valid.
                 // Add the modal screen.
-                try _src_this_frontend_.addModalScreen(allocator, app_name, screen_name, panel_names);
+                try _src_this_frontend_.addModalScreen(allocator, _paths_.app_name.?, screen_name, panel_names);
 
                 // Rebuild deps/framers/api.zig
                 try _src_this_deps_.rebuildForUpdatedScreens(allocator);

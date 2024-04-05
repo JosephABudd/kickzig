@@ -19,7 +19,7 @@ pub fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8, cmd: []co
 // Framework build.
 
 pub const already_built: []const u8 = "The framework is already built.\n";
-
+pub const not_framework_folder: []const u8 = "A framework root folder was not found in your path.\n";
 // Channel name.
 
 /// invalidChannelNameMessage returns a invalid channel name message.
@@ -123,5 +123,5 @@ pub fn notUniqueTabName(allocator: std.mem.Allocator, name: []const u8) ![]const
 /// notValidScreenTabName returns a not current tab name message.
 /// The caller controls the returned value.
 pub fn notValidScreenTabName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
-    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a valid name for a tab using screen content.\nA tab using screen content must have the same name as the panel-screen providing the content.\nThe panel-screen providing the content must already exist.\n", .{name});
+    return try std.fmt.allocPrint(allocator, "\"{s}\" is not a valid name for a tab using screen content.\nA tab using screen content must have the same name as the content-screen or panel-screen providing the content.\nThe content-screen or panel-screen providing the content must already exist.\n", .{name});
 }

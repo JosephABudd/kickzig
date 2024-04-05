@@ -82,7 +82,7 @@ pub fn depsMessageAdded(allocator: std.mem.Allocator, message_name: []const u8) 
 }
 
 pub fn backendMessageHandlerRemoved(allocator: std.mem.Allocator, message_name: []const u8) ![]const u8 {
-    return try std.fmt.allocPrint(allocator, "Removed the back-end «{s}» message handler.\n", .{message_name});
+    return try std.fmt.allocPrint(allocator, "Removed the back-end «{s}» messenger.\n", .{message_name});
 }
 
 pub fn depsMessageRemoved(allocator: std.mem.Allocator, message_name: []const u8) ![]const u8 {

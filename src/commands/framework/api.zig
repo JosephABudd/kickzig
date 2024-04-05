@@ -10,7 +10,7 @@ pub const command: []const u8 = "framework";
 pub const verb_help: []const u8 = "help";
 pub const verb_restart: []const u8 = "restart";
 
-pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_name: []const u8, remaining_args: [][]u8) !void {
+pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]u8) !void {
     var folder_paths: *_paths_.FolderPaths = try _paths_.folders();
     defer folder_paths.deinit();
     if (remaining_args.len > 0) {
@@ -36,7 +36,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
                 allocator.free(msg);
             };
             // Create the framework.
-            _source_.recreate(allocator, app_name) catch |create_err| {
+            _source_.recreate(allocator, _paths_.app_name.?) catch |create_err| {
                 // Have input so make the error message.
                 const user_command: []const u8 = try std.fmt.allocPrint(allocator, "{s} {s}", .{ command, verb_restart });
                 defer allocator.free(user_command);
@@ -63,7 +63,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_nam
         try folder_paths.build();
 
         // Create the framework.
-        _source_.create(allocator, app_name) catch |create_err| {
+        _source_.create(allocator, _paths_.app_name.?) catch |create_err| {
             // Have input so make the error message.
             const msg: []const u8 = _warning_.fatal(allocator, create_err, command) catch {
                 return create_err;

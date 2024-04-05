@@ -19,8 +19,7 @@ pub const verb_add_fbf: []const u8 = "add-fbf"; // front initializes & sends req
 pub const verb_add_bf_fbf: []const u8 = "add-bf-fbf"; // front initializes & sends request to back, back sends response to front.
 pub const verb_remove: []const u8 = "remove";
 
-pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, app_name: []const u8, remaining_args: [][]u8) !void {
-    _ = app_name;
+pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]u8) !void {
     var folder_paths: *_paths_.FolderPaths = try _paths_.folders();
     defer folder_paths.deinit();
     switch (remaining_args.len) {

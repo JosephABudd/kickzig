@@ -2,6 +2,7 @@ const std = @import("std");
 const _stdout_ = @import("stdout");
 const _paths_ = @import("paths");
 const _usage_ = @import("usage");
+const _warning_ = @import("warning");
 const _framework_commands_ = @import("commands/framework/api.zig");
 const _screen_commands_ = @import("commands/screen/api.zig");
 const _message_commands_ = @import("commands/message/api.zig");
@@ -11,12 +12,17 @@ pub fn main() !void {
     var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
     const gpa = gpa_instance.allocator();
 
-    // Current working directory.
-    var cwd_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
-    const cwd_app_name: []const u8 = try std.os.getcwd(&cwd_buffer);
-
+    var in_framework_folder: bool = true;
     // Init the paths module.
-    try _paths_.init(gpa, cwd_app_name);
+    _paths_.init(gpa) catch |err| {
+        switch (err) {
+            error.NotFrameworkPath => {
+                in_framework_folder = false;
+            },
+            else => return err,
+        }
+    };
+    defer _paths_.deinit();
 
     // Process the args.
     var args: [][]u8 = try getProcessArgs(gpa);
@@ -34,31 +40,42 @@ pub fn main() !void {
     } else {
         remaining_args = args[0..0];
     }
-    try handleCommand(gpa, cli_name, cwd_app_name, command, remaining_args);
+    try handleCommand(gpa, cli_name, command, remaining_args, in_framework_folder);
 }
 
 /// handleCommand dispatches the user input to the proper handlers.
-fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, cwd_app_name: []const u8, command: []u8, remaining_args: [][]u8) !void {
-    const app_name: []const u8 = std.fs.path.basename(cwd_app_name);
+fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, command: []u8, remaining_args: [][]u8, in_frame_folder: bool) !void {
 
     // Process the command.
 
     // framework command.
     if (std.mem.eql(u8, command, _framework_commands_.command)) {
-        try _framework_commands_.handleCommand(allocator, cli_name, app_name, remaining_args);
+        try _framework_commands_.handleCommand(allocator, cli_name, remaining_args);
         return;
     }
 
     // screen command.
     if (std.mem.eql(u8, command, _screen_commands_.command)) {
-        try _screen_commands_.handleCommand(allocator, cli_name, app_name, remaining_args);
-        return;
+        if (!in_frame_folder) {
+            // Display message;
+            _stdout_.print(_warning_.not_framework_folder) catch {
+                // Don't return an error;
+            };
+            return;
+        }
+        return _screen_commands_.handleCommand(allocator, cli_name, remaining_args);
     }
 
     // message command.
     if (std.mem.eql(u8, command, _message_commands_.command)) {
-        try _message_commands_.handleCommand(allocator, cli_name, app_name, remaining_args);
-        return;
+        if (!in_frame_folder) {
+            // Display message;
+            _stdout_.print(_warning_.not_framework_folder) catch {
+                // Don't return an error;
+            };
+            return;
+        }
+        return _message_commands_.handleCommand(allocator, cli_name, remaining_args);
     }
 
     // unknown user input.
