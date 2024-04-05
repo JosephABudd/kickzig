@@ -69,12 +69,14 @@ Kickzig generates my version of an application framework, written in zig, using 
 
 The command `kickzig framework` generates the source code for a framework that is ready to run. The framework requires a vendored clone of David Vanderson's DVUI package.
 
+Note Well: Currently, dvui must be build using zig version 11.
+
 ```shell
 ＄ mkdir myapp
 ＄ cd myapp
 ＄ kickzig framework
 ＄ git clone https://github.com/david-vanderson/dvui.git src/vendor/dvui/
-＄ zig build -freference-trace=255
+＄ zig11 build -freference-trace=255
 ＄ ./zig-out/bin/standalone-sdl
 ```
 
