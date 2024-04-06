@@ -510,8 +510,9 @@ My only edits to the messenger file are
 
 * line 14
 * line 22
-* lines 54 - 89
-* line 100
+* lines 46 - 51
+* lines 57 - 92
+* line 103
 
 ```zig
   1 ⎥ /// This is the back-end's "AddContact" message handler.
@@ -559,77 +560,80 @@ My only edits to the messenger file are
  43 ⎥             self.exit(@src(), err, "self.send_channels.AddContact.send(message)");
  44 ⎥             return err;
  45 ⎥         };
- 46 ⎥         // The stored data has changed with the added record.
- 47 ⎥         // Start new lists.
- 48 ⎥         try self.triggers.RebuildContactList.trigger();
- 49 ⎥     }
- 50 ⎥ 
- 51 ⎥     /// receiveJob fullfills the front-end's request.
- 52 ⎥     /// Returns nothing or an error.
- 53 ⎥     fn receiveJob(self: *Messenger, message: *_message_.AddContact.Message) !void {
- 54 ⎥         if (message.frontend_payload.contact) |contact| {
- 55 ⎥             if (contact.name == null) {
- 56 ⎥                 try message.backend_payload.set(
- 57 ⎥                     .{ .user_error_message = "Name is a required field." },
- 58 ⎥                 );
- 59 ⎥                 return;
- 60 ⎥             }
- 61 ⎥             if (contact.address == null) {
- 62 ⎥                 try message.backend_payload.set(
- 63 ⎥                     .{ .user_error_message = "Address is a required field." },
- 64 ⎥                 );
- 65 ⎥                 return;
- 66 ⎥             }
- 67 ⎥             if (contact.city == null) {
- 68 ⎥                 try message.backend_payload.set(
- 69 ⎥                     .{ .user_error_message = "City is a required field." },
- 70 ⎥                 );
- 71 ⎥                 return;
- 72 ⎥             }
- 73 ⎥             if (contact.state == null) {
- 74 ⎥                 try message.backend_payload.set(
- 75 ⎥                     .{ .user_error_message = "State is a required field." },
- 76 ⎥                 );
- 77 ⎥                 return;
- 78 ⎥             }
- 79 ⎥             if (contact.zip == null) {
- 80 ⎥                 try message.backend_payload.set(
- 81 ⎥                     .{ .user_error_message = "Zip is a required field." },
- 82 ⎥                 );
- 83 ⎥                 return;
- 84 ⎥             }
- 85 ⎥             // Store the record.
- 86 ⎥             try self.store.contact_table.add(contact.name.?, contact.address.?, contact.city.?, contact.state.?, contact.zip.?);
- 87 ⎥         } else {
- 88 ⎥             return error.AddContactMessageMissingContact;
- 89 ⎥         }
- 90 ⎥     }
- 91 ⎥ };
- 92 ⎥ 
- 93 ⎥ pub fn init(startup: _startup_.Backend) !*Messenger {
- 94 ⎥     var messenger: *Messenger = try startup.allocator.create(Messenger);
- 95 ⎥     messenger.allocator = startup.allocator;
- 96 ⎥     messenger.send_channels = startup.send_channels;
- 97 ⎥     messenger.receive_channels = startup.receive_channels;
- 98 ⎥     messenger.triggers = startup.triggers;
- 99 ⎥     messenger.exit = startup.exit;
-100 ⎥     messenger.store = startup.store;
-101 ⎥ 
-102 ⎥     // Subscribe to receive the AddContact message.
-103 ⎥     var receive_behavior = try startup.receive_channels.AddContact.initBehavior();
-104 ⎥     errdefer {
-105 ⎥         messenger.deinit();
-106 ⎥     }
-107 ⎥     receive_behavior.implementor = messenger;
-108 ⎥     receive_behavior.receiveFn = &Messenger.receiveAddContactFn;
-109 ⎥     try startup.receive_channels.AddContact.subscribe(receive_behavior);
-110 ⎥     errdefer {
-111 ⎥         messenger.deinit();
-112 ⎥     }
-113 ⎥ 
-114 ⎥     return messenger;
-115 ⎥ }
+ 46 ⎥         if (message.backend_payload.user_error_message.?.len == 0) {
+ 47 ⎥             // There are no warnings for the user so the record was added.
+ 48 ⎥             // The stored data has changed with the added record.
+ 49 ⎥             // Start new lists.
+ 50 ⎥             try self.triggers.RebuildContactList.trigger();
+ 51 ⎥         }
+ 52 ⎥     }
+ 53 ⎥ 
+ 54 ⎥     /// receiveJob fullfills the front-end's request.
+ 55 ⎥     /// Returns nothing or an error.
+ 56 ⎥     fn receiveJob(self: *Messenger, message: *_message_.AddContact.Message) !void {
+ 57 ⎥         if (message.frontend_payload.contact) |contact| {
+ 58 ⎥             if (contact.name == null) {
+ 59 ⎥                 try message.backend_payload.set(
+ 60 ⎥                     .{ .user_error_message = "Name is a required field." },
+ 61 ⎥                 );
+ 62 ⎥                 return;
+ 63 ⎥             }
+ 64 ⎥             if (contact.address == null) {
+ 65 ⎥                 try message.backend_payload.set(
+ 66 ⎥                     .{ .user_error_message = "Address is a required field." },
+ 67 ⎥                 );
+ 68 ⎥                 return;
+ 69 ⎥             }
+ 70 ⎥             if (contact.city == null) {
+ 71 ⎥                 try message.backend_payload.set(
+ 72 ⎥                     .{ .user_error_message = "City is a required field." },
+ 73 ⎥                 );
+ 74 ⎥                 return;
+ 75 ⎥             }
+ 76 ⎥             if (contact.state == null) {
+ 77 ⎥                 try message.backend_payload.set(
+ 78 ⎥                     .{ .user_error_message = "State is a required field." },
+ 79 ⎥                 );
+ 80 ⎥                 return;
+ 81 ⎥             }
+ 82 ⎥             if (contact.zip == null) {
+ 83 ⎥                 try message.backend_payload.set(
+ 84 ⎥                     .{ .user_error_message = "Zip is a required field." },
+ 85 ⎥                 );
+ 86 ⎥                 return;
+ 87 ⎥             }
+ 88 ⎥             // Store the record.
+ 89 ⎥             try self.store.contact_table.add(contact.name.?, contact.address.?, contact.city.?, contact.state.?, contact.zip.?);
+ 90 ⎥         } else {
+ 91 ⎥             return error.AddContactMessageMissingContact;
+ 92 ⎥         }
+ 93 ⎥     }
+ 94 ⎥ };
+ 95 ⎥ 
+ 96 ⎥ pub fn init(startup: _startup_.Backend) !*Messenger {
+ 97 ⎥     var messenger: *Messenger = try startup.allocator.create(Messenger);
+ 98 ⎥     messenger.allocator = startup.allocator;
+ 99 ⎥     messenger.send_channels = startup.send_channels;
+100 ⎥     messenger.receive_channels = startup.receive_channels;
+101 ⎥     messenger.triggers = startup.triggers;
+102 ⎥     messenger.exit = startup.exit;
+103 ⎥     messenger.store = startup.store;
+104 ⎥ 
+105 ⎥     // Subscribe to receive the AddContact message.
+106 ⎥     var receive_behavior = try startup.receive_channels.AddContact.initBehavior();
+107 ⎥     errdefer {
+108 ⎥         messenger.deinit();
+109 ⎥     }
+110 ⎥     receive_behavior.implementor = messenger;
+111 ⎥     receive_behavior.receiveFn = &Messenger.receiveAddContactFn;
+112 ⎥     try startup.receive_channels.AddContact.subscribe(receive_behavior);
+113 ⎥     errdefer {
+114 ⎥         messenger.deinit();
+115 ⎥     }
 116 ⎥ 
+117 ⎥     return messenger;
+118 ⎥ }
+119 ⎥ 
 ```
 
 ## The EditContact message and back-end messenger
@@ -835,8 +839,9 @@ My only edits to the messenger file are
 
 * line 14
 * line 22
-* lines 54 - 100
-* line 111
+* lines 46 - 51
+* lines 57 - 103
+* line 114
 
 ```zig
   1 ⎥ /// This is the back-end's "EditContact" message handler.
@@ -884,88 +889,91 @@ My only edits to the messenger file are
  43 ⎥             self.exit(@src(), err, "self.send_channels.EditContact.send(message)");
  44 ⎥             return err;
  45 ⎥         };
- 46 ⎥         // The stored data has changed with the edited record.
- 47 ⎥         // Start new lists.
- 48 ⎥         try self.triggers.RebuildContactList.trigger();
- 49 ⎥     }
- 50 ⎥ 
- 51 ⎥     /// receiveJob fullfills the front-end's request.
- 52 ⎥     /// Returns nothing or an error.
- 53 ⎥     fn receiveJob(self: *Messenger, message: *_message_.EditContact.Message) !void {
- 54 ⎥         if (message.frontend_payload.contact) |contact| {
- 55 ⎥             if (contact.id == 0) {
- 56 ⎥                 try message.backend_payload.set(
- 57 ⎥                     .{ .user_error_message = "ID is a required field." },
- 58 ⎥                 );
- 59 ⎥                 return;
- 60 ⎥             }
- 61 ⎥             if (contact.name == null) {
- 62 ⎥                 try message.backend_payload.set(
- 63 ⎥                     .{ .user_error_message = "Name is a required field." },
- 64 ⎥                 );
- 65 ⎥                 return;
- 66 ⎥             }
- 67 ⎥ 
- 68 ⎥             if (contact.address == null) {
- 69 ⎥                 try message.backend_payload.set(
- 70 ⎥                     .{ .user_error_message = "Address is a required field." },
- 71 ⎥                 );
- 72 ⎥                 return;
- 73 ⎥             }
- 74 ⎥ 
- 75 ⎥             if (contact.city == null) {
- 76 ⎥                 try message.backend_payload.set(
- 77 ⎥                     .{ .user_error_message = "City is a required field." },
- 78 ⎥                 );
- 79 ⎥                 return;
- 80 ⎥             }
- 81 ⎥ 
- 82 ⎥             if (contact.state == null) {
- 83 ⎥                 try message.backend_payload.set(
- 84 ⎥                     .{ .user_error_message = "State is a required field." },
- 85 ⎥                 );
- 86 ⎥                 return;
- 87 ⎥             }
- 88 ⎥ 
- 89 ⎥             if (contact.zip == null) {
- 90 ⎥                 try message.backend_payload.set(
- 91 ⎥                     .{ .user_error_message = "Zip is a required field." },
- 92 ⎥                 );
- 93 ⎥                 return;
- 94 ⎥             }
- 95 ⎥ 
- 96 ⎥             // Store the record.
- 97 ⎥             try self.store.contact_table.update(contact.id, contact.name.?, contact.address.?, contact.city.?, contact.state.?, contact.zip.?);
- 98 ⎥         } else {
- 99 ⎥             return error.EditContactMessageMissingContact;
-100 ⎥         }
-101 ⎥     }
-102 ⎥ };
-103 ⎥ 
-104 ⎥ pub fn init(startup: _startup_.Backend) !*Messenger {
-105 ⎥     var messenger: *Messenger = try startup.allocator.create(Messenger);
-106 ⎥     messenger.allocator = startup.allocator;
-107 ⎥     messenger.send_channels = startup.send_channels;
-108 ⎥     messenger.receive_channels = startup.receive_channels;
-109 ⎥     messenger.triggers = startup.triggers;
-110 ⎥     messenger.exit = startup.exit;
-111 ⎥     messenger.store = startup.store;
-112 ⎥ 
-113 ⎥     // Subscribe to receive the EditContact message.
-114 ⎥     var receive_behavior = try startup.receive_channels.EditContact.initBehavior();
-115 ⎥     errdefer {
-116 ⎥         messenger.deinit();
-117 ⎥     }
-118 ⎥     receive_behavior.implementor = messenger;
-119 ⎥     receive_behavior.receiveFn = &Messenger.receiveEditContactFn;
-120 ⎥     try startup.receive_channels.EditContact.subscribe(receive_behavior);
-121 ⎥     errdefer {
-122 ⎥         messenger.deinit();
-123 ⎥     }
-124 ⎥ 
-125 ⎥     return messenger;
-126 ⎥ }
+ 46 ⎥         if (message.backend_payload.user_error_message.?.len == 0) {
+ 47 ⎥             // There are no warnings for the user so the record was added.
+ 48 ⎥             // The stored data has changed with the added record.
+ 49 ⎥             // Start new lists.
+ 50 ⎥             try self.triggers.RebuildContactList.trigger();
+ 51 ⎥         }
+ 52 ⎥     }
+ 53 ⎥ 
+ 54 ⎥     /// receiveJob fullfills the front-end's request.
+ 55 ⎥     /// Returns nothing or an error.
+ 56 ⎥     fn receiveJob(self: *Messenger, message: *_message_.EditContact.Message) !void {
+ 57 ⎥         if (message.frontend_payload.contact) |contact| {
+ 58 ⎥             if (contact.id == 0) {
+ 59 ⎥                 try message.backend_payload.set(
+ 60 ⎥                     .{ .user_error_message = "ID is a required field." },
+ 61 ⎥                 );
+ 62 ⎥                 return;
+ 63 ⎥             }
+ 64 ⎥             if (contact.name == null) {
+ 65 ⎥                 try message.backend_payload.set(
+ 66 ⎥                     .{ .user_error_message = "Name is a required field." },
+ 67 ⎥                 );
+ 68 ⎥                 return;
+ 69 ⎥             }
+ 70 ⎥ 
+ 71 ⎥             if (contact.address == null) {
+ 72 ⎥                 try message.backend_payload.set(
+ 73 ⎥                     .{ .user_error_message = "Address is a required field." },
+ 74 ⎥                 );
+ 75 ⎥                 return;
+ 76 ⎥             }
+ 77 ⎥ 
+ 78 ⎥             if (contact.city == null) {
+ 79 ⎥                 try message.backend_payload.set(
+ 80 ⎥                     .{ .user_error_message = "City is a required field." },
+ 81 ⎥                 );
+ 82 ⎥                 return;
+ 83 ⎥             }
+ 84 ⎥ 
+ 85 ⎥             if (contact.state == null) {
+ 86 ⎥                 try message.backend_payload.set(
+ 87 ⎥                     .{ .user_error_message = "State is a required field." },
+ 88 ⎥                 );
+ 89 ⎥                 return;
+ 90 ⎥             }
+ 91 ⎥ 
+ 92 ⎥             if (contact.zip == null) {
+ 93 ⎥                 try message.backend_payload.set(
+ 94 ⎥                     .{ .user_error_message = "Zip is a required field." },
+ 95 ⎥                 );
+ 96 ⎥                 return;
+ 97 ⎥             }
+ 98 ⎥ 
+ 99 ⎥             // Store the record.
+100 ⎥             try self.store.contact_table.update(contact.id, contact.name.?, contact.address.?, contact.city.?, contact.state.?, contact.zip.?);
+101 ⎥         } else {
+102 ⎥             return error.EditContactMessageMissingContact;
+103 ⎥         }
+104 ⎥     }
+105 ⎥ };
+106 ⎥ 
+107 ⎥ pub fn init(startup: _startup_.Backend) !*Messenger {
+108 ⎥     var messenger: *Messenger = try startup.allocator.create(Messenger);
+109 ⎥     messenger.allocator = startup.allocator;
+110 ⎥     messenger.send_channels = startup.send_channels;
+111 ⎥     messenger.receive_channels = startup.receive_channels;
+112 ⎥     messenger.triggers = startup.triggers;
+113 ⎥     messenger.exit = startup.exit;
+114 ⎥     messenger.store = startup.store;
+115 ⎥ 
+116 ⎥     // Subscribe to receive the EditContact message.
+117 ⎥     var receive_behavior = try startup.receive_channels.EditContact.initBehavior();
+118 ⎥     errdefer {
+119 ⎥         messenger.deinit();
+120 ⎥     }
+121 ⎥     receive_behavior.implementor = messenger;
+122 ⎥     receive_behavior.receiveFn = &Messenger.receiveEditContactFn;
+123 ⎥     try startup.receive_channels.EditContact.subscribe(receive_behavior);
+124 ⎥     errdefer {
+125 ⎥         messenger.deinit();
+126 ⎥     }
 127 ⎥ 
+128 ⎥     return messenger;
+129 ⎥ }
+130 ⎥ 
 ```
 
 ## The RemoveContact message and back-end messenger
