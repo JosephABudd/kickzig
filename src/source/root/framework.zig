@@ -8,6 +8,7 @@ const _standalone_template_ = @import("standalone_template.zig");
 const _src_this_backend_ = @import("src/@This/backend/framework.zig");
 const _src_this_frontend_ = @import("src/@This/frontend/framework.zig");
 const _src_this_deps_ = @import("source_deps");
+const _src_vendor_ = @import("src/vendor/framework.zig");
 
 pub const frontend = _src_this_frontend_;
 pub const backend = _src_this_backend_;
@@ -65,4 +66,5 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
     try _src_this_backend_.create(allocator);
     try _src_this_frontend_.create(allocator, app_name);
     try _src_this_deps_.create(allocator);
+    try _src_vendor_.create();
 }
