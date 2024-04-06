@@ -34,8 +34,17 @@ pub fn createAnyPackage(allocator: std.mem.Allocator, screen_name: []const u8, p
     try rebuildPanelsZig(allocator, package_dir, screen_name);
 }
 
+pub fn create(allocator: std.mem.Allocator) !void {
+    // All of the screens can be removed from this folder.
+    // So it needs a git keep file.
+    var package_dir: std.fs.Dir = try directory(null);
+    defer package_dir.close();
+    try _filenames_.addGitKeepFile(package_dir);
+    return createHelloWorldPackage(allocator);
+}
+
 /// createHelloWorldPackage adds the complete Example screen folder and package.
-pub fn createHelloWorldPackage(allocator: std.mem.Allocator) !void {
+fn createHelloWorldPackage(allocator: std.mem.Allocator) !void {
     // Open/Create the screen package folder.
     var package_dir: std.fs.Dir = try directory("HelloWorld");
     defer package_dir.close();

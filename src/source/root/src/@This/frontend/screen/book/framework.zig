@@ -8,6 +8,13 @@ const _any_panel_template_ = @import("any_panel_template.zig");
 const _messenger_template_ = @import("messenger_template.zig");
 const _screen_template_ = @import("screen_template.zig");
 
+// create adds the .git_keep_this_folder file.
+pub fn create() !void {
+    var package_dir: std.fs.Dir = try directory(null);
+    defer package_dir.close();
+    try _filenames_.addGitKeepFile(package_dir);
+}
+
 /// add creates a book screen folder and package.
 pub fn add(allocator: std.mem.Allocator, screen_name: []const u8, tab_names: [][]const u8) !void {
     // Open/Create the screen package folder.
@@ -131,22 +138,22 @@ fn addScreenFile(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_n
 fn directory(screen_name: ?[]const u8) !std.fs.Dir {
     const folders: *_paths_.FolderPaths = try _paths_.folders();
     defer folders.deinit();
-    var panel_folder: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_book.?, .{});
+    var book_folder: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_book.?, .{});
     if (screen_name == null) {
-        return panel_folder;
+        return book_folder;
     }
     // Open the screen folder and return that.
-    defer panel_folder.close();
+    defer book_folder.close();
     var screen_folder: std.fs.Dir = undefined;
-    if (panel_folder.openDir(screen_name.?, .{})) |folder| {
+    if (book_folder.openDir(screen_name.?, .{})) |folder| {
         screen_folder = folder;
     } else |err| {
         if (err != error.FileNotFound) {
             return err;
         }
         // Screen folder not found so create the screen folder.
-        try panel_folder.makeDir(screen_name.?);
-        screen_folder = try panel_folder.openDir(screen_name.?, .{});
+        try book_folder.makeDir(screen_name.?);
+        screen_folder = try book_folder.openDir(screen_name.?, .{});
     }
     return screen_folder;
 }

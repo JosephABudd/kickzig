@@ -12,6 +12,7 @@ As I continue to learn and appreciate zig and dvui, I am recreating my kick code
 
 Still a work in progress.
 
+* added .git_keep_this_folder files in folders that can get emptied so that git will see the files and keep those empty folders. The reason is that kickzig requires all framework folders to be present when it does most things.
 * kickzig now works correctly from anywhere inside a framework folder.
 * kickzig now responss correctly when `kickzig message` and `kickzig screen` commands are used before the `kickzig framework` command.
 * Improved some CLI responses.

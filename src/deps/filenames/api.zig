@@ -3,25 +3,35 @@ const paths = @import("paths");
 pub const backend = @import("backend.zig");
 pub const frontend = @import("frontend.zig");
 pub const deps = @import("deps.zig");
-const zig_file_extension: []const u8 = ".zig";
-const panel_file_suffix: []const u8 = "_panel.zig";
 
+const panel_file_suffix: []const u8 = "_panel.zig";
+const zig_file_extension: []const u8 = ".zig";
+
+pub const api_file_name: []const u8 = "api.zig";
+pub const backend_file_name = "backend.zig";
 pub const build_file_name: []const u8 = "build.zig";
 pub const build_zon_file_name: []const u8 = "build.zig.zon";
-pub const standalone_sdl_file_name: []const u8 = "standalone-sdl.zig";
-pub const api_file_name: []const u8 = "api.zig";
+pub const counter_file_name = "counter.zig";
+pub const frontent_main_menu_file_name: []const u8 = "main_menu.zig";
+pub const git_keep: []const u8 = ".git_keep_this_folder";
+pub const ok_file_name: []const u8 = "OK.zig";
 pub const ralativeFilePathSuffix: []const u8 = ":1:1";
-pub const screen_screen_file_name: []const u8 = "screen.zig";
 pub const screen_messenger_file_name: []const u8 = "messenger.zig";
 pub const screen_panels_file_name: []const u8 = "panels.zig";
-pub const frontent_main_menu_file_name: []const u8 = "main_menu.zig";
-pub const ok_file_name: []const u8 = "OK.zig";
-pub const yesno_file_name: []const u8 = "YesNo.zig";
-pub const tabbar_file_name: []const u8 = "tabbar.zig";
-pub const counter_file_name = "counter.zig";
-pub const backend_file_name = "backend.zig";
-pub const screen_tabs_file_name = "screen_tags.zig";
+pub const screen_screen_file_name: []const u8 = "screen.zig";
 pub const screen_pointers_file_name = "screen_pointers.zig";
+pub const screen_tabs_file_name = "screen_tags.zig";
+pub const standalone_sdl_file_name: []const u8 = "standalone-sdl.zig";
+pub const tabbar_file_name: []const u8 = "tabbar.zig";
+pub const yesno_file_name: []const u8 = "YesNo.zig";
+
+// all.
+
+pub fn addGitKeepFile(dir: std.fs.Dir) !void {
+    var ofile: std.fs.File = try dir.createFile(git_keep, .{});
+    defer ofile.close();
+    try ofile.writeAll("DO NOT REMOVE THIS FILE.\nThis file ensures that this folder, which is part of the framework, is never empty so that git keeps this folder in the repo.\n");
+}
 
 // framework.
 

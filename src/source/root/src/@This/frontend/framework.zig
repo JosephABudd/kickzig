@@ -21,11 +21,14 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
     // Add the main menu file which is a data file.
     // It sets the default landing screen.
     try buildMainMenu();
-    // Add the default landing screen.
-    // It contains lots of example code.
-    try _src_this_frontend_panel_screen_.createHelloWorldPackage(allocator);
-    // Add the OK modal screen.
+    // Add each panel screen and the folder's git keep file.
+    try _src_this_frontend_panel_screen_.create(allocator);
+    // Add each modal screen.
     try _src_this_frontend_modal_screen_.create(allocator);
+    // Add the book screen folder's git keep file.
+    try _src_this_frontend_book_screen_.create();
+    // Add the tab screen folder's git keep file.
+    try _src_this_frontend_tab_screen_.create();
     // Build api.zig.
     try rebuild(allocator, app_name);
 }
