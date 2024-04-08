@@ -94,7 +94,7 @@ I'll initialize the store package in **standalone-sdl.zig** where I'll
 Vendors are the dependencies cloned from repos. The vendor folder is at **src/vendor/**.
 
 1. kickzig's default settings required me to clone dvui into the vendor folder.
-1. I'm going to also clone [LeRoyce Pearson's sqlite-zig package](https://github.com/leroycep/sqlite-zig.git) into the vendor folder.
+1. I'm going to also clone [Vincent Rischmann's zig-sqlite package](https://github.com/vrischmann/zig-sqlite.git) into the vendor folder.
 
 ## Next
 

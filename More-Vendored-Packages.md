@@ -3,8 +3,7 @@
 
 ### The zig-sqlite package
 
-[
-Vincent Rischmann's zig-sqlite package](https://github.com/vrischmann/zig-sqlite.git)
+[Vincent Rischmann's zig-sqlite package](https://github.com/vrischmann/zig-sqlite.git)
 
 ```shell
 ＄ git clone https://github.com/vrischmann/zig-sqlite.git  src/vendor/zig-sqlite/
