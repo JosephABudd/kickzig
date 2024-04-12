@@ -6,6 +6,7 @@ pub const content =
     \\const _messenger_ = @import("messenger.zig");
     \\const _modal_params_ = @import("modal_params");
     \\const _panels_ = @import("panels.zig");
+    \\const _various_ = @import("various");
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\const OKModalParams = _modal_params_.OK;
@@ -24,6 +25,7 @@ pub const content =
     \\    lock: *_lock_.ThreadLock, // For persistant state data.
     \\    window: *dvui.Window,
     \\    main_view: *MainView,
+    \\    container: ?*_various_.Container,
     \\    all_panels: *_panels_.Panels,
     \\    messenger: *_messenger_.Messenger,
     \\    example_message_from_messenger: ?[]const u8,
@@ -32,16 +34,28 @@ pub const content =
     \\    yes_no: ?bool,
     \\    exit: ExitFn,
     \\
-    \\    /// refresh only if this panel is showing and this screen is showing.
-    \\    pub fn refresh(self: *Panel) void {
-    \\        if (self.all_panels.current_panel_tag == .HelloWorld) {
-    \\            self.main_view.refreshHelloWorld();
-    \\        }
-    \\    }
-    \\
     \\    pub fn deinit(self: *Panel) void {
     \\        self.lock.deinit();
     \\        self.allocator.destroy(self);
+    \\    }
+    \\
+    \\    /// refresh only if this panel and ( container or screen ) are showing.
+    \\    pub fn refresh(self: *Panel) void {
+    \\        if (self.all_panels.current_panel_tag == .HelloWorld) {
+    \\            // This is the current panel.
+    \\            if (self.container) |container| {
+    \\                // Refresh the container.
+    \\                // The container will refresh only if it's the currently viewed screen.
+    \\                container.refresh();
+    \\            } else {
+    \\                // Main view will refresh only if this is the currently viewed screen.
+    \\                self.main_view.refreshHelloWorld();
+    \\            }
+    \\        }
+    \\    }
+    \\
+    \\    pub fn setContainer(self: *Panel, container: *_various_.Container) void {
+    \\        self.container = container;
     \\    }
     \\
     \\    fn modalNoCB(implementor: *anyopaque) void {
@@ -120,6 +134,15 @@ pub const content =
     \\            );
     \\            self.main_view.showYesNo(yesno_args);
     \\        }
+    \\
+    \\        // Row 6 example: A button which closes the container.
+    \\        if (self.container) |container| {
+    \\            // This screen is framing inside a container.
+    \\            // Allow the user to close the container.
+    \\            if (try dvui.button(@src(), "Close Container.", .{}, .{})) {
+    \\                container.close();
+    \\            }
+    \\        }
     \\    }
     \\};
     \\
@@ -139,6 +162,7 @@ pub const content =
     \\    panel.yes_no = null;
     \\    panel.exit = exit;
     \\    panel.window = window;
+    \\    panel.container = null;
     \\    return panel;
     \\}
 ;
