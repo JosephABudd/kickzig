@@ -8,7 +8,7 @@ As I started learning zig, I found and started using [Dave Vanderson's dvui proj
 
 As I continue to learn and appreciate zig and dvui, I am recreating my kick code generator to work with zig and dvui.
 
-## April ?, 2023
+## April 12, 2023
 
 Still a work in progress.
 
