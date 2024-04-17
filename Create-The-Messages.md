@@ -29,7 +29,15 @@ Added the back-end RebuildContactList messenger at /home/nil/zig/crud/src/@This/
 ## The AddContact message
 
 The AddContact message contains the new user created contact record.
-The AddContact back-end messenger adds the new user created contact record to the store. Then the AddContact back-end messenger triggers the RebuildContactList messenger.
+The AddContact back-end messenger
+
+1. Checks for user errors.
+   * If there is a user error then sends the message back to the front-end with the user error message.
+1. Adds the record to the store.
+   * If there is an error then closes down the app by calling exit.
+   * Otherwise
+     * Returns the message with success information.
+     * Triggers the RebuildContactList messenger.
 
 ```shell
 ＄ kickzig message add-fbf AddContact
@@ -40,6 +48,15 @@ Added the back-end AddContact messenger at /home/nil/zig/crud/src/@This/backend/
 ## The EditContact message
 
 The EditContact message contains the user's edits to a contact record.
+
+1. Checks for user errors.
+   * If there is a user error then sends the message back to the front-end with the user error message.
+1. Updates the record in the store.
+   * If there is an error then closes down the app by calling exit.
+   * Otherwise
+     * Returns the message with success information.
+     * Triggers the RebuildContactList messenger.
+
 The EditContact back-end messenger updates the store with the user's edits to the record. Then the EditContact back-end messenger triggers the RebuildContactList messenger.
 
 ```shell
@@ -51,7 +68,12 @@ Added the back-end EditContact messenger at /home/nil/zig/crud/src/@This/backend
 ## The RemoveContact message
 
 The RemoveContact message contains the id of a contact record that the user wants removed.
-The RemoveContact back-end messenger removes the user selected contact record from the store. Then the RemoveContact back-end messenger triggers the RebuildContactList messenger.
+
+1. Removes the record from the store.
+   * If there is an error then closes down the app by calling exit.
+   * Otherwise
+     * Returns the message with success information.
+     * Triggers the RebuildContactList messenger.
 
 ```shell
 ＄ kickzig message add-fbf RemoveContact
