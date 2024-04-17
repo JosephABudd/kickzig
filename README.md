@@ -10,61 +10,26 @@ As I continue to learn and appreciate zig and dvui, I am recreating my kick code
 
 ## April 16, 2023
 
-* Corrected missing newline in modal screen panels.zig file so it looks formatted.
 * Removed seq faults.
+* Corrected framework some code and documentation.
 
 Still a work in progress.
 
+## Summary
 
-### Previously
+1. kickzig is a cli that generates a framework. The command `kickzig framework` generates that framework that is ready to build and run immediatley.
+1. kickzig allows the developer to add and remove
+   1. Screens. Screens are front-end packages. Screens implement GUI logic.
+   1. Messages.
+      * Each message has a channel for sending and a channel for receiveing.
+      * Each front-end screen has a messenger that can send and receive any or all messages with the back-end.
+      * The back-end has a messenger for each message that will handle that message and communicate back to the front-end if needed.
 
-* Added missing container from the HelloWorld screen's HelloWorld panel.
-* added .git_keep_this_folder files in framework folders that may get emptied. This way, git will see the .git_keep_this_folder file and keep that folder which has no .zig files. The reason is that kickzig requires all framework folders to be present when it does most things.
-* kickzig now works correctly from anywhere inside a framework folder.
-* kickzig now responss correctly when `kickzig message` and `kickzig screen` commands are used before the `kickzig framework` command.
-* Improved some CLI responses.
-* Completed the crud.
-* Completed the wiki.
-* Fixed some code and documentation as I brought the crud and wiki up to date.
-
-#### CLI changes
-
-* Added some missing CLI responses.
-
-#### Framework changes
-
-* The main menu is optional.
-* The front-end screens are simpler and easier to use.
-* The closing down process logs the error info if there is an error.
-* Added the **content panel** which is only used as content for a tab.
-* Completed new Tab-bars:
-  * Each Tab is a type. So there can be multiple instances of each Tab.
-  * For content, a Tab can use it's own panel or it can use a separate panel-screen or content-screen (same thing).
-  * Tabs can be added to and removed from tab-bars.
-  * Tab-bar Options:
-    * .direction: can be .vertical or .horizontal. Default is .horizontal.
-    * .toggle_direction: if true then the user can toggle the direction. Default is true.
-    * .tabs_movable: if true the user can move tabs around. Default is true.
-    * .tabs_closable: if true the user can close tabs. Default is true.
-  * Tab options:
-    * .movable: If set overrides the Tab-bar setting. Default is unset.
-    * .closable: If set overrides the Tab-bar setting. Default is unset.
-
-### To do. The next big steps are
-
-* Review tabs.
-* Review the closing down process.
-* Review source code documentation.
-* Review my zig coding styles.
-* This new version of tabs can be reworked for other navigation-layouts.
-
-## kickzig is a framework code generator
-
-Kickzig generates my version of an application framework, written in zig, using dvui. The framework is an application that is ready to build and run right away. The application has a front-end which is the gui logic and it has the back-end which is the business logic. The front-end and back-end communicate asynchronously using messages. Kickzig also adds and removes those messages.
+### Folder layout
 
 1. The framework puts the application code at
    * «app-folder»/ (build.zig, build.zig.zon, standalone.zig, etc)
-   * «app-folder»/src/@This/backend/ (back-end code)
+   * «app-folder»/src/@This/backend/messenger/ (back-end messenger code)
    * «app-folder»/src/@This/frontend/ (front-end code)
    * «app-folder»/src/@This/deps/ (dependencies)
 1. Vendor code can be placed in «app-folder»/src/vendor/.
@@ -110,6 +75,8 @@ Whenever you add any type of screen with kickzig, it functions perfectly.
 ##### Panel screens
 
 A Panel screen is the simplest type of screen. It only displays one of it's panels at any one time. Panel screens always function when you create them although the panels display the screen name and panel name by default.
+
+The Panel screens are useful for creating other types of screens. They are the first screens that I created. I used the Panel screens to create each of the other types of screens.
 
 ##### Content screens
 
