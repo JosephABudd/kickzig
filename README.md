@@ -35,11 +35,11 @@ Still a work in progress.
 1. Vendor code can be placed in «app-folder»/src/vendor/.
 1. DVUI must be cloned into «app-folder»/src/vendor/dvui/.
 
-### Example: Creating a framework, building and running an application
+## Example: Creating a framework, building and running an application
 
 The command `kickzig framework` generates the source code for a framework that is ready to run. The framework requires a vendored clone of David Vanderson's DVUI package.
 
-Note Well: Currently, dvui must be build using zig version 11.
+Nota Bene: Currently, dvui must be built using zig version 11.
 
 ```shell
 ＄ mkdir myapp
@@ -50,39 +50,39 @@ Note Well: Currently, dvui must be build using zig version 11.
 ＄ ./zig-out/bin/standalone-sdl
 ```
 
-#### The opening. Hello World screen
+### The opening. Hello World screen
 
 ![The app's kickzig panel example.](images/myapp_start.png)
 
-#### The OK modal screen popped from the opening Hello world screen
+### The OK modal screen popped from the opening Hello world screen
 
 ![The app's OK modal screen.](images/myapp_ok.png)
 
-#### The YesNo modal screen popped from the opening Hello world screen
+### The YesNo modal screen popped from the opening Hello world screen
 
 ![The app's YesNo modal screen.](images/myapp_yes_no.png)
 
-### kickzig for the front-end
+## kickzig for the front-end
 
 kickzig is mostly a tool for the application's front-end. The framework's front-end is a collection of screens. Each screen is a collection of panels. Panel's are displayed one at a time.
 
-#### Screens
+### Screens
 
 A screen is a collection of panels and has it's own messenger which communicates with the back-end.
 
 Whenever you add any type of screen with kickzig, it functions perfectly.
 
-##### Panel screens
+#### Panel screens
 
 A Panel screen is the simplest type of screen. It only displays one of it's panels at any one time. Panel screens always function when you create them although the panels display the screen name and panel name by default.
 
 The Panel screens are useful for creating other types of screens. They are the first screens that I created. I used the Panel screens to create each of the other types of screens.
 
-##### Content screens
+#### Content screens
 
 A Content screen is really just another Panel screen. That's why it's in the panel/ folder with the other panel-screens. The difference is that a content screen is only going to be used for a tab's content.
 
-##### The differences between panel screens and content screens
+#### The differences between panel screens and content screens
 
 1. **Implementation**
    * A **content screen** implementation:
@@ -97,7 +97,7 @@ A Content screen is really just another Panel screen. That's why it's in the pan
      1. in the app's main view.
      1. in a tab's content area.
 
-##### Examples
+#### Examples
 
 `kickzig screen add-panel Edit Select Edit` creates a panel screen named **Edit** in the panel/ folder. The default panel is named **Select** and another panel is named **Edit**. By default the Select and Edit panels each display their screen and panel name.
 
@@ -161,11 +161,11 @@ The **EOJ** modal screen is also part of the framework. It is only used in the s
 
 ![The app's main menu.](images/myapp_main_menu.png)
 
-### kickzig for messages
+## kickzig for messages
 
-The front-end and back-end communicate asynchronously using messages. Messages are sent and messages are received. There is no waiting for a message response. Responses happend when they happen.
+The front-end and back-end communicate asynchronously using messages. Messages are sent and messages are received. There is no waiting.
 
-#### Adding a message
+### Adding a message
 
 * The command `kickzig message add-bf «message_name»` will add a 1 way message which the back-end «message_name» messenger sends to the front-end when triggered from anywhere in the back-end.
 * The command `kickzig message add-fbf «message_name»` will add a 2 way message, that begins with any front-end screen's messenger sending the message and expecting a response from the back-end «message_name» messenger.
@@ -173,55 +173,48 @@ The front-end and back-end communicate asynchronously using messages. Messages a
 
 When you add a message you also add with it:
 
-1. The message struct in deb/message/«message_name».zig.
+1. The message struct in deps/message/«message_name».zig.
 1. The back-end messenger at backend/messenger/«message_name».zig.
 1. The message channels in:
    * startup.receive_channels,
    * startup.send_channels,
    * startup.triggers.
 
-#### Removing a message
+### Removing a message
 
-Removing a message also removes the back-end's messenger at src/@This/backend/messenger/.
+`kickzig message remove AddContact` will remove
 
-`kickzig message remove AddContact` will remove the **AddContact** message from the framework and the **AddContact** messenger at **src/@This/backend/messenger/AddContact.zig**.
+1. The message at **src/@This/deps/message/AddContact.zig**.
+1. The back-end messenger at **src/@This/backend/messenger/AddContact.zig**.
+1. The message channels at **src/@This/deps/channel/\*\*/AddContact.zig**.
+1. References to the channels in the startup params at **src/@This/deps/startup/api.zig**.
 
-#### Listing all messages
+### Listing all messages
 
 `kickzig message list` will display each message.
 
-### Closing down the application
+## Startup parameters
 
-![The app's closing screen.](images/myapp_closing.png)
+Front-end startup parameters are the only parameter passed to the front-end packages at startup. Back-end startup parameters are the only parameter passed to the back-end packages at startup.
 
-#### Startup parameters
+The developer can add to the startup parameters.
 
 1. The startup parameter `close_down_jobs: *_closedownjobs_.Jobs` allows modules to add their shut down call back to be executed during the closing down process.
 1. The startup parameter `exit: ExitFn` is the function called only when there is a fatal error. It starts the shut down process with an error message.
 
-#### 2 Ways to start the shut down process
+## Closing down the application
 
-1. The user clicks the window's ❎ button. The `main_loop:` in **standalone-sdl.zig** calls the closer module's `fn close(user_message: []const u8) void` which starts the closing process.
-1. A software fatal error occurs. That module calls the startup parameter `exit` which starts the closing process.
+![The app's closing screen.](images/myapp_closing.png)
 
-#### The shut down process
+### 2 Ways to start the shut down process
 
-The closer module has 2 important functions that do the same thing. The only difference is the modal screen heading that they use.
+1. **The user clicks the window's ❎ button**. The `main_loop:` in **standalone-sdl.zig** calls the closer module's `fn close(user_message: []const u8) void` which starts the closing process.
+1. **A fatal error occurs in the developer's code**. That module calls the startup parameter `exit` which starts the closing process. Example below.
 
-1. **fn exit(user_message: []const u8) void** uses the heading "Closing. Fatal Error.". The exit function is a startup parameter which is only called when there is a fatal error.
-1. **fn close(user_message: []const u8) void** uses the heading "Closing". The close function is called by the `main_loop:` in **standalone-sdl.zig** when the user clicks the window's ❎ button.
-
-##### Part 1: The front-end and back-end working together
-
-The heading, message and close down jobs are passed to the **EOJ** modal screen. It displays it's panel with the heading and message. It does not display a button to actually stop the application because the shut down process has only begun.
-
-The **EOJ** screen's messenger passes the list of close down jobs to the backend using the `CloseDownJobs` message.
-
-As the back-end `CloseDownJobs` messenger runs each job it reports it's progress back to the front-end using the `CloseDownJobs` message.
-
-At the front-end the **EOJ** modal screen's messenger receives each message from the back-end. The messenger passes each update to the **EOJ** panel to be displayed.
-
-When the back-end finally reports that the all of the jobs are completed:
-
-1. If a fatal error causes the close then the **EOJ** panel displays the close button. That way the user can see the closing screen and understand that an error has occured. The user can then click the close button to close the application once and for all.
-1. If the user closed the app by clicking on the window's ❎ button, then the app closes for the user.
+```zig
+        self.receiveJob(message) catch |err| {
+            // Fatal error.
+            self.exit(@src(), err, "self.receiveJob(message)");
+            return err;
+        };
+```
