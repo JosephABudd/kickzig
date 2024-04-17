@@ -97,8 +97,7 @@ const template =
     \\    /// It takes control of the message and deinits it.
     \\    /// Receive functions own the message they receive and must deinit it.
     \\    pub fn send(self: *Group, message: *_message_.Message) !void {
-    \\        var copy: *_message_.Message = try message.copy();
-    \\        var thread = try std.Thread.spawn(.{ .allocator = self.allocator }, Group.dispatchDeinit, .{ self, copy });
+    \\        var thread = try std.Thread.spawn(.{ .allocator = self.allocator }, Group.dispatchDeinit, .{ self, message });
     \\        std.Thread.detach(thread);
     \\    }
     \\

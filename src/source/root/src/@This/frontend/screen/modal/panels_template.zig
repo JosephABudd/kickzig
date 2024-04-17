@@ -202,6 +202,7 @@ const line_imports_panel_tags =
     \\const ModalParams = @import("modal_params").{{ screen_name }};
     \\
     \\const PanelTags = enum {
+    \\
 ;
 
 const line_panel_tag =

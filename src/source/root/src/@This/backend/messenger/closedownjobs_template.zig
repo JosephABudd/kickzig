@@ -47,7 +47,7 @@ pub const content =
     \\            for (jobs, 0..) |job, i| {
     \\                current_f32 += 1.0;
     \\                job.job(job.implementor);
-    \\                var return_message: *_message_.CloseDownJobs.Message = try _message_.CloseDownJobs.init(self.allocator);
+    \\                var return_message: *_message_.CloseDownJobs.Message = try message.copy();
     \\                var status_update: []u8 = try std.fmt.allocPrint(self.allocator, "Finishing up. Completed {d} of {d} jobs.", .{ (i + 1), jobs.len });
     \\                defer self.allocator.free(status_update);
     \\                try return_message.backend_payload.set(.{

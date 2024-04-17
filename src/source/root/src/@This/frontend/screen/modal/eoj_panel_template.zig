@@ -29,9 +29,11 @@ pub const content =
     \\
     \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
     \\        if (self.modal_params != null) {
-    \\            // Single use only.
+    \\            // EOJ is single use only.
+    \\            setup_args.deinit();
     \\            return;
     \\        }
+    \\
     \\        self.modal_params = setup_args;
     \\        self.status_len = 0;
     \\        self.progress = 0.0;
@@ -41,11 +43,15 @@ pub const content =
     \\            self.completed_callbacks = false;
     \\
     \\            // Send the jobs to the back-end to process.
-    \\            var jobs: ?[]const *_closedownjobs_.Job = try setup_args.exit_jobs.slice();
-    \\            self.messenger.sendCloseDownJobs(jobs);
+    \\            var close_down_jobs: ?[]const *_closedownjobs_.Job = try setup_args.exit_jobs.slice();
+    \\            self.messenger.sendCloseDownJobs(close_down_jobs);
     \\        } else {
     \\            // No jobs to run.
     \\            self.completed_callbacks = true;
+    \\            if (self.completed_callbacks) {
+    \\                const bg_thread = try std.Thread.spawn(.{}, background_progress, .{ self, self.progress });
+    \\                bg_thread.detach();
+    \\            }
     \\        }
     \\    }
     \\
@@ -68,7 +74,7 @@ pub const content =
     \\
     \\        if (status) |text| {
     \\            if (text.len > 0) {
-    \\                self.status_len = @min(text.len, self.status.len);
+    \\                self.status_len = @min(text.len, 255);
     \\                for (0..self.status_len) |i| {
     \\                    self.status[i] = text[i];
     \\                }
@@ -80,6 +86,12 @@ pub const content =
     \\        }
     \\        self.completed_callbacks = completed_callbacks;
     \\        self.progress = progress;
+    \\        if (self.completed_callbacks) {
+    \\            const bg_thread = std.Thread.spawn(.{}, background_progress, .{ self, self.progress }) catch {
+    \\                return;
+    \\            };
+    \\            bg_thread.detach();
+    \\        }
     \\    }
     \\
     \\    /// frame this panel.
@@ -131,12 +143,6 @@ pub const content =
     \\
     \\        // Row 3b Progress.
     \\        try dvui.progress(@src(), .{ .percent = self.progress }, .{ .expand = .horizontal, .gravity_y = 0.5, .corner_radius = dvui.Rect.all(100) });
-    \\        if (self.completed_callbacks) {
-    \\            const bg_thread = try std.Thread.spawn(.{}, background_progress, .{self});
-    \\            bg_thread.detach();
-    \\        }
-    \\
-    \\        // Closing this modal and quitting the app.
     \\        if (self.progress >= 1.0) {
     \\            // The progress has completed.
     \\            if (self.modal_params.?.is_fatal) {
@@ -160,27 +166,22 @@ pub const content =
     \\        }
     \\    }
     \\
-    \\    // background_progress was shamelessly copied from src/vendor/dvui/src/Examples.zig
-    \\    fn background_progress(implementor: *anyopaque) !void {
-    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
-    \\
-    \\        const delay_ns: u64 = 2_000_000_000;
+    \\    fn background_progress(self: *Panel, self_progress: f32) !void {
     \\        const interval: u64 = 10_000_000;
-    \\        const total_sleep_f32: f32 = @as(f32, @floatFromInt(delay_ns)) * self.progress;
-    \\        var total_sleep: u64 = @intFromFloat(total_sleep_f32);
-    \\        while (total_sleep < delay_ns) : (total_sleep += interval) {
+    \\        var progress: f32 = self_progress;
+    \\        while (progress < 1.0) {
     \\            std.time.sleep(interval);
-    \\            self.lock.lock();
-    \\            self.progress = @as(f32, @floatFromInt(total_sleep)) / @as(f32, @floatFromInt(delay_ns));
-    \\            self.lock.unlock();
-    \\            dvui.refresh(self.window, @src(), null);
-    \\            if (self.progress >= 1.0) {
-    \\                return;
+    \\            progress += 0.005;
+    \\            {
+    \\                self.lock.lock();
+    \\                defer self.lock.unlock();
+    \\
+    \\                if (progress > self.progress) {
+    \\                    self.progress = progress;
+    \\                    dvui.refresh(self.window, @src(), null);
+    \\                }
     \\            }
     \\        }
-    \\        self.lock.lock();
-    \\        self.progress = 1.0;
-    \\        self.lock.unlock();
     \\    }
     \\};
     \\

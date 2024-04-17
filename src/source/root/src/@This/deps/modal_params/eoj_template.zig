@@ -65,10 +65,6 @@ pub const content =
     \\        var job: *Job = try Job.init(self.allocator, title, implementor, function);
     \\        try self.jobs.append(job);
     \\    }
-    \\
-    \\    pub fn jobs(self: *Params) ![]const *Job {
-    \\        return self.exit_jobs.slice();
-    \\    }
     \\};
     \\
     \\const Job = struct {

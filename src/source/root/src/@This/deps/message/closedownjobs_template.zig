@@ -136,6 +136,8 @@ pub const content: []const u8 =
     \\        }
     \\        // This is the last existing pointer.
     \\        self.count_pointers.deinit();
+    \\        self.backend_payload.deinit();
+    \\        self.frontend_payload.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\

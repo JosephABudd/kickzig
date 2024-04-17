@@ -11,7 +11,6 @@ pub const content =
     \\
     \\pub const Messenger = struct {
     \\    allocator: std.mem.Allocator,
-    \\    arena: std.mem.Allocator,
     \\
     \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
@@ -30,6 +29,7 @@ pub const content =
     \\        };
     \\        message.frontend_payload.set(.{ .jobs = jobs }) catch {
     \\            // ignore error.
+    \\            message.deinit();
     \\            return;
     \\        };
     \\        self.send_channels.CloseDownJobs.send(message) catch {
