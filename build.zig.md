@@ -7,8 +7,6 @@
 * line 213
 * lines 231 - 232
 * lines 252 - 257
-* lines 220, 230
-* lines 250 - 250
 
 ### Additions related to my record module in the src/@This/deps/record/ folder
 
