@@ -23,6 +23,8 @@ As I continue to learn and appreciate zig and dvui, I am recreating my kick code
       * Each front-end screen has a messenger that can send and receive any or all messages with the back-end.
       * The back-end has a messenger for each message that will handle that message and communicate back to the front-end if needed.
 
+The [wiki](https://github.com/JosephABudd/kickzig/wiki) documents building a CRUD with kickzig.
+
 ### Folder layout
 
 1. The framework puts the application code at
