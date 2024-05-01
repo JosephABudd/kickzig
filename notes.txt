@@ -1,0 +1,3 @@
+Struct
+
+Any member that are deinited must be optional.

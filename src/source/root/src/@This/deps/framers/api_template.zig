@@ -335,8 +335,8 @@ const line_show_hide_refresh_modal =
     \\    /// show{{ screen_name }} owns modal_args_ptr.
     \\    pub fn show{{ screen_name }}(self: *MainView, modal_args_ptr: *anyopaque) void {
     \\        self.lock.lock();
-    \\        defer dvui.refresh(self.window, @src(), null);
     \\        defer self.lock.unlock();
+    \\        defer dvui.refresh(self.window, @src(), null);
     \\
     \\        if (self.current_is_modal) {
     \\            // The current modal is still showing.

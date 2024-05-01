@@ -4,7 +4,7 @@ pub const content: []const u8 =
     \\
     \\pub const Jobs = struct {
     \\    allocator: std.mem.Allocator,
-    \\    jobs: []const *Job,
+    \\    jobs: []*const Job,
     \\    jobs_index: usize,
     \\
     \\    pub fn deinit(self: *Jobs) void {
@@ -21,7 +21,7 @@ pub const content: []const u8 =
     \\    pub fn init(allocator: std.mem.Allocator) !*Jobs {
     \\        var self: *Jobs = try allocator.create(Jobs);
     \\        self.allocator = allocator;
-    \\        self.jobs = try allocator.alloc(*Job, 10);
+    \\        self.jobs = try allocator.alloc(*const Job, 10);
     \\        errdefer {
     \\            allocator.destroy(self);
     \\        }
@@ -33,27 +33,27 @@ pub const content: []const u8 =
     \\    pub fn add(
     \\        self: *Jobs,
     \\        title: []const u8,
-    \\        implementor: *anyopaque,
-    \\        function: *fn () void,
+    \\        context: *anyopaque,
+    \\        function: *const fn (context: *anyopaque) void,
     \\    ) !void {
     \\        if (self.jobs_index == self.jobs.len) {
-    \\            var more_jobs: []*Job = try self.allocator.alloc(*Job, (self.jobs_index + 10));
+    \\            var more_jobs: []*const Job = try self.allocator.alloc(*const Job, (self.jobs_index + 10));
     \\            for (self.jobs, 0..) |job, i| {
     \\                more_jobs[i] = job;
     \\            }
     \\            self.allocator.free(self.jobs);
     \\            self.jobs = more_jobs;
     \\        }
-    \\        var job: *Job = try Job.init(self.allocator, title, implementor, function);
+    \\        var job: *const Job = try Job.init(self.allocator, title, context, function);
     \\        self.jobs[self.jobs_index] = job;
     \\        self.jobs_index += 1;
     \\    }
     \\
-    \\    pub fn slice(self: *Jobs) !?[]const *Job {
+    \\    pub fn slice(self: *Jobs) !?[]const *const Job {
     \\        if (self.jobs_index == 0) {
     \\            return null;
     \\        }
-    \\        var copy: []*Job = try self.allocator.alloc(*Job, self.jobs_index);
+    \\        var copy: []*const Job = try self.allocator.alloc(*const Job, self.jobs_index);
     \\        for (self.jobs, 0..) |job, i| {
     \\            if (i == self.jobs_index) {
     \\                break;
@@ -68,11 +68,11 @@ pub const content: []const u8 =
     \\    allocator: std.mem.Allocator,
     \\    count_pointers: *Counter,
     \\    title: []const u8,
-    \\    implementor: *anyopaque,
-    \\    job: *fn (implementor: *anyopaque) void,
+    \\    context: *anyopaque,
+    \\    job: *const fn (context: *anyopaque) void,
     \\
     \\    // deinit does not deinit until self is the final pointer to Job.
-    \\    pub fn deinit(self: *Job) void {
+    \\    pub fn deinit(self: *const Job) void {
     \\        if (self.count_pointers.dec() > 0) {
     \\            // There are more pointers.
     \\            // See fn copy.
@@ -89,7 +89,7 @@ pub const content: []const u8 =
     \\    /// * increments the count of the number of pointers to this Job.
     \\    /// * returns self.
     \\    /// See deinit().
-    \\    pub fn copy(self: *Job) !*Job {
+    \\    pub fn copy(self: *const Job) !*const Job {
     \\        _ = self.count_pointers.inc();
     \\        return self;
     \\    }
@@ -97,15 +97,18 @@ pub const content: []const u8 =
     \\    pub fn init(
     \\        allocator: std.mem.Allocator,
     \\        title: []const u8,
-    \\        implementor: *anyopaque,
-    \\        job: *fn () void,
-    \\    ) !*Job {
-    \\        var self: *Job = try allocator.create(Job);
-    \\        self.title = try allocator.alloc(u8, title.len);
+    \\        context: *anyopaque,
+    \\        job: *const fn (context: *anyopaque) void,
+    \\    ) !*const Job {
+    \\        var self: *const Job = try allocator.create(Job);
+    \\        @constCast(self).count_pointers = try Counter.init(allocator);
+    \\        _ = self.count_pointers.inc();
+    \\        errdefer allocator.destroy(self);
+    \\        @constCast(self).title = try allocator.alloc(u8, title.len);
     \\        @memcpy(@constCast(self.title), title);
-    \\        self.allocator = allocator;
-    \\        self.implementor = implementor;
-    \\        self.job = job;
+    \\        @constCast(self).allocator = allocator;
+    \\        @constCast(self).context = context;
+    \\        @constCast(self).job = job;
     \\        return self;
     \\    }
     \\};

@@ -20,6 +20,8 @@ pub const content =
     \\    /// init constructs this screen.
     \\    pub fn init(startup: _startup_.Frontend) !*Screen {
     \\        var self: *Screen = try startup.allocator.create(Screen);
+    \\        try startup.close_down_jobs.add("Example", self, &Screen.exampleCloseDownJob);
+    \\        errdefer startup.allocator.destroy(self);
     \\        self.allocator = startup.allocator;
     \\        self.main_view = startup.main_view;
     \\        self.receive_channels = startup.receive_channels;
@@ -40,6 +42,7 @@ pub const content =
     \\        self.messenger.?.all_panels = self.all_panels.?;
     \\        // The HelloWorld panel is the default.
     \\        self.all_panels.?.setCurrentToHelloWorld();
+    \\
     \\        return self;
     \\    }
     \\
@@ -81,6 +84,10 @@ pub const content =
     \\
     \\    pub fn frame(self: *Screen, arena: std.mem.Allocator) !void {
     \\        try self.all_panels.?.frameCurrent(arena);
+    \\    }
+    \\
+    \\    fn exampleCloseDownJob(_: *anyopaque) void {
+    \\        std.log.info("This is an example close down job in frontend/screen/panel/HelloWorld/screen.zig", .{});
     \\    }
     \\};
 ;

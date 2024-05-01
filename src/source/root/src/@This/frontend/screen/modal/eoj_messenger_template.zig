@@ -1,5 +1,5 @@
 pub const content =
-    \\const std = @import("std");
+    \\    const std = @import("std");
     \\
     \\const _channel_ = @import("channel");
     \\const _closedownjobs_ = @import("closedownjobs");
@@ -22,7 +22,7 @@ pub const content =
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    pub fn sendCloseDownJobs(self: *Messenger, jobs: ?[]const *_closedownjobs_.Job) void {
+    \\    pub fn sendCloseDownJobs(self: *Messenger, jobs: ?[]const *const _closedownjobs_.Job) void {
     \\        var message: *_message_.CloseDownJobs.Message = _message_.CloseDownJobs.init(self.allocator) catch {
     \\            // ignore error.
     \\            return;

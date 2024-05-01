@@ -29,10 +29,10 @@ pub const content: []const u8 =
     \\    is_set: bool,
     \\
     \\    // Each close down job.
-    \\    jobs: ?[]const *_closedownjobs_.Job,
+    \\    jobs: ?[]const *const _closedownjobs_.Job,
     \\
     \\    pub const Settings = struct {
-    \\        jobs: ?[]const *_closedownjobs_.Job,
+    \\        jobs: ?[]const *const _closedownjobs_.Job,
     \\    };
     \\
     \\    fn init(allocator: std.mem.Allocator) !*FrontendPayload {

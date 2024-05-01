@@ -66,9 +66,9 @@ pub fn screen(allocator: std.mem.Allocator, cli_name: []const u8) ![]u8 {
 const screen_template: []const u8 =
     \\
     \\📺 MANAGING SCREENS WITH {{cli_name}}.
-    \\Screen names must be in PascalCase.
-    \\Panel names must be in PascalCase.
-    \\Tab names must be in PascalCase.
+    \\Screen names must be in TitleCase.
+    \\Panel names must be in TitleCase.
+    \\Tab names must be in TitleCase.
     \\
     \\＄ cd myapp
     \\＄ {{cli_name}} screen help
@@ -101,7 +101,7 @@ pub fn message(allocator: std.mem.Allocator, cli_name: []const u8) ![]u8 {
 const message_template: []const u8 =
     \\
     \\💬 MANAGING MESSAGES WITH {{cli_name}}.
-    \\Messages names must be in PascalCase.
+    \\Messages names must be in TitleCase.
     \\
     \\＄ cd myapp
     \\＄ {{cli_name}} message help

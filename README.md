@@ -1,11 +1,19 @@
 # kickzig "zig and dvui my way"
 
-## April 16, 2023
+## May 1, 2023
 
-* Removed seq faults.
-* Corrected framework some code and documentation.
+kickzig is doing what I want.
 
-Still a work in progress.
+I've added 2 threads.
+
+1. The main thread runs the gui.
+1. A second thread waits for messages from the front-end and sends them to the back-end.
+1. A third thread waits for messages from the back-end and sends them to the front-end.
+
+## Still a work in progress. TO DO
+
+1. review and regulate the coding styles I used in the framework.
+1. keep up with changes in dvui.
 
 ## Summary
 

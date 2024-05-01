@@ -99,7 +99,7 @@ const template =
     \\    defer back_to_front_channels.deinit();
     \\    const front_to_back_channels: *_channel_.FrontendToBackend = try _channel_.FrontendToBackend.init(gpa, exit);
     \\    defer front_to_back_channels.deinit();
-    \\    const triggers: *_channel_.Trigger = try _channel_.Trigger.init(back_to_front_channels, exit);
+    \\    const triggers: *_channel_.Trigger = try _channel_.Trigger.init(gpa, exit);
     \\    defer triggers.deinit();
     \\
     \\    // Initialize the front end.

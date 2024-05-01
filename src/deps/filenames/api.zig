@@ -520,6 +520,10 @@ pub fn allDepsChannelBackToFrontNames(allocator: std.mem.Allocator) ![][]const u
     var iterator = dir.iterate();
     while (try iterator.next()) |file| {
         if (file.kind == .file) {
+            if (std.mem.eql(u8, file.name, deps.general_dispatcher_file_name)) {
+                // The general dispatcher is not a channel.
+                continue;
+            }
             if (customChannelNameFromFileName(file.name)) |channel_name| {
                 try channel_names.append(channel_name);
             }
@@ -544,6 +548,10 @@ pub fn allDepsChannelFrontToBackNames(allocator: std.mem.Allocator) ![][]const u
     var iterator = dir.iterate();
     while (try iterator.next()) |file| {
         if (file.kind == .file) {
+            if (std.mem.eql(u8, file.name, deps.general_dispatcher_file_name)) {
+                // The general dispatcher is not a channel.
+                continue;
+            }
             if (customChannelNameFromFileName(file.name)) |channel_name| {
                 try channel_names.append(channel_name);
             }

@@ -68,8 +68,15 @@ const template =
     \\            self.exit(@src(), err, "self.receiveJob(message)");
     \\            return err;
     \\        };
-    \\        // Send the send the reply to the front-end if required.
-    \\        self.send_channels.{{ message_name }}.send(message) catch |err| {
+    \\        // If required, send a copy of the message back.
+    \\        // Send a copy of the message back to the front-end.
+    \\        // The channel owns the message so never deinit the message.
+    \\        const copy = message.copy() catch |err| {
+    \\            // Fatal error.
+    \\            self.exit(@src(), err, "message.copy()");
+    \\            return err;
+    \\        };
+    \\        self.send_channels.{{ message_name }}.send(copy) catch |err| {
     \\            // Fatal error.
     \\            self.exit(@src(), err, "self.send_channels.{{ message_name }}.send(message)");
     \\            return err;

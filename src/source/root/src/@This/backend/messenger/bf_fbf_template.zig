@@ -69,8 +69,15 @@ const template =
     \\            self.exit(@src(), err, "self.receiveJob(message)");
     \\            return err;
     \\        };
-    \\        // Send the send the reply to the front-end if required.
-    \\        self.send_channels.{{ message_name }}.send(message) catch |err| {
+    \\        // If required, send a copy of this message back.
+    \\        // Send a copy of the message back to the front-end.
+    \\        // The channel owns the message so never deinit the message.
+    \\        const copy = message.copy() catch |err| {
+    \\            // Fatal error.
+    \\            self.exit(@src(), err, "message.copy()");
+    \\            return err;
+    \\        };
+    \\        self.send_channels.{{ message_name }}.send(copy) catch |err| {
     \\            // Fatal error.
     \\            self.exit(@src(), err, "self.send_channels.{{ message_name }}.send(message)");
     \\            return err;
@@ -139,13 +146,13 @@ const template =
     \\    }
     \\
     \\    // Subscribe to trigger-send the {{ message_name }} message.
-    \\    var trigger_behavior = try startup.triggers.{{ message_name }}.initBehavior();
+    \\    var trigger_behavior = try startup.triggers.{{ message_name }}.?.initBehavior();
     \\    errdefer {
     \\        messenger.deinit();
     \\    }
     \\    trigger_behavior.implementor = messenger;
     \\    trigger_behavior.triggerFn = &Messenger.trigger{{ message_name }}Fn;
-    \\    try startup.triggers.{{ message_name }}.subscribe(trigger_behavior);
+    \\    try startup.triggers.{{ message_name }}.?.subscribe(trigger_behavior);
     \\    errdefer {
     \\        messenger.deinit();
     \\    }

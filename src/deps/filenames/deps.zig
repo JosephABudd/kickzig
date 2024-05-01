@@ -8,6 +8,7 @@ pub const closedownjobs_message_name = "CloseDownJobs";
 pub const eoj_file_name = "EOJ.zig";
 pub const tabbar_widget_file_name = "TabBarWidget.zig";
 pub const tabbar_item_widget_file_name = "TabBarItemWidget.zig";
+pub const general_dispatcher_file_name = "general_dispatcher.zig";
 
 pub fn allMessageNames(allocator: std.mem.Allocator) ![][]const u8 {
     const folders = try paths.folders();

@@ -46,13 +46,13 @@ pub const content =
     \\            var current_f32: f32 = 0.0;
     \\            for (jobs, 0..) |job, i| {
     \\                current_f32 += 1.0;
-    \\                job.job(job.implementor);
+    \\                job.job(job.context);
     \\                var return_message: *_message_.CloseDownJobs.Message = try message.copy();
     \\                var status_update: []u8 = try std.fmt.allocPrint(self.allocator, "Finishing up. Completed {d} of {d} jobs.", .{ (i + 1), jobs.len });
     \\                defer self.allocator.free(status_update);
     \\                try return_message.backend_payload.set(.{
     \\                    .status_update = status_update,
-    \\                    .completed = (i < last),
+    \\                    .completed = (i == last),
     \\                    .progress = current_f32 / last_f32,
     \\                });
     \\                try self.send_channels.CloseDownJobs.send(return_message);

@@ -43,7 +43,7 @@ pub const content =
     \\            self.completed_callbacks = false;
     \\
     \\            // Send the jobs to the back-end to process.
-    \\            var close_down_jobs: ?[]const *_closedownjobs_.Job = try setup_args.exit_jobs.slice();
+    \\            var close_down_jobs: ?[]const *const _closedownjobs_.Job = try setup_args.exit_jobs.slice();
     \\            self.messenger.sendCloseDownJobs(close_down_jobs);
     \\        } else {
     \\            // No jobs to run.
@@ -85,12 +85,14 @@ pub const content =
     \\            self.status_len = 0;
     \\        }
     \\        self.completed_callbacks = completed_callbacks;
-    \\        self.progress = progress;
     \\        if (self.completed_callbacks) {
     \\            const bg_thread = std.Thread.spawn(.{}, background_progress, .{ self, self.progress }) catch {
     \\                return;
     \\            };
     \\            bg_thread.detach();
+    \\        } else {
+    \\            self.progress = progress;
+    \\            dvui.refresh(self.window, @src(), null);
     \\        }
     \\    }
     \\

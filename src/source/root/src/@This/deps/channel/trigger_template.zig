@@ -39,9 +39,13 @@ const template =
     \\pub const _message_ = @import("message").{{ channel_name }};
     \\const ExitFn = @import("various").ExitFn;
     \\
-    \\/// Behavior is back-end messenger's call-backs and state.
-    \\/// .implementor implements the recieveFn and triggerFn.
-    \\/// .triggerFn sends a default {{ channel_name }} message to the front-end.
+    \\/// Behavior is an implementor and it's message trigger fn.
+    \\/// The behavior is by default, only implemented by the back-end's {{ channel_name }} messenger.
+    \\/// .implementor implements the triggerFn.
+    \\/// .triggerFn
+    \\/// - creates a {{ channel_name }} message.
+    \\/// - sends that message to the front-end by calling self.send_channels.{{ channel_name }}.send(message);.
+    \\/// - returns any errors.
     \\pub const Behavior = struct {
     \\    implementor: *anyopaque,
     \\    triggerFn: *const fn (implementor: *anyopaque) anyerror!void,
