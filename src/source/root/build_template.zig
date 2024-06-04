@@ -1,4 +1,38 @@
-pub const content =
+const std = @import("std");
+const fmt = std.fmt;
+
+pub const Template = struct {
+    allocator: std.mem.Allocator,
+    app_name: []const u8,
+
+    // The caller owns the returned value.
+    pub fn init(allocator: std.mem.Allocator, app_name: []const u8) !*Template {
+        var data: *Template = try allocator.create(Template);
+        data.app_name = try allocator.alloc(u8, app_name.len);
+        errdefer {
+            allocator.destroy(data);
+        }
+        @memcpy(@constCast(data.app_name), app_name);
+        data.allocator = allocator;
+        return data;
+    }
+
+    pub fn deinit(self: *Template) void {
+        self.allocator.free(self.app_name);
+        self.allocator.destroy(self);
+    }
+
+    // The caller owns the returned value.
+    pub fn content(self: *Template) ![]const u8 {
+        // Replace {{ app_name }} with the app name.
+        const replacement_size: usize = std.mem.replacementSize(u8, template, "{{ app_name }}", self.app_name);
+        const with_app_name: []u8 = try self.allocator.alloc(u8, replacement_size);
+        _ = std.mem.replace(u8, template, "{{ app_name }}", self.app_name, with_app_name);
+        return with_app_name;
+    }
+};
+
+const template =
     \\const std = @import("std");
     \\
     \\pub fn build(b: *std.Build) void {
@@ -173,7 +207,7 @@ pub const content =
     \\    widget_mod.addImport("various", various_mod);
     \\
     \\    const exe = b.addExecutable(.{
-    \\        .name = "fix",
+    \\        .name = "{{ app_name }}",
     \\        .root_source_file = .{ .path = b.pathFromRoot("src/main.zig") },
     \\        .target = target,
     \\        .optimize = optimize,
