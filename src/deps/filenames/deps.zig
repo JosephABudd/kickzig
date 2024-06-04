@@ -14,7 +14,7 @@ pub fn allMessageNames(allocator: std.mem.Allocator) ![][]const u8 {
     const folders = try paths.folders();
 
     // The screen's folder path.
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_message.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_deps_message.?, .{ .iterate = true });
     defer dir.close();
 
     // The files.
@@ -55,7 +55,7 @@ pub fn allCustomMessageNames(allocator: std.mem.Allocator) ![][]const u8 {
     const folders = try paths.folders();
 
     // The screen's folder path.
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_message.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_deps_message.?, .{ .iterate = true });
     defer dir.close();
 
     // The files.

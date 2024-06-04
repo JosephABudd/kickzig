@@ -7,8 +7,8 @@ const _success_ = @import("success");
 const _strings_ = @import("strings");
 const _filenames_ = @import("filenames");
 const _verify_ = @import("verify");
-const _src_this_frontend_ = @import("source").frontend;
-const _src_this_deps_ = @import("source").deps;
+const _src_frontend_ = @import("source")._root_._src_.frontend;
+const _src_deps_ = @import("source")._root_._src_.deps;
 
 pub const command: []const u8 = "screen";
 pub const verb_help: []const u8 = "help";
@@ -37,7 +37,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
             }
             if (std.mem.eql(u8, verb, verb_list)) {
                 // The user input is "screen list".
-                break :blk try _src_this_frontend_.listScreens(allocator);
+                break :blk try _src_frontend_.listScreens(allocator);
             }
             // The user input is screen 💩.
             break :blk try syntaxError(allocator, cli_name);
@@ -67,15 +67,15 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                     break :blk;
                 }
                 var removed: bool = false;
-                removed = try _src_this_frontend_.removeTabScreen(allocator, _paths_.app_name.?, screen_name);
+                removed = try _src_frontend_.removeTabScreen(allocator, _paths_.app_name.?, screen_name);
                 if (!removed) {
-                    removed = try _src_this_frontend_.removePanelScreen(allocator, _paths_.app_name.?, screen_name);
+                    removed = try _src_frontend_.removePanelScreen(allocator, _paths_.app_name.?, screen_name);
                 }
                 if (!removed) {
-                    removed = try _src_this_frontend_.removeModalScreen(allocator, _paths_.app_name.?, screen_name);
+                    removed = try _src_frontend_.removeModalScreen(allocator, _paths_.app_name.?, screen_name);
                 }
                 if (!removed) {
-                    removed = try _src_this_frontend_.removeBookScreen(allocator, _paths_.app_name.?, screen_name);
+                    removed = try _src_frontend_.removeBookScreen(allocator, _paths_.app_name.?, screen_name);
                 }
                 if (!removed) {
                     // This should never happen.
@@ -86,7 +86,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 }
                 // The screen was removed.
                 // Rebuild deps/framers/api.zig
-                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+                try _src_deps_.rebuildForUpdatedScreens(allocator);
                 // Inform the user.
                 const msg: []const u8 = try _success_.screenRemoved(allocator, screen_name);
                 defer allocator.free(msg);
@@ -143,10 +143,10 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 }
                 // The user input is valid.
                 // Add the panel screen.
-                try _src_this_frontend_.addPanelScreen(allocator, _paths_.app_name.?, screen_name, panel_names, adding_content_screen);
+                try _src_frontend_.addPanelScreen(allocator, _paths_.app_name.?, screen_name, panel_names, adding_content_screen);
 
                 // Rebuild deps/framers/api.zig
-                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+                try _src_deps_.rebuildForUpdatedScreens(allocator);
 
                 // Inform the user.
                 var msg: []const u8 = undefined;
@@ -212,10 +212,10 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 }
                 // The user input is valid.
                 // Add the tab screen.
-                try _src_this_frontend_.addTabScreen(allocator, _paths_.app_name.?, screen_name, tab_names);
+                try _src_frontend_.addTabScreen(allocator, _paths_.app_name.?, screen_name, tab_names);
 
                 // Rebuild deps/framers/api.zig
-                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+                try _src_deps_.rebuildForUpdatedScreens(allocator);
 
                 // Inform the user.
                 const msg: []const u8 = try _success_.screenAddedTab(allocator, screen_name);
@@ -256,10 +256,10 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 }
                 // The user input is valid.
                 // Add the book screen.
-                try _src_this_frontend_.addBookScreen(allocator, _paths_.app_name.?, screen_name, menu_item_names);
+                try _src_frontend_.addBookScreen(allocator, _paths_.app_name.?, screen_name, menu_item_names);
 
                 // Rebuild deps/framers/api.zig
-                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+                try _src_deps_.rebuildForUpdatedScreens(allocator);
 
                 // Inform the user.
                 const msg: []const u8 = try _success_.screenAddedBook(allocator, screen_name);
@@ -300,10 +300,10 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 }
                 // The user input is valid.
                 // Add the modal screen.
-                try _src_this_frontend_.addModalScreen(allocator, _paths_.app_name.?, screen_name, panel_names);
+                try _src_frontend_.addModalScreen(allocator, _paths_.app_name.?, screen_name, panel_names);
 
                 // Rebuild deps/framers/api.zig
-                try _src_this_deps_.rebuildForUpdatedScreens(allocator);
+                try _src_deps_.rebuildForUpdatedScreens(allocator);
 
                 // Inform the user.
                 const msg: []const u8 = try _success_.screenAddedModal(allocator, screen_name);

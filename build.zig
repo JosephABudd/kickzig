@@ -61,9 +61,9 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    // src/source/root/src/@This/deps/.
+    // src/source/root/src/deps/.
     const source_deps_mod = b.addModule("source_deps", .{
-        .root_source_file = .{ .path = "src/source/root/src/@This/deps/framework.zig" },
+        .root_source_file = .{ .path = "src/source/root/src/deps/framework.zig" },
         .imports = &.{
             .{ .name = "filenames", .module = filenames_mod },
             .{ .name = "paths", .module = paths_mod },
@@ -102,7 +102,7 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("verify", verify_mod);
     // src/source/ module.
     exe.root_module.addImport("source", source_mod);
-    // src/source/root/src/@This/deps/.
+    // src/source/root/src/deps/.
     exe.root_module.addImport("source_deps", source_deps_mod);
     // src/source/libs/ modules.
     exe.root_module.addImport("paths", paths_mod);

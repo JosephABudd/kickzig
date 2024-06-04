@@ -12,16 +12,8 @@ pub fn main() !void {
     var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
     const gpa = gpa_instance.allocator();
 
-    var in_framework_folder: bool = true;
     // Init the paths module.
-    _paths_.init(gpa) catch |err| {
-        switch (err) {
-            error.NotFrameworkPath => {
-                in_framework_folder = false;
-            },
-            else => return err,
-        }
-    };
+    const in_framework_folder: bool = try _paths_.init(gpa);
     defer _paths_.deinit();
 
     // Process the args.

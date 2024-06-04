@@ -1,3 +1,9 @@
-Struct
+my_zig/
+＄ kickzig init stuff
 
-Any member that are deinited must be optional.
+＄ git clone https://github.com/david-vanderson/dvui.git ./stuff
+＄ rm -r ./stuff/.git
+＄ rm .stuff/.gitignore
+
+cd ./stuff/
+add framework

@@ -14,7 +14,7 @@ pub fn allPanelFolders(allocator: std.mem.Allocator) ![][]const u8 {
     var folder_names = std.ArrayList([]const u8).init(allocator);
     defer folder_names.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_panel.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_frontend_screen_panel.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterateAssumeFirstIteration();
@@ -46,7 +46,7 @@ pub fn allTabFolders(allocator: std.mem.Allocator) ![][]const u8 {
     var folder_names = std.ArrayList([]const u8).init(allocator);
     defer folder_names.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_tab.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_frontend_screen_tab.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -78,7 +78,7 @@ pub fn allModalFolders(allocator: std.mem.Allocator) ![][]const u8 {
     var folder_names = std.ArrayList([]const u8).init(allocator);
     defer folder_names.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_modal.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_frontend_screen_modal.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -110,7 +110,7 @@ pub fn allCustomModalFolders(allocator: std.mem.Allocator) ![][]const u8 {
     var folder_names = std.ArrayList([]const u8).init(allocator);
     defer folder_names.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_modal.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_frontend_screen_modal.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -145,7 +145,7 @@ pub fn allBookFolders(allocator: std.mem.Allocator) ![][]const u8 {
     var folder_names = std.ArrayList([]const u8).init(allocator);
     defer folder_names.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_frontend_screen_book.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_frontend_screen_book.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -178,7 +178,7 @@ pub fn allPanelScreenFileNames(allocator: std.mem.Allocator, screen_name: []cons
     defer folder_names.deinit();
 
     // The screen's folder path.
-    try folder_names.append(folders.root_src_this_frontend_screen_panel.?);
+    try folder_names.append(folders.root_src_frontend_screen_panel.?);
     try folder_names.append(screen_name);
     const folder_path: []const []const u8 = try folder_names.toOwnedSlice();
     defer allocator.free(folder_path);
@@ -221,7 +221,7 @@ pub fn allModalScreenFileNames(allocator: std.mem.Allocator, screen_name: []cons
     defer folder_names.deinit();
 
     // The screen's folder path.
-    try folder_names.append(folders.root_src_this_frontend_screen_modal.?);
+    try folder_names.append(folders.root_src_frontend_screen_modal.?);
     try folder_names.append(screen_name);
     const folder_path: []const []const u8 = try folder_names.toOwnedSlice();
     defer allocator.free(folder_path);
@@ -263,7 +263,7 @@ pub fn allTabScreenFileNames(allocator: std.mem.Allocator, screen_name: []const 
     defer folder_names.deinit();
 
     // The screen's folder path.
-    try folder_names.append(folders.root_src_this_frontend_screen_tab.?);
+    try folder_names.append(folders.root_src_frontend_screen_tab.?);
     try folder_names.append(screen_name);
     const folder_path: [][]const u8 = try folder_names.toOwnedSlice();
     defer allocator.free(folder_path);
@@ -305,7 +305,7 @@ pub fn allBookScreenFileNames(allocator: std.mem.Allocator, screen_name: []const
     defer folder_names.deinit();
 
     // The screen's folder path.
-    try folder_names.append(folders.root_src_this_frontend_screen_book.?);
+    try folder_names.append(folders.root_src_frontend_screen_book.?);
     try folder_names.append(screen_name);
     const folder_path: [][]const u8 = try folder_names.toOwnedSlice();
     defer allocator.free(folder_path);

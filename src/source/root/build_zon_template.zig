@@ -35,20 +35,31 @@ pub const Template = struct {
 const template =
     \\.{
     \\    .name = "{{ app_name }}",
-    \\    .version = "0.0.1",
+    \\    .version = "0.0.0",
     \\    .dependencies = .{
-    \\        //.sdl = .{
-    \\            //.url = "https://github.com/Beyley/SDL/archive/587205c11bfd88d515408209ca4b1c271e9f5db9.tar.gz",
-    \\            //.hash = "1220da316edbe998b3ae807af6b22b4f8c713c0b77b72275a5bc358b115ee3ecec14",
-    \\        //},
-    \\        .freetype = .{
-    \\            .url = "https://github.com/david-vanderson/freetype/archive/18a1df5a3ef8afa0782c419b153a21e9e160335f.tar.gz",
-    \\            .hash = "1220b305af272ac3026704b8d7e13740350daf59a6a95e45dedb428c55933e3df925",
+    \\        .dvui = .{
+    \\            .url = "https://github.com/david-vanderson/dvui/archive/27b59c5f25350ad4481110eecd0920b828e61a30.tar.gz",
+    \\            .hash = "1220ed3bf40a032dc1d677d4663160ec7f4f18f4b5887d57b691ae7005335449f5d5",
     \\        },
-    \\        .stb_image = .{
-    \\            .url = "https://github.com/david-vanderson/stb_image/archive/9a961327f5e67ec799bc9a6258d7abebb59d7028.tar.gz",
-    \\            .hash = "1220e47cea6fd7a0098a1b0ac3e47a2c3b558dc3afb0a75c71d7b00e53936824287e",
-    \\        },
+    \\    },
+    \\    // Specifies the set of files and directories that are included in this package.
+    \\    // Only files and directories listed here are included in the `hash` that
+    \\    // is computed for this package.
+    \\    // Paths are relative to the build root. Use the empty string (`""`) to refer to
+    \\    // the build root itself.
+    \\    // A directory listed here means that all files within, recursively, are included.
+    \\    .paths = .{
+    \\        // This makes *all* files, recursively, included in this package. It is generally
+    \\        // better to explicitly list the files and directories instead, to insure that
+    \\        // fetching from tarballs, file system paths, and version control all result
+    \\        // in the same contents hash.
+    \\        "",
+    \\        // For example...
+    \\        //"build.zig",
+    \\        //"build.zig.zon",
+    \\        //"src",
+    \\        //"LICENSE",
+    \\        //"README.md",
     \\    },
     \\}
 ;

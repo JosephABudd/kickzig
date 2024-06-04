@@ -21,7 +21,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
         }
         if (std.mem.eql(u8, remaining_args[0], verb_restart)) {
             // User input is "framework restart".
-            // Remove and then create a new root/src/@This/.
+            // Remove and then create a new root/src/.
             folder_paths.reBuild() catch |restart_err| {
                 var user_input: []const u8 = undefined;
                 user_input = std.fmt.allocPrint(allocator, "{s} {s}", .{ command, verb_restart }) catch {

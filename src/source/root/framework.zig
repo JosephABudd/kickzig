@@ -4,21 +4,11 @@ const paths = @import("paths");
 const _filenames_ = @import("filenames");
 const _build_template_ = @import("build_template.zig");
 const _build_zon_template_ = @import("build_zon_template.zig");
-const _standalone_template_ = @import("standalone_template.zig");
-const _src_this_backend_ = @import("src/@This/backend/framework.zig");
-const _src_this_frontend_ = @import("src/@This/frontend/framework.zig");
-const _src_this_deps_ = @import("source_deps");
-const _src_vendor_ = @import("src/vendor/framework.zig");
+pub const _src_ = @import("src/framework.zig");
 
-pub const frontend = _src_this_frontend_;
-pub const backend = _src_this_backend_;
-pub const deps = _src_this_deps_;
-
-/// recreate rebuilds root/src/@This/ entirely.
+/// recreate rebuilds root/src/ entirely.
 pub fn recreate(allocator: std.mem.Allocator, app_name: []const u8) !void {
-    try _src_this_backend_.create(allocator);
-    try _src_this_frontend_.create(allocator, app_name);
-    try _src_this_deps_.create(allocator);
+    try _src_.recreate(allocator, app_name);
 }
 
 pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
@@ -49,22 +39,5 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
         try ofile.writeAll(content);
     }
 
-    {
-        // standalone-sdl.zig
-        // Build the data for the template.
-        var template: *_standalone_template_.Template = try _standalone_template_.Template.init(allocator, app_name);
-        defer template.deinit();
-        const content: []const u8 = try template.content();
-        defer allocator.free(content);
-
-        // Open, write and close the file.
-        ofile = try root_dir.createFile(_filenames_.standalone_sdl_file_name, .{});
-        defer ofile.close();
-        try ofile.writeAll(content);
-    }
-
-    try _src_this_backend_.create(allocator);
-    try _src_this_frontend_.create(allocator, app_name);
-    try _src_this_deps_.create(allocator);
-    try _src_vendor_.create();
+    try _src_.create(allocator, app_name);
 }

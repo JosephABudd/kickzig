@@ -1,61 +1,38 @@
 # kickzig "zig and dvui my way"
 
-## May 1, 2023
+Still a work in progress.
 
-kickzig is doing what I want.
+## June 4, 2024: version 0.1.0
 
-I've added 2 threads.
+[Dave Vanderson's dvui project](https://github.com/david-vanderson/dvui) is an excellent graphics framework that is young, very easy to use and just keeps getting better. It also has excellent documentation.
 
-1. The main thread runs the gui.
-1. A second thread waits for messages from the front-end and sends them to the back-end.
-1. A third thread waits for messages from the back-end and sends them to the front-end.
-
-## Still a work in progress. TO DO
-
-1. review and regulate the coding styles I used in the framework.
-1. keep up with changes in dvui.
+At the time of this writing, dvui is at revision **27b59c5f25350ad4481110eecd0920b828e61a30** which works with zig 0.12.0. kickzig now works with that dvui revision.
 
 ## Summary
 
-_Whenever I begin working with a new language I like to rewrite certain programs with that new language. So here I am rewriting my kick program which was previously written in GO._
-
-As I started learning zig, I found and started using [Dave Vanderson's dvui project](https://github.com/david-vanderson/dvui). Dvui is an excellent graphics framework that is young, very easy to use and just keeps getting better.
-
-As I continue to learn and appreciate zig and dvui, I am recreating my kick code generator to work with zig and dvui.
-
-1. kickzig is a cli that generates a framework. The command `kickzig framework` generates that framework that is ready to build and run immediatley.
+1. kickzig is a cli that generates an application framework which uses the beautiful dvui graphics framework. The command `kickzig framework` generates that framework that is ready to build and run immediatley.
 1. kickzig allows the developer to add and remove
    1. Screens. Screens are front-end packages. Screens implement GUI logic.
    1. Messages.
       * Each message has a channel for sending and a channel for receiveing.
       * Each front-end screen has a messenger that can send and receive any or all messages with the back-end.
-      * The back-end has a messenger for each message that will handle that message and communicate back to the front-end if needed.
+      * The back-end has 1 messenger for each message. Each messenger can receive and send it's assigned message.
 
-The [wiki](https://github.com/JosephABudd/kickzig/wiki) documents building a CRUD with kickzig.
-
-### Folder layout
-
-1. The framework puts the application code at
-   * «app-folder»/ (build.zig, build.zig.zon, standalone.zig, etc)
-   * «app-folder»/src/@This/backend/messenger/ (back-end messenger code)
-   * «app-folder»/src/@This/frontend/ (front-end code)
-   * «app-folder»/src/@This/deps/ (dependencies)
-1. Vendor code can be placed in «app-folder»/src/vendor/.
-1. DVUI must be cloned into «app-folder»/src/vendor/dvui/.
+The [wiki](https://github.com/JosephABudd/kickzig/wiki) documents building a CRUD with an previous version of kickzig. It will be updated using the current version of kickzig as time allows.
 
 ## Example: Creating a framework, building and running an application
 
 The command `kickzig framework` generates the source code for a framework that is ready to run. The framework requires a vendored clone of David Vanderson's DVUI package.
 
-Nota Bene: Currently, dvui must be built using zig version 11.
+Nota Bene: Currently, dvui must be built using zig version 0.12.0.
 
 ```shell
 ＄ mkdir myapp
 ＄ cd myapp
 ＄ kickzig framework
-＄ git clone https://github.com/david-vanderson/dvui.git src/vendor/dvui/
-＄ zig11 build -freference-trace=255
-＄ ./zig-out/bin/standalone-sdl
+＄ zig fetch https://github.com/david-vanderson/dvui/archive/27b59c5f25350ad4481110eecd0920b828e61a30.tar.gz
+＄ zig build -freference-trace=255
+＄ ./zig-out/bin/myapp
 ```
 
 ### The opening. Hello World screen
@@ -160,7 +137,7 @@ The **EOJ** modal screen is also part of the framework. It is only used in the s
 
 1. **The DVUI Debug window.** The framework's main menu allows the developer to open and use the DVUI debug window.
 1. **The DVUI Demo window.** The framework's main menu also allows the developer to turn on the DVUI demo window. The actual example code is **pub fn demo() !void** in **src/vendor/dvui/src/Examples.zig**.
-1. The developer can turn the above menu items off by setting `pub const show_developer_menu_items: bool = false;` in **src/@This/frontent/api.zig**.
+1. The developer can turn the above menu items off by setting `pub const show_developer_menu_items: bool = false;` in **src/frontent/api.zig**.
 1. **The DVUI source code.** The src code is cloned in **src/vendor/dvui/** so that it is immediately available for review.
 
 ![The app's main menu.](images/myapp_main_menu.png)
@@ -188,10 +165,10 @@ When you add a message you also add with it:
 
 `kickzig message remove AddContact` will remove
 
-1. The message at **src/@This/deps/message/AddContact.zig**.
-1. The back-end messenger at **src/@This/backend/messenger/AddContact.zig**.
-1. The message channels at **src/@This/deps/channel/\*\*/AddContact.zig**.
-1. References to the channels in the startup params at **src/@This/deps/startup/api.zig**.
+1. The message at **src/deps/message/AddContact.zig**.
+1. The back-end messenger at **src/backend/messenger/AddContact.zig**.
+1. The message channels at **src/deps/channel/\*\*/AddContact.zig**.
+1. References to the channels in the startup params at **src/deps/startup/api.zig**.
 
 ### Listing all messages
 

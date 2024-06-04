@@ -4,8 +4,8 @@ const _stdout_ = @import("stdout");
 const _source_ = @import("source");
 const _filenames_ = @import("filenames");
 const _strings_ = @import("strings");
-const _src_this_backend_messenger_ = _source_.backend.messenger;
-const _src_this_deps_ = @import("source_deps");
+const _src_backend_messenger_ = _source_._root_._src_.backend.messenger;
+const _src_deps_ = @import("source_deps");
 
 const _warning_ = @import("warning");
 const _success_ = @import("success");
@@ -55,8 +55,8 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                     return;
                 }
                 // User input is "message add-fbf UpdateList".
-                try _src_this_backend_messenger_.addFBF(allocator, remaining_args[1]);
-                try _src_this_deps_.addMessageFBF(allocator, remaining_args[1]);
+                try _src_backend_messenger_.addFBF(allocator, remaining_args[1]);
+                try _src_deps_.addMessageFBF(allocator, remaining_args[1]);
                 {
                     // Inform user added message.
                     const output: []const u8 = try _success_.depsMessageAdded(allocator, remaining_args[1]);
@@ -78,8 +78,8 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                     return;
                 }
                 // User input is "message add-bf UpdateList".
-                try _src_this_backend_messenger_.addBF(allocator, remaining_args[1]);
-                try _src_this_deps_.addMessageBF(allocator, remaining_args[1]);
+                try _src_backend_messenger_.addBF(allocator, remaining_args[1]);
+                try _src_deps_.addMessageBF(allocator, remaining_args[1]);
                 {
                     // Inform user added message.
                     const output: []const u8 = try _success_.depsMessageAdded(allocator, remaining_args[1]);
@@ -101,8 +101,8 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                     return;
                 }
                 // User input is "message add-bf-fbf UpdateList".
-                try _src_this_backend_messenger_.addBFFBF(allocator, remaining_args[1]);
-                try _src_this_deps_.addMessageBFFBF(allocator, remaining_args[1]);
+                try _src_backend_messenger_.addBFFBF(allocator, remaining_args[1]);
+                try _src_deps_.addMessageBFFBF(allocator, remaining_args[1]);
                 {
                     // Inform user added message.
                     const output: []const u8 = try _success_.depsMessageAdded(allocator, remaining_args[1]);
@@ -124,8 +124,8 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                     return;
                 }
                 // User input is "message remove EditContact".
-                try _src_this_backend_messenger_.remove(allocator, remaining_args[1]);
-                try _src_this_deps_.removeMessage(allocator, remaining_args[1]);
+                try _src_backend_messenger_.remove(allocator, remaining_args[1]);
+                try _src_deps_.removeMessage(allocator, remaining_args[1]);
                 {
                     // Inform user removed message.
                     const output: []const u8 = try _success_.depsMessageRemoved(allocator, remaining_args[1]);

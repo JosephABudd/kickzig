@@ -21,9 +21,11 @@ pub const screen_panels_file_name: []const u8 = "panels.zig";
 pub const screen_screen_file_name: []const u8 = "screen.zig";
 pub const screen_pointers_file_name = "screen_pointers.zig";
 pub const screen_tabs_file_name = "screen_tags.zig";
-pub const standalone_sdl_file_name: []const u8 = "standalone-sdl.zig";
+pub const main_file_name: []const u8 = "main.zig";
+pub const root_file_name: []const u8 = "root.zig";
 pub const tabbar_file_name: []const u8 = "tabbar.zig";
 pub const yesno_file_name: []const u8 = "YesNo.zig";
+pub const favicon_file_name: []const u8 = "zig-favicon.png";
 
 // all.
 
@@ -83,7 +85,7 @@ pub fn allBackendMessageHandlerNames(allocator: std.mem.Allocator) ![][]const u8
     const folders = try paths.folders();
     defer folders.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_backend_messenger.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_backend_messenger.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -107,7 +109,7 @@ pub fn allCustomBackendMessageHandlerNames(allocator: std.mem.Allocator) ![][]co
     const folders = try paths.folders();
     defer folders.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_backend_messenger.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_backend_messenger.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -390,7 +392,7 @@ fn allDepsMessageFileNames(allocator: std.mem.Allocator) ![][]const u8 {
     var message_names = std.ArrayList([]const u8).init(allocator);
     defer message_names.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_message.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_deps_message.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -490,7 +492,7 @@ pub fn allDepsChannelTriggerNames(allocator: std.mem.Allocator) ![][]const u8 {
     const folders = try paths.folders();
     defer folders.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_channel_trigger.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_deps_channel_trigger.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -514,7 +516,7 @@ pub fn allDepsChannelBackToFrontNames(allocator: std.mem.Allocator) ![][]const u
     const folders = try paths.folders();
     defer folders.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_channel_backtofront.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_deps_channel_backtofront.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -542,7 +544,7 @@ pub fn allDepsChannelFrontToBackNames(allocator: std.mem.Allocator) ![][]const u
     const folders = try paths.folders();
     defer folders.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_channel_fronttoback.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_deps_channel_fronttoback.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();
@@ -570,7 +572,7 @@ pub fn allDepsModalParamsNames(allocator: std.mem.Allocator) ![][]const u8 {
     const folders = try paths.folders();
     defer folders.deinit();
 
-    var dir = try std.fs.openDirAbsolute(folders.root_src_this_deps_modal_params.?, .{ .iterate = true });
+    var dir = try std.fs.openDirAbsolute(folders.root_src_deps_modal_params.?, .{ .iterate = true });
     defer dir.close();
 
     var iterator = dir.iterate();

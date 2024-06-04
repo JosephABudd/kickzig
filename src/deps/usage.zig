@@ -39,16 +39,16 @@ const framework_template: []const u8 =
     \\＄ mkdir myapp
     \\＄ cd myapp
     \\＄ kickzig framework
-    \\＄ git clone https://github.com/david-vanderson/dvui.git src/vendor/dvui/
+    \\＄ zig fetch --save https://github.com/david-vanderson/dvui/archive/27b59c5f25350ad4481110eecd0920b828e61a30.tar.gz
     \\＄ zig build -freference-trace=255
-    \\＄ ./zig-out/bin/standalone-sdl
+    \\＄ ./zig-out/bin/myapp
     \\
     \\🌐 THE FRAMEWORK:
     \\The framework is contained in these folders.
     \\1. ./ which contains build.zig, build.zig.zon, standalone-sdl.zig
-    \\2. ./src/@This/backend/ which contains the back-end code.
-    \\3. ./src/@This/frontend/ which contains the front-end code.
-    \\4. ./src/@This/deps/ which contains the dependencies.
+    \\2. ./src/backend/ which contains the back-end code.
+    \\3. ./src/frontend/ which contains the front-end code.
+    \\4. ./src/deps/ which contains the dependencies.
     \\5. ./src/vendor/ which contains vendered code.
     \\6. ./src/vendor/dvui/ which contains dvui.
     \\
