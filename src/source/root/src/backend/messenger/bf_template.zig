@@ -61,7 +61,7 @@ const template =
     \\    pub fn trigger{{ message_name }}Fn(implementor: *anyopaque) anyerror!void {
     \\        var self: *Messenger = @alignCast(@ptrCast(implementor));
     \\
-    \\        var message: *_message_.{{ message_name }}.Message = self.triggerJob() catch |err| {
+    \\        const message: *_message_.{{ message_name }}.Message = self.triggerJob() catch |err| {
     \\            // Fatal error.
     \\            self.exit(@src(), err, "self.triggerJob()");
     \\            return err;
