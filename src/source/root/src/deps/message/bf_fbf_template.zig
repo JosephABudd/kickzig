@@ -135,7 +135,7 @@ const template =
     \\        self.is_set = true;
     \\        if (values.user_error_message) |user_error_message| {
     \\            self.user_error_message = try self.allocator.alloc(u8, user_error_message.len);
-    \\            @memcpy(@constCast(self.user_error_message), user_error_message);
+    \\            @memcpy(@constCast(self.user_error_message.?), user_error_message);
     \\        }
     \\    }
     \\};

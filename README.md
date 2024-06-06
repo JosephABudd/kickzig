@@ -2,11 +2,9 @@
 
 Still a work in progress.
 
-## June 4, 2024: version 0.1.0
+## June 6, 2024: version 0.1.1
 
-[Dave Vanderson's dvui project](https://github.com/david-vanderson/dvui) is an excellent graphics framework that is young, very easy to use and just keeps getting better. It also has excellent documentation.
-
-At the time of this writing, dvui is at revision **27b59c5f25350ad4481110eecd0920b828e61a30** which works with zig 0.12.0. kickzig now works with that dvui revision.
+Added bugfix to messages.
 
 ## Summary
 
