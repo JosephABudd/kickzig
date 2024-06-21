@@ -48,7 +48,10 @@ const template =
     \\        "channel",
     \\        .{
     \\            .root_source_file = .{
-    \\                .path = b.pathFromRoot("src/deps/channel/api.zig"),
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/channel/api.zig",
+    \\                },
     \\            },
     \\        },
     \\    );
@@ -58,7 +61,10 @@ const template =
     \\        "closedownjobs",
     \\        .{
     \\            .root_source_file = .{
-    \\                .path = b.pathFromRoot("src/deps/closedownjobs/api.zig"),
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/closedownjobs/api.zig",
+    \\                },
     \\            },
     \\        },
     \\    );
@@ -67,7 +73,12 @@ const template =
     \\    const closer_mod = b.addModule(
     \\        "closer",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/deps/closer/api.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/closer/api.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -75,7 +86,12 @@ const template =
     \\    const counter_mod = b.addModule(
     \\        "counter",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/deps/counter/api.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/counter/api.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -83,7 +99,12 @@ const template =
     \\    const framers_mod = b.addModule(
     \\        "framers",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/deps/framers/api.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/framers/api.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -91,7 +112,12 @@ const template =
     \\    const lock_mod = b.addModule(
     \\        "lock",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/deps/lock/api.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/lock/api.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -99,7 +125,12 @@ const template =
     \\    const message_mod = b.addModule(
     \\        "message",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/deps/message/api.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/message/api.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -107,7 +138,12 @@ const template =
     \\    const modal_params_mod = b.addModule(
     \\        "modal_params",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/deps/modal_params/api.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/modal_params/api.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -115,7 +151,12 @@ const template =
     \\    const screen_pointers_mod = b.addModule(
     \\        "screen_pointers",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/frontend/screen_pointers.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/frontend/screen_pointers.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -123,7 +164,12 @@ const template =
     \\    const startup_mod = b.addModule(
     \\        "startup",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/deps/startup/api.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/startup/api.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -131,7 +177,12 @@ const template =
     \\    const various_mod = b.addModule(
     \\        "various",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/deps/various/api.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/various/api.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -139,7 +190,12 @@ const template =
     \\    const widget_mod = b.addModule(
     \\        "widget",
     \\        .{
-    \\            .root_source_file = .{ .path = b.pathFromRoot("src/deps/widget/api.zig") },
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/widget/api.zig",
+    \\                },
+    \\            },
     \\        },
     \\    );
     \\
@@ -208,7 +264,12 @@ const template =
     \\
     \\    const exe = b.addExecutable(.{
     \\        .name = "{{ app_name }}",
-    \\        .root_source_file = .{ .path = b.pathFromRoot("src/main.zig") },
+    \\        .root_source_file = .{
+    \\            .src_path = .{
+    \\                .owner = b,
+    \\                .sub_path = "src/main.zig",
+    \\            },
+    \\        },
     \\        .target = target,
     \\        .optimize = optimize,
     \\    });

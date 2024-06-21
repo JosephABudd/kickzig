@@ -1,34 +1,54 @@
 # kickzig "zig and dvui my way"
 
-Still a work in progress.
+Still, very much a work in progress.
 
-## June 6, 2024: version 0.1.1
+## June 20, 2024: version 0.2.0
 
-Added bugfix to messages.
+Works with [dvui](https://github.com/david-vanderson/dvui) and zig v. 0.13.0.
 
 ## Summary
 
-1. kickzig is a cli that generates an application framework which uses the beautiful dvui graphics framework. The command `kickzig framework` generates that framework that is ready to build and run immediatley.
-1. kickzig allows the developer to add and remove
-   1. Screens. Screens are front-end packages. Screens implement GUI logic.
-   1. Messages.
-      * Each message has a channel for sending and a channel for receiveing.
+### kickzig is a CLI. It only does 3 things
+
+1. **Generates the source code**, of an application framework, written in zig. The framework which uses the beautiful [dvui](https://github.com/david-vanderson/dvui) graphics framework in the front-end. That said, kickzig also requires the developer to understand how to use the dvui widgets. The framework source code contains various widget examples. (That's why it runs right out of the box.) You will find some in the framework source code. Also see the dvui [Examples.zig](https://github.com/david-vanderson/dvui/blob/main/src/Examples.zig) or the [dvui demo](https://github.com/david-vanderson/dvui-demo).
+1. **Adds and removes screens** in the source code.
+   * Screens are the framework's front-end packages that display content to the user and receive input from the user.
+   * Different types of screens do that in their own unique way.
+   * A screen may have one or more panels. Panels are where the developer designs a display and receives input from the user.
+   * A screen has a messenger which communicates with the back-end. The developer subscribes the messenger to the channels of messages that need to be received. The developer adds functions to send and receive messages.
+1. **Adds and removes messages** in the source code.
+      * Messages are how the framework's front-end and back-end communicate.
+      * The developer will customize each message.
+        * A message's front-end payload is what the front-end sends to the back-end. The developer will want to customize the front-end payload.
+        * A message's back-end payload is what the back-end sends to the front-end. By default, the back-end payload only returns an optional error message for the user. The developer is free to cutomize the back-end payload.
       * Each front-end screen has a messenger that can send and receive any or all messages with the back-end.
-      * The back-end has 1 messenger for each message. Each messenger can receive and send it's assigned message.
+        * The developer will subscribe a screen messenger to a message's receive channel in order to receive that message.
+        * The developer will send a message through it's send channel.
+        * The developer will create the messenger's send and receive functions.
+      * The back-end has 1 messenger for each message.
+        * A back-end messenger by default
+          * is already subscribed to it's message's receive channel.
+          * is already receiving it's messages through that receive channel.
+          * is already returning it's message through it's send channel.
+          * is already handling errors.
+        * So what does the developer have to do?
+          * For back-end messengers which receive a message, the developer must provide the required functionality for processing the message in the messenger's fn **receiveJob**.
+          * For back-end messengers which can be triggered, the developer must provide the required functionality for creating a new message in the messenger's fn **triggerJob**.
+        * Those messengers which receive a message can also trigger other back-end messengers to send their message. For example, an **AddContact** messenger can trigger a **RebuildContactList** messenger to send the updated list of contacts to the front end.
 
 The [wiki](https://github.com/JosephABudd/kickzig/wiki) documents building a CRUD with an previous version of kickzig. It will be updated using the current version of kickzig as time allows.
 
 ## Example: Creating a framework, building and running an application
 
-The command `kickzig framework` generates the source code for a framework that is ready to run. The framework requires a vendored clone of David Vanderson's DVUI package.
+The command `kickzig framework` generates the source code for a framework that is ready to run. The framework requires a fetched archive of David Vanderson's DVUI package. (Sounds complicated but its not. See below.)
 
-Nota Bene: Currently, dvui must be built using zig version 0.12.0.
+Nota Bene: Currently, the kickzig generated framework must be built using zig version 0.13.0.
 
 ```shell
 ＄ mkdir myapp
 ＄ cd myapp
 ＄ kickzig framework
-＄ zig fetch https://github.com/david-vanderson/dvui/archive/27b59c5f25350ad4481110eecd0920b828e61a30.tar.gz
+＄ zig fetch https://github.com/david-vanderson/dvui/archive/8b29569d96fe3f037ec2fc707be53c4e0a0ad2d1.tar.gz --save
 ＄ zig build -freference-trace=255
 ＄ ./zig-out/bin/myapp
 ```
@@ -51,11 +71,11 @@ kickzig is mostly a tool for the application's front-end. The framework's front-
 
 A screen is a collection of panels and has it's own messenger which communicates with the back-end.
 
-Whenever you add any type of screen with kickzig, it functions perfectly.
+Whenever the developer adds any type of screen with kickzig, it functions perfectly.
 
 ### Panel screens
 
-A Panel screen is the simplest type of screen. It only displays one of it's panels at any one time. Panel screens always function when you create them although the panels display the screen name and panel name by default.
+A Panel screen is the simplest type of screen. It only displays one of it's panels at any one time. Panel screens always function when the developer creates them although the panels display the screen name and panel name by default.
 
 The Panel screens are useful for creating other types of screens. They are the first screens that I created. I used the Panel screens to create each of the other types of screens.
 
@@ -69,9 +89,9 @@ A Content screen is really just another Panel screen. That's why it's in the pan
    * A **content screen** implementation:
      1. is initialized by the tab that uses the screen for content.
    * A **panel screen** implementation:
-     1. is initialized by the app at startup and should there fore, be added to the main menu or linked to some other way.
+     1. is initialized by the app at startup and should there fore, be added to the main menu.
      1. can also be initialized by a tab that is using the screen for content.
-1. **Framing**
+1. **Framing** is when a screen is drawn and user input is received.
    * A **content screen** frames:
      1. in a tab's content area.
    * A **panel screen** frames:
@@ -80,14 +100,14 @@ A Content screen is really just another Panel screen. That's why it's in the pan
 
 ### Examples
 
-`kickzig screen add-panel Edit Select Edit` creates a panel screen named **Edit** in the panel/ folder. The default panel is named **Select** and another panel is named **Edit**. By default the Select and Edit panels each display their screen and panel name.
+`kickzig screen add-panel Edit Select Edit` creates a panel screen named **Edit** in the panel/ folder. The default panel is named **Select** and another panel is named **Edit**. By default the Select and Edit panels each display their screen and panel name. It's the developers job to edit any panel's file to achieve the propper functionality.
 
-`kickzig screen add-content Remove Select Confirm` creates a content screen named **Remove** in the panel/ folder. The default panel is named **Select** and another panel named **Confirm**. By default the Select and Confirm panels each display their screen and panel name.
+`kickzig screen add-content Remove Select Confirm` creates a content screen named **Remove** in the panel/ folder. The default panel is named **Select** and another panel named **Confirm**. By default the Select and Confirm panels each display their screen and panel name. Again, it's the developers job to edit any panel's file to achieve the propper functionality.
 
 ### tab-bar screens
 
-1. A tab-bar screen always functions when you create it.
-1. Contains one example tab for each tab that you named.
+1. A tab-bar screen always functions when the developer creates it.
+1. Contains one example tab for each tab-type that the developer named. However, the developer may have 0 or more tabs of each tab-type in the tab-bar. For example: My tab-bar has a Log tab-type which will display a log from an IRC Chat room. I can open a Log tab-type for each chat room the user joins. Each tab can also close when the user leaves the chat room.
 1. Defaults to:
    * A .horizontal bar direction that the user can toggle between .horizontal and .vertical.
    * User closable tabs.
@@ -104,8 +124,8 @@ A tab's content can be one of the screen's own panels or a tab's content can be 
 `kickzig screen add-tab Contacts Add *Edit *Remove` creates a tab screen named **Contacts** with 3 tab types ( Add, Edit, Remove ) and 1 instance of each tab running in the tab-bar as an example.
 
 * The **Add** tab type gets it's content from the Add panel in the screen package.
-* I prefixed the **Edit** tab name with **\*** because it uses, the **Edit** screen in the panel/ folder, for content.
-* I prefixed the **Remove** tab name with **\*** because it uses, the **Remove** screen in the panel/ folder, for content.
+* I prefixed the **Edit** tab name with **\*** so that it will use the **Edit** screen in the panel/ folder, for content.
+* I prefixed the **Remove** tab name with **\*** so that it will use the **Remove** screen in the panel/ folder, for content.
 
 Below is the Contacts screen with the horizontal layout. Notice that the **Remove** tab is selected and is displaying the **Remove** content-screen.
 
@@ -134,7 +154,7 @@ The **EOJ** modal screen is also part of the framework. It is only used in the s
 ### DVUI tools for the developer
 
 1. **The DVUI Debug window.** The framework's main menu allows the developer to open and use the DVUI debug window.
-1. **The DVUI Demo window.** The framework's main menu also allows the developer to turn on the DVUI demo window. The actual example code is **pub fn demo() !void** in **src/vendor/dvui/src/Examples.zig**.
+1. **The DVUI Demo window.** The framework's main menu also allows the developer to turn on the DVUI demo window. The actual example code is **pub fn demo() !void** in [Examples.zig](https://github.com/david-vanderson/dvui/blob/main/src/Examples.zig).
 1. The developer can turn the above menu items off by setting `pub const show_developer_menu_items: bool = false;` in **src/frontent/api.zig**.
 1. **The DVUI source code.** The src code is cloned in **src/vendor/dvui/** so that it is immediately available for review.
 
@@ -142,31 +162,19 @@ The **EOJ** modal screen is also part of the framework. It is only used in the s
 
 ## kickzig for messages
 
-The front-end and back-end communicate asynchronously using messages. Messages are sent and messages are received. There is no waiting.
+The front-end and back-end communicate asynchronously using messages. Messages are sent and messages are received. There is no waiting for a message.
 
 ### Adding a message
 
-* The command `kickzig message add-bf «message_name»` will add a 1 way message which the back-end «message_name» messenger sends to the front-end when triggered from anywhere in the back-end.
-* The command `kickzig message add-fbf «message_name»` will add a 2 way message, that begins with any front-end screen's messenger sending the message and expecting a response from the back-end «message_name» messenger.
-* The command `kickzig message add-bf-fbf «message_name»` will add a message that is both 1 way and 2 way:
-
-When you add a message you also add with it:
-
-1. The message struct in deps/message/«message_name».zig.
-1. The back-end messenger at backend/messenger/«message_name».zig.
-1. The message channels in:
-   * startup.receive_channels,
-   * startup.send_channels,
-   * startup.triggers.
+* The command `kickzig message add-bf «message_name»` will add a 1 way message which travels back-to-front.
+* The command `kickzig message add-fbf «message_name»` will add a 2 way message which travels front-to-back and back-to-front.
+* The command `kickzig message add-bf-fbf «message_name»` will add a message that is both 1 way and 2 way. That is to say that the back-end messenger has 2 different functions for sending a message.
+  1. The **fn receiveJob** receives a message and then sends the response.
+  1. The **fn triggerJob** only sends a message.
 
 ### Removing a message
 
-`kickzig message remove AddContact` will remove
-
-1. The message at **src/deps/message/AddContact.zig**.
-1. The back-end messenger at **src/backend/messenger/AddContact.zig**.
-1. The message channels at **src/deps/channel/\*\*/AddContact.zig**.
-1. References to the channels in the startup params at **src/deps/startup/api.zig**.
+`kickzig message remove AddContact` will remove the **AddContact** message from the framework.
 
 ### Listing all messages
 
@@ -187,7 +195,7 @@ The developer can add to the startup parameters.
 
 ### 2 Ways to start the shut down process
 
-1. **The user clicks the window's ❎ button**. The `main_loop:` in **standalone-sdl.zig** calls the closer module's `fn close(user_message: []const u8) void` which starts the closing process.
+1. **The user clicks the window's ❎ button**. The `main_loop:` in **src/main.zig** calls the closer module's `fn close(user_message: []const u8) void` which starts the closing process.
 1. **A fatal error occurs in the developer's code**. That module calls the startup parameter `exit` which starts the closing process. Example below.
 
 ```zig

@@ -75,6 +75,7 @@ const template =
     \\pub fn main() !void {
     \\    // init SDL sdl_backend (creates OS window)
     \\    var sdl_backend = try SDLBackend.init(.{
+    \\        .allocator = gpa,
     \\        .size = .{ .w = 500.0, .h = 400.0 },
     \\        // .min_size = .{ .w = 500.0, .h = 400.0 },
     \\        .vsync = vsync,

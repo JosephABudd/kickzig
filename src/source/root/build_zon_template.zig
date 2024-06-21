@@ -37,10 +37,6 @@ const template =
     \\    .name = "{{ app_name }}",
     \\    .version = "0.0.0",
     \\    .dependencies = .{
-    \\        .dvui = .{
-    \\            .url = "https://github.com/david-vanderson/dvui/archive/27b59c5f25350ad4481110eecd0920b828e61a30.tar.gz",
-    \\            .hash = "1220ed3bf40a032dc1d677d4663160ec7f4f18f4b5887d57b691ae7005335449f5d5",
-    \\        },
     \\    },
     \\    // Specifies the set of files and directories that are included in this package.
     \\    // Only files and directories listed here are included in the `hash` that

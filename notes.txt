@@ -1,9 +1,22 @@
-my_zig/
-＄ kickzig init stuff
+thread 10134 panic: Deadlock detected
+debug(dvui): borderAndBackground 1cb9891f forcing background on to support border
 
-＄ git clone https://github.com/david-vanderson/dvui.git ./stuff
-＄ rm -r ./stuff/.git
-＄ rm .stuff/.gitignore
-
-cd ./stuff/
-add framework
+/usr/local/zig/lib/std/Thread/Mutex.zig:82:13: 0x11ce916 in lock (x)
+            @panic("Deadlock detected");
+            ^
+/home/nil/zig/misc/x/src/deps/lock/api.zig:34:24: 0x11c0f1e in lock (x)
+        self.mutex.lock();
+                       ^
+/home/nil/zig/misc/x/src/frontend/screen/modal/EOJ/EOJ_panel.zig:177:31: 0x1368831 in background_progress (x)
+                self.lock.lock();
+                              ^
+/usr/local/zig/lib/std/Thread.zig:429:13: 0x132e5e1 in callFn__anon_31002 (x)
+            @call(.auto, f, args) catch |err| {
+            ^
+/usr/local/zig/lib/std/Thread.zig:674:30: 0x12cfb82 in entryFn (x)
+                return callFn(f, args_ptr.*);
+                             ^
+./nptl/pthread_create.c:442:8: 0x7f5d73210ac2 in start_thread (pthread_create.c)
+../sysdeps/unix/sysv/linux/x86_64/clone3.S:81:0: 0x7f5d732a284f in ??? (../sysdeps/unix/sysv/linux/x86_64/clone3.S)
+???:?:?: 0x0 in ??? (???)
+Aborted (core dumped)

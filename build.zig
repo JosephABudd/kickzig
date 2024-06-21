@@ -17,44 +17,89 @@ pub fn build(b: *std.Build) void {
 
     // Internal src/deps/ modules.
     const stdout_mod = b.addModule("stdout", .{
-        .root_source_file = .{ .path = "src/deps/stdout/api.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/deps/stdout/api.zig",
+            },
+        },
         .imports = &.{},
     });
     const usage_mod = b.addModule("usage", .{
-        .root_source_file = .{ .path = "src/deps/usage.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/deps/usage.zig",
+            },
+        },
         .imports = &.{},
     });
     const warning_mod = b.addModule("warning", .{
-        .root_source_file = .{ .path = "src/deps/warning.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/deps/warning.zig",
+            },
+        },
         .imports = &.{},
     });
     const paths_mod = b.addModule("paths", .{
-        .root_source_file = .{ .path = "src/deps/paths/api.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/deps/paths/api.zig",
+            },
+        },
         .imports = &.{},
     });
     const filenames_mod = b.addModule("filenames", .{
-        .root_source_file = .{ .path = "src/deps/filenames/api.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/deps/filenames/api.zig",
+            },
+        },
         .imports = &.{
             .{ .name = "paths", .module = paths_mod },
         },
     });
     const success_mod = b.addModule("success", .{
-        .root_source_file = .{ .path = "src/deps/success.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/deps/success.zig",
+            },
+        },
         .imports = &.{
             .{ .name = "paths", .module = paths_mod },
             .{ .name = "filenames", .module = filenames_mod },
         },
     });
     const slices_mod = b.addModule("slices", .{
-        .root_source_file = .{ .path = "src/deps/slices.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/deps/slices.zig",
+            },
+        },
         .imports = &.{},
     });
     const strings_mod = b.addModule("strings", .{
-        .root_source_file = .{ .path = "src/deps/strings.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/deps/strings.zig",
+            },
+        },
         .imports = &.{},
     });
     const verify_mod = b.addModule("verify", .{
-        .root_source_file = .{ .path = "src/deps/verify.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/deps/verify.zig",
+            },
+        },
         .imports = &.{
             .{ .name = "filenames", .module = filenames_mod },
             .{ .name = "strings", .module = strings_mod },
@@ -63,7 +108,12 @@ pub fn build(b: *std.Build) void {
 
     // src/source/root/src/deps/.
     const source_deps_mod = b.addModule("source_deps", .{
-        .root_source_file = .{ .path = "src/source/root/src/deps/framework.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/source/root/src/deps/framework.zig",
+            },
+        },
         .imports = &.{
             .{ .name = "filenames", .module = filenames_mod },
             .{ .name = "paths", .module = paths_mod },
@@ -73,7 +123,12 @@ pub fn build(b: *std.Build) void {
 
     // source/ module.
     const source_mod = b.addModule("source", .{
-        .root_source_file = .{ .path = "src/source/api.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/source/api.zig",
+            },
+        },
         .imports = &.{
             .{ .name = "stdout", .module = stdout_mod },
             .{ .name = "paths", .module = paths_mod },
@@ -86,9 +141,12 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "kickzig",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/main.zig",
+            },
+        },
         .target = target,
         .optimize = optimize,
     });
@@ -141,7 +199,12 @@ pub fn build(b: *std.Build) void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const unit_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = .{
+            .src_path = .{
+                .owner = b,
+                .sub_path = "src/main.zig",
+            },
+        },
         .target = target,
         .optimize = optimize,
     });
