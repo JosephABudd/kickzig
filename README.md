@@ -8,7 +8,7 @@ Works with [dvui](https://github.com/david-vanderson/dvui) and zig v. 0.13.0.
 
 ## Summary
 
-### kickzig is a CLI. It only does 3 things
+### kickzig is a CLI. It does 3 things
 
 1. **Generates the source code**, of an application framework, written in zig. The framework which uses the beautiful [dvui](https://github.com/david-vanderson/dvui) graphics framework in the front-end. That said, kickzig also requires the developer to understand how to use the dvui widgets. The framework source code contains various widget examples. (That's why it runs right out of the box.) You will find some in the framework source code. Also see the dvui [Examples.zig](https://github.com/david-vanderson/dvui/blob/main/src/Examples.zig) or the [dvui demo](https://github.com/david-vanderson/dvui-demo).
 1. **Adds and removes screens** in the source code.

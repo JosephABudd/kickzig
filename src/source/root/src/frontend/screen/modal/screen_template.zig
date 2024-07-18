@@ -108,8 +108,9 @@ const line_start =
     \\    allocator: std.mem.Allocator,
     \\    main_view: *MainView,
     \\    all_panels: *_panels_.Panels,
-    \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
+    \\    send_channels: *_channel_.FrontendToBackend,
+    \\    modal_params: ?*ModalParams,
     \\
     \\    /// init constructs this screen, subscribes it to main_view and returns the error.
     \\    pub fn init(startup: _startup_.Frontend) !*Screen {
@@ -118,6 +119,7 @@ const line_start =
     \\        self.main_view = startup.main_view;
     \\        self.receive_channels = startup.receive_channels;
     \\        self.send_channels = startup.send_channels;
+    \\        self.modal_params = null;
     \\
     \\        // The messenger.
     \\        var messenger: *_messenger_.Messenger = try _messenger_.init(startup.allocator, startup.main_view, startup.send_channels, startup.receive_channels, startup.exit);
@@ -139,6 +141,9 @@ const line_start =
     \\
     \\    pub fn deinit(self: *Screen) void {
     \\        self.all_panels.deinit();
+    \\        if (self.modal_params) |modal_params| {
+    \\            modal_params.deinit();
+    \\        }
     \\        self.allocator.destroy(self);
     \\    }
     \\
@@ -153,12 +158,16 @@ const line_start =
     \\    }
     \\
     \\    /// setState sets the state for this modal screen.
-    \\    pub fn setState(self: *Screen, setup_args: *ModalParams) !void {
+    \\    pub fn setState(self: *Screen, modal_params: *ModalParams) !void {
+    \\        if (self.modal_params) |params| {
+    \\            params.deinit();
+    \\        }
+    \\        self.modal_params = modal_params;
     \\
 ;
 
 const line_preset_modal =
-    \\        try self.all_panels.{0s}.?.presetModal(setup_args);
+    \\        try self.all_panels.{0s}.?.presetModal(modal_params);
     \\
 ;
 

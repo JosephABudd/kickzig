@@ -32,7 +32,7 @@ pub fn createAnyPackage(allocator: std.mem.Allocator, screen_name: []const u8, p
     try addMessengerFile(package_dir);
     // Add each panel file.
     for (panel_names) |panel_name| {
-        try addAnyPanel(allocator, package_dir, screen_name, panel_name);
+        try addAnyPanel(allocator, package_dir, screen_name, panel_name, panel_names);
     }
     // rebuildPanelsZig builds panels.zig with the names of each panel.
     try rebuildPanelsZig(allocator, package_dir, screen_name, true);
@@ -127,8 +127,8 @@ pub fn addEOJPanel(allocator: std.mem.Allocator, package_dir: std.fs.Dir) !void 
 /// addAnyPanel adds a single panel file to a screen with a messenger.
 /// It does not rewrite the package's panels.zig file.
 /// Caller must call rebuildPanelsZig after all panels are added.
-pub fn addAnyPanel(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8, panel_name: []const u8) !void {
-    var template: *_any_panel_template_.Template = try _any_panel_template_.init(allocator, screen_name, panel_name);
+pub fn addAnyPanel(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8, panel_name: []const u8, panel_names: []const []const u8) !void {
+    var template: *_any_panel_template_.Template = try _any_panel_template_.init(allocator, screen_name, panel_name, panel_names);
     defer template.deinit();
     const content: []const u8 = try template.content();
     defer allocator.free(content);

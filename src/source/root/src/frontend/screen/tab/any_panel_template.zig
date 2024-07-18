@@ -14,15 +14,23 @@ pub const Template = struct {
 
     // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
+
         // screen_name
         var size: usize = std.mem.replacementSize(u8, template, "{{ screen_name }}", self.screen_name);
         const with_screen_name: []u8 = try self.allocator.alloc(u8, size);
         defer self.allocator.free(with_screen_name);
         _ = std.mem.replace(u8, template, "{{ screen_name }}", self.screen_name, with_screen_name);
+
+        // panel_name
+        size = std.mem.replacementSize(u8, with_screen_name, "{{ panel_name }}", self.tab_name);
+        const with_panel_name: []u8 = try self.allocator.alloc(u8, size);
+        defer self.allocator.free(with_panel_name);
+        _ = std.mem.replace(u8, with_screen_name, "{{ panel_name }}", self.tab_name, with_panel_name);
+
         // tab_name
-        size = std.mem.replacementSize(u8, with_screen_name, "{{ tab_name }}", self.tab_name);
+        size = std.mem.replacementSize(u8, with_panel_name, "{{ tab_name }}", self.tab_name);
         const with_tab_name: []u8 = try self.allocator.alloc(u8, size);
-        _ = std.mem.replace(u8, with_screen_name, "{{ tab_name }}", self.tab_name, with_tab_name);
+        _ = std.mem.replace(u8, with_panel_name, "{{ tab_name }}", self.tab_name, with_tab_name);
         return with_tab_name;
     }
 };
@@ -55,6 +63,7 @@ const template =
     \\const _various_ = @import("various");
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
+    \\const OKModalParams = @import("modal_params").OK;
     \\
     \\// KICKZIG TODO:
     \\// Remember. Defers happen in reverse order.
@@ -218,32 +227,53 @@ const template =
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
     \\
-    \\        // The content area for a tab's content.
-    \\        var scroll = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
-    \\        defer scroll.deinit();
-    \\
-    \\        // Row 1 example: The screen's name.
-    \\        try dvui.labelNoFmt(@src(), "{{ screen_name }} Screen.", .{ .font_style = .title });
-    \\
-    \\        // Row 2 example: This panel's name.
     \\        {
+    \\            // Row 1: The screen's name using 1 column.
+    \\            // Use the same background as the scroller.
+    \\            var row: *dvui.BoxWidget = try dvui.box(
+    \\                @src(),
+    \\                .horizontal,
+    \\                .{
+    \\                    .expand = .horizontal,
+    \\                    .background = true,
+    \\                },
+    \\            );
+    \\            defer row.deinit();
+    \\
+    \\            try dvui.labelNoFmt(@src(), "{{ screen_name }} Screen.", .{ .font_style = .title });
+    \\        }
+    \\
+    \\        var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
+    \\        defer scroller.deinit();
+    \\
+    \\        var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
+    \\        defer layout.deinit();
+    \\
+    \\        {
+    \\            // Row 2 example: Information using 1 column.
+    \\            var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+    \\            defer row.deinit();
+    \\
+    \\            try dvui.label(@src(), "This panel is content for the {{ tab_name }} tab. Shown above is the screen name. Here, below the screen name is a scroll area containing the this panel's name and the rest of the panel's content. All of this is content displayed as an example.", .{}, .{});
+    \\        }
+    \\        {
+    \\            // Row 3 example: This panel's name using 2 columns.
     \\            var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
     \\            defer row.deinit();
     \\
     \\            try dvui.labelNoFmt(@src(), "Panel Name: ", .{ .font_style = .heading });
-    \\            try dvui.labelNoFmt(@src(), "{{ tab_name }}", .{});
+    \\            try dvui.labelNoFmt(@src(), "{{ panel_name }}", .{});
     \\        }
-    \\
-    \\        // Row 3: A button which closes this tab.
+    \\        // Row 4: A button which closes this tab using 1 column.
     \\        if (try dvui.button(@src(), "Close.", .{}, .{})) {
     \\            try self.closeTab();
     \\        }
     \\
-    \\        // Row 4: A button which opens another tab.
-    \\        // if (try dvui.button(@src(), "OK Modal Screen.", .{}, .{})) {
-    \\        //     const ok_args = try OKModalParams.init(self.allocator, "Hello World!", "This is the OK modal popped from the HelloWorld screen.");
-    \\        //     self.main_view.showOK(ok_args);
-    \\        // }
+    \\        // Row 5 example: A button which opens the OK modal screen using 1 column.
+    \\        if (try dvui.button(@src(), "OK Modal Screen.", .{}, .{})) {
+    \\            const ok_args = try OKModalParams.init(self.allocator, "Using the OK Modal Screen!", "This is the OK modal activated from the {{ panel_name }} panel in the {{ screen_name }} screen.");
+    \\            self.main_view.showOK(ok_args);
+    \\        }
     \\
     \\    }
     \\

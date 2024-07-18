@@ -15,9 +15,8 @@ const _helloworld_messenger_template_ = @import("helloworld_messenger_template.z
 /// The folder only contains:
 /// * The screen.zig file.
 /// * The messenger.zig file.
-/// The folder does not contain:
-/// * Any panel files. See addAnyPanel and removePanel.
-/// * The panels.zig file. See rebuildPanelsZig.
+/// * Any panel files.
+/// * The panels.zig file. See buildPanelsZig.
 pub fn createAnyPackage(allocator: std.mem.Allocator, screen_name: []const u8, panel_names: [][]const u8, only_frame_in_container: bool) !void {
     // Open/Create the screen package folder.
     var package_dir: std.fs.Dir = try directory(screen_name);
@@ -28,10 +27,10 @@ pub fn createAnyPackage(allocator: std.mem.Allocator, screen_name: []const u8, p
     try addMessengerFile(allocator, package_dir, screen_name);
     // Add each panel file.
     for (panel_names) |panel_name| {
-        try addAnyPanel(allocator, package_dir, screen_name, panel_name);
+        try addAnyPanel(allocator, package_dir, screen_name, panel_name, panel_names, only_frame_in_container);
     }
-    // rebuildPanelsZig builds panels.zig with the names of each panel.
-    try rebuildPanelsZig(allocator, package_dir, screen_name);
+    // buildPanelsZig builds panels.zig with the names of each panel.
+    try buildPanelsZig(allocator, package_dir, screen_name);
 }
 
 pub fn create(allocator: std.mem.Allocator) !void {
@@ -55,8 +54,8 @@ fn createHelloWorldPackage(allocator: std.mem.Allocator) !void {
     try addHelloWorldScreenFile(package_dir);
     // Add the example messenger file.
     try addHelloWorldMessengerFile(package_dir);
-    // rebuildPanelsZig builds panels.zig with the names of each panel.
-    try rebuildPanelsZig(allocator, package_dir, "HelloWorld");
+    // buildPanelsZig builds panels.zig with the names of each panel.
+    try buildPanelsZig(allocator, package_dir, "HelloWorld");
 }
 
 /// remove removes a panel screen package folder and files.
@@ -92,9 +91,9 @@ pub fn addHelloWorldPanel(allocator: std.mem.Allocator, package_dir: std.fs.Dir)
 
 /// addAnyPanel adds a single panel file to a screen.
 /// It does not rewrite the package's panels.zig file.
-/// Caller must call rebuildPanelsZig after all panels are added.
-pub fn addAnyPanel(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8, panel_name: []const u8) !void {
-    var template: *_any_panel_template_.Template = try _any_panel_template_.init(allocator, screen_name, panel_name);
+/// Caller must call buildPanelsZig after all panels are added.
+pub fn addAnyPanel(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8, panel_name: []const u8, all_panel_names: []const []const u8, only_frame_in_container: bool) !void {
+    var template: *_any_panel_template_.Template = try _any_panel_template_.init(allocator, screen_name, panel_name, all_panel_names, only_frame_in_container);
     defer template.deinit();
     const content: []const u8 = try template.content();
     defer allocator.free(content);
@@ -107,22 +106,10 @@ pub fn addAnyPanel(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen
     try ofile.writeAll(content);
 }
 
-/// removePanel removes a single panel file from a screen.
-/// It does not rewrite the package's panels.zig file.
-/// Caller must call rebuildPanelsZig after all panels are removed.
-pub fn removePanel(allocator: std.mem.Allocator, screen_name: []const u8, panel_name: []const u8) !void {
-    // Open the folder.
-    var screen_dir: std.fs.Dir = try directory(screen_name);
-    defer screen_dir.close();
-    const fname: []const u8 = try _filenames_.frontendScreenPanelFileName(allocator, panel_name);
-    defer allocator.free(fname);
-    try screen_dir.deleteFile(fname);
-}
-
-// rebuildPanelsZig rebuilds the panels.zig file.
+// buildPanelsZig builds the panels.zig file.
 // It rebuilds using the names of each panel file in the screen package.
 // Call this after panels are added or removed.
-pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8) !void {
+pub fn buildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8) !void {
     // Build the template and the content.
     const template: *_panels_template_.Template = try _panels_template_.init(allocator);
     defer template.deinit();
