@@ -1,376 +1,407 @@
 
+## dvui
+
+The framework included the dvui dependency in build.zig when it created the file, so I don't have to.
+
+* lines 7 - 10
+
 ## My additions to build.zig
 
-### Additions related to Vincent Rischmann's zig-sqlite package which is vendored in the src/vendor/zig-sqlite/ folder
+I have to include the dependency for
 
-* lines 33 - 50
-* line 213
-* lines 231 - 232
-* lines 252 - 257
+* Kamil Tomšík's fridge (sqlite) dependency in build.zig.zon,
+* my record package at src/deps/record/,
+* my store package at src/deps/store/.
 
-### Additions related to my record module in the src/@This/deps/record/ folder
+### Additions related to Kamil Tomšík's fridge (sqlite) package
 
-* lines 134 - 138
-* line 169
-* line 183
-* line 208 - 209
-* line 212
-* line 249
+* lines 11 - 16
+* line 277
+* lines 312 - 313
 
-### Additions related to my store module in the src/@This/deps/store/ folder
+### Additions related to my record module in the src/deps/record/ folder
 
-* lines 128 - 132
-* line 197
-* line 211 - 213
-* line 250
+* lines 191 - 202
+* line 232
+* line 247
+* line 272 - 273
+* line 276
+* line 309
+
+### Additions related to my store module in the src/deps/store/ folder
+
+* lines 178 - 189
+* line 261
+* line 275 - 277
+* line 310
 
 ```zig
   1 ⎥ const std = @import("std");
-  2 ⎥ const Pkg = std.build.Pkg;
-  3 ⎥ const Compile = std.Build.Step.Compile;
-  4 ⎥ 
-  5 ⎥ pub fn build(b: *std.build.Builder) !void {
-  6 ⎥     const target = b.standardTargetOptions(.{});
-  7 ⎥     const optimize = b.standardOptimizeOption(.{});
-  8 ⎥ 
-  9 ⎥     // VENDOR MODULES.
- 10 ⎥ 
- 11 ⎥     const lib_bundle = b.addStaticLibrary(.{
- 12 ⎥         .name = "dvui_libs",
- 13 ⎥         .target = target,
- 14 ⎥         .optimize = optimize,
- 15 ⎥     });
- 16 ⎥     lib_bundle.addCSourceFile(.{ .file = .{ .path = "src/vendor/dvui/src/stb/stb_image_impl.c" }, .flags = &.{} });
- 17 ⎥     lib_bundle.addCSourceFile(.{ .file = .{ .path = "src/vendor/dvui/src/stb/stb_truetype_impl.c" }, .flags = &.{} });
- 18 ⎥     link_deps(b, lib_bundle);
- 19 ⎥     b.installArtifact(lib_bundle);
- 20 ⎥ 
- 21 ⎥     const dvui_mod = b.addModule("dvui", .{
- 22 ⎥         .source_file = .{ .path = "src/vendor/dvui/src/dvui.zig" },
- 23 ⎥         .dependencies = &.{},
- 24 ⎥     });
- 25 ⎥ 
- 26 ⎥     const sdl_mod = b.addModule("SDLBackend", .{
- 27 ⎥         .source_file = .{ .path = "src/vendor/dvui/src/backends/SDLBackend.zig" },
- 28 ⎥         .dependencies = &.{
- 29 ⎥             .{ .name = "dvui", .module = dvui_mod },
+  2 ⎥ 
+  3 ⎥ pub fn build(b: *std.Build) void {
+  4 ⎥     const target = b.standardTargetOptions(.{});
+  5 ⎥     const optimize = b.standardOptimizeOption(.{});
+  6 ⎥ 
+  7 ⎥     const dvui_dep = b.dependency(
+  8 ⎥         "dvui",
+  9 ⎥         .{ .target = target, .optimize = optimize },
+ 10 ⎥     );
+ 11 ⎥     const sqlite_dep = b.dependency(
+ 12 ⎥         "fridge",
+ 13 ⎥         .{
+ 14 ⎥             .bundle = true,
+ 15 ⎥         },
+ 16 ⎥     );
+ 17 ⎥ 
+ 18 ⎥     // Framework modules.
+ 19 ⎥ 
+ 20 ⎥     // channel_mod. A framework deps/ module.
+ 21 ⎥     const channel_mod = b.addModule(
+ 22 ⎥         "channel",
+ 23 ⎥         .{
+ 24 ⎥             .root_source_file = .{
+ 25 ⎥                 .src_path = .{
+ 26 ⎥                     .owner = b,
+ 27 ⎥                     .sub_path = "src/deps/channel/api.zig",
+ 28 ⎥                 },
+ 29 ⎥             },
  30 ⎥         },
- 31 ⎥     });
+ 31 ⎥     );
  32 ⎥ 
- 33 ⎥     // sqlite
- 34 ⎥     const sqlite = b.addStaticLibrary(.{
- 35 ⎥         .name = "sqlite",
- 36 ⎥         .target = target,
- 37 ⎥         .optimize = optimize,
- 38 ⎥     });
- 39 ⎥     sqlite.addCSourceFile(.{
- 40 ⎥         .file = .{ .path = "src/vendor/zig-sqlite/c/sqlite3.c" },
- 41 ⎥         .flags = &[_][]const u8{
- 42 ⎥             "-std=c99",
+ 33 ⎥     // closedownjobs_mod. A framework deps/ module.
+ 34 ⎥     const closedownjobs_mod = b.addModule(
+ 35 ⎥         "closedownjobs",
+ 36 ⎥         .{
+ 37 ⎥             .root_source_file = .{
+ 38 ⎥                 .src_path = .{
+ 39 ⎥                     .owner = b,
+ 40 ⎥                     .sub_path = "src/deps/closedownjobs/api.zig",
+ 41 ⎥                 },
+ 42 ⎥             },
  43 ⎥         },
- 44 ⎥     });
- 45 ⎥     sqlite.addIncludePath(.{ .path = "src/vendor/zig-sqlite/c" });
- 46 ⎥     sqlite.linkLibC();
- 47 ⎥     const sqlite_mod = b.addModule("sqlite", .{
- 48 ⎥         .source_file = .{ .path = "src/vendor/zig-sqlite/sqlite.zig" },
- 49 ⎥         .dependencies = &.{},
- 50 ⎥     });
- 51 ⎥ 
- 52 ⎥     // FRAMEWORK MODULES.
- 53 ⎥ 
- 54 ⎥     // channel_mod. A framework deps/ module.
- 55 ⎥     const channel_mod = b.addModule("channel", .{
- 56 ⎥         .source_file = .{ .path = "src/@This/deps/channel/api.zig" },
- 57 ⎥         .dependencies = &.{},
- 58 ⎥     });
- 59 ⎥ 
- 60 ⎥     // closedownjobs_mod. A framework deps/ module.
- 61 ⎥     const closedownjobs_mod = b.addModule("closedownjobs", .{
- 62 ⎥         .source_file = .{ .path = "src/@This/deps/closedownjobs/api.zig" },
- 63 ⎥         .dependencies = &.{},
- 64 ⎥     });
- 65 ⎥ 
- 66 ⎥     // closer_mod. A framework deps/ module.
- 67 ⎥     const closer_mod = b.addModule("closer", .{
- 68 ⎥         .source_file = .{ .path = "src/@This/deps/closer/api.zig" },
- 69 ⎥         .dependencies = &.{},
- 70 ⎥     });
+ 44 ⎥     );
+ 45 ⎥ 
+ 46 ⎥     // closer_mod. A framework deps/ module.
+ 47 ⎥     const closer_mod = b.addModule(
+ 48 ⎥         "closer",
+ 49 ⎥         .{
+ 50 ⎥             .root_source_file = .{
+ 51 ⎥                 .src_path = .{
+ 52 ⎥                     .owner = b,
+ 53 ⎥                     .sub_path = "src/deps/closer/api.zig",
+ 54 ⎥                 },
+ 55 ⎥             },
+ 56 ⎥         },
+ 57 ⎥     );
+ 58 ⎥ 
+ 59 ⎥     // counter_mod. A framework deps/ module.
+ 60 ⎥     const counter_mod = b.addModule(
+ 61 ⎥         "counter",
+ 62 ⎥         .{
+ 63 ⎥             .root_source_file = .{
+ 64 ⎥                 .src_path = .{
+ 65 ⎥                     .owner = b,
+ 66 ⎥                     .sub_path = "src/deps/counter/api.zig",
+ 67 ⎥                 },
+ 68 ⎥             },
+ 69 ⎥         },
+ 70 ⎥     );
  71 ⎥ 
- 72 ⎥     // counter_mod. A framework deps/ module.
- 73 ⎥     const counter_mod = b.addModule("counter", .{
- 74 ⎥         .source_file = .{ .path = "src/@This/deps/counter/api.zig" },
- 75 ⎥         .dependencies = &.{},
- 76 ⎥     });
- 77 ⎥ 
- 78 ⎥     // framers_mod. A framework deps/ module.
- 79 ⎥     const framers_mod = b.addModule("framers", .{
- 80 ⎥         .source_file = .{ .path = "src/@This/deps/framers/api.zig" },
- 81 ⎥         .dependencies = &.{},
- 82 ⎥     });
- 83 ⎥ 
- 84 ⎥     // lock_mod. A framework deps/ module.
- 85 ⎥     const lock_mod = b.addModule("lock", .{
- 86 ⎥         .source_file = .{ .path = "src/@This/deps/lock/api.zig" },
- 87 ⎥         .dependencies = &.{},
- 88 ⎥     });
- 89 ⎥ 
- 90 ⎥     // message_mod. A framework deps/ module.
- 91 ⎥     const message_mod = b.addModule("message", .{
- 92 ⎥         .source_file = .{ .path = "src/@This/deps/message/api.zig" },
- 93 ⎥         .dependencies = &.{},
- 94 ⎥     });
- 95 ⎥ 
- 96 ⎥     // modal_params_mod. A framework deps/ module.
- 97 ⎥     const modal_params_mod = b.addModule("modal_params", .{
- 98 ⎥         .source_file = .{ .path = "src/@This/deps/modal_params/api.zig" },
- 99 ⎥         .dependencies = &.{},
-100 ⎥     });
-101 ⎥ 
-102 ⎥     // screen_pointers_mod. A framework frontend/ module.
-103 ⎥     const screen_pointers_mod = b.addModule("screen_pointers", .{
-104 ⎥         .source_file = .{ .path = "src/@This/frontend/screen_pointers.zig" },
-105 ⎥         .dependencies = &.{},
-106 ⎥     });
-107 ⎥ 
-108 ⎥     // startup_mod. A framework deps/ module.
-109 ⎥     const startup_mod = b.addModule("startup", .{
-110 ⎥         .source_file = .{ .path = "src/@This/deps/startup/api.zig" },
-111 ⎥         .dependencies = &.{},
-112 ⎥     });
-113 ⎥ 
-114 ⎥     // various_mod. A framework deps/ module.
-115 ⎥     const various_mod = b.addModule("various", .{
-116 ⎥         .source_file = .{ .path = "src/@This/deps/various/api.zig" },
-117 ⎥         .dependencies = &.{},
-118 ⎥     });
-119 ⎥ 
-120 ⎥     // widget_mod. A framework deps/ module.
-121 ⎥     const widget_mod = b.addModule("widget", .{
-122 ⎥         .source_file = .{ .path = "src/@This/deps/widget/api.zig" },
-123 ⎥         .dependencies = &.{},
-124 ⎥     });
-125 ⎥ 
-126 ⎥     // My modules.
-127 ⎥ 
-128 ⎥     // my deps/store/ module.
-129 ⎥     const store_mod = b.addModule("store", .{
-130 ⎥         .source_file = .{ .path = "src/@This/deps/store/api.zig" },
-131 ⎥         .dependencies = &.{},
-132 ⎥     });
-133 ⎥ 
-134 ⎥     // my deps/record/ module.
-135 ⎥     const record_mod = b.addModule("record", .{
-136 ⎥         .source_file = .{ .path = "src/@This/deps/record/api.zig" },
-137 ⎥         .dependencies = &.{},
-138 ⎥     });
-139 ⎥ 
-140 ⎥     // FRAMEWORK MODULE DEPENDENCIES.
-141 ⎥ 
-142 ⎥     // Dependencies for channel_mod. A framework deps/ module.
-143 ⎥     try channel_mod.dependencies.put("message", message_mod);
-144 ⎥     try channel_mod.dependencies.put("various", various_mod);
-145 ⎥ 
-146 ⎥     // Dependencies for closedownjobs_mod. A framework deps/ module.
-147 ⎥     try closedownjobs_mod.dependencies.put("counter", counter_mod);
-148 ⎥ 
-149 ⎥     // Dependencies for closer_mod. A framework deps/ module.
-150 ⎥     try closer_mod.dependencies.put("closedownjobs", closedownjobs_mod);
-151 ⎥     try closer_mod.dependencies.put("dvui", dvui_mod);
-152 ⎥     try closer_mod.dependencies.put("framers", framers_mod);
-153 ⎥     try closer_mod.dependencies.put("lock", lock_mod);
-154 ⎥     try closer_mod.dependencies.put("modal_params", modal_params_mod);
-155 ⎥     try closer_mod.dependencies.put("various", various_mod);
-156 ⎥ 
-157 ⎥     // Dependencies for framers_mod. A framework deps/ module.
-158 ⎥     try framers_mod.dependencies.put("startup", startup_mod);
-159 ⎥     try framers_mod.dependencies.put("dvui", dvui_mod);
-160 ⎥     try framers_mod.dependencies.put("modal_params", modal_params_mod);
-161 ⎥     try framers_mod.dependencies.put("various", various_mod);
-162 ⎥     try framers_mod.dependencies.put("lock", lock_mod);
-163 ⎥ 
-164 ⎥     // Dependencies for message_mod. A framework deps/ module.
-165 ⎥     try message_mod.dependencies.put("counter", counter_mod);
-166 ⎥     try message_mod.dependencies.put("closedownjobs", closedownjobs_mod);
-167 ⎥     try message_mod.dependencies.put("framers", framers_mod);
-168 ⎥     try message_mod.dependencies.put("various", various_mod);
-169 ⎥     try message_mod.dependencies.put("record", record_mod);
-170 ⎥ 
-171 ⎥     // Dependencies for modal_params_mod. A framework deps/ module.
-172 ⎥     try modal_params_mod.dependencies.put("closedownjobs", closedownjobs_mod);
-173 ⎥ 
-174 ⎥     // Dependencies for screen_pointers_mod. A framework frontend/ module.
-175 ⎥     try screen_pointers_mod.dependencies.put("channel", channel_mod);
-176 ⎥     try screen_pointers_mod.dependencies.put("closedownjobs", closedownjobs_mod);
-177 ⎥     try screen_pointers_mod.dependencies.put("closer", closer_mod);
-178 ⎥     try screen_pointers_mod.dependencies.put("dvui", dvui_mod);
-179 ⎥     try screen_pointers_mod.dependencies.put("framers", framers_mod);
-180 ⎥     try screen_pointers_mod.dependencies.put("lock", lock_mod);
-181 ⎥     try screen_pointers_mod.dependencies.put("message", message_mod);
-182 ⎥     try screen_pointers_mod.dependencies.put("modal_params", modal_params_mod);
-183 ⎥     try screen_pointers_mod.dependencies.put("record", record_mod);
-184 ⎥     try screen_pointers_mod.dependencies.put("screen_pointers", screen_pointers_mod);
-185 ⎥     try screen_pointers_mod.dependencies.put("startup", startup_mod);
-186 ⎥     try screen_pointers_mod.dependencies.put("various", various_mod);
-187 ⎥     try screen_pointers_mod.dependencies.put("widget", widget_mod);
-188 ⎥ 
-189 ⎥     // Dependencies for startup_mod. A framework deps/ module.
-190 ⎥     try startup_mod.dependencies.put("channel", channel_mod);
-191 ⎥     try startup_mod.dependencies.put("closedownjobs", closedownjobs_mod);
-192 ⎥     try startup_mod.dependencies.put("dvui", dvui_mod);
-193 ⎥     try startup_mod.dependencies.put("framers", framers_mod);
-194 ⎥     try startup_mod.dependencies.put("modal_params", modal_params_mod);
-195 ⎥     try startup_mod.dependencies.put("various", various_mod);
-196 ⎥     try startup_mod.dependencies.put("screen_pointers", screen_pointers_mod);
-197 ⎥     try startup_mod.dependencies.put("store", store_mod);
-198 ⎥ 
-199 ⎥     // Dependencies for widget_mod. A framework deps/ module.
-200 ⎥     try widget_mod.dependencies.put("dvui", dvui_mod);
-201 ⎥     try widget_mod.dependencies.put("lock", lock_mod);
-202 ⎥     try widget_mod.dependencies.put("framers", framers_mod);
-203 ⎥     try widget_mod.dependencies.put("startup", startup_mod);
-204 ⎥     try widget_mod.dependencies.put("various", various_mod);
+ 72 ⎥     // framers_mod. A framework deps/ module.
+ 73 ⎥     const framers_mod = b.addModule(
+ 74 ⎥         "framers",
+ 75 ⎥         .{
+ 76 ⎥             .root_source_file = .{
+ 77 ⎥                 .src_path = .{
+ 78 ⎥                     .owner = b,
+ 79 ⎥                     .sub_path = "src/deps/framers/api.zig",
+ 80 ⎥                 },
+ 81 ⎥             },
+ 82 ⎥         },
+ 83 ⎥     );
+ 84 ⎥ 
+ 85 ⎥     // lock_mod. A framework deps/ module.
+ 86 ⎥     const lock_mod = b.addModule(
+ 87 ⎥         "lock",
+ 88 ⎥         .{
+ 89 ⎥             .root_source_file = .{
+ 90 ⎥                 .src_path = .{
+ 91 ⎥                     .owner = b,
+ 92 ⎥                     .sub_path = "src/deps/lock/api.zig",
+ 93 ⎥                 },
+ 94 ⎥             },
+ 95 ⎥         },
+ 96 ⎥     );
+ 97 ⎥ 
+ 98 ⎥     // message_mod. A framework deps/ module.
+ 99 ⎥     const message_mod = b.addModule(
+100 ⎥         "message",
+101 ⎥         .{
+102 ⎥             .root_source_file = .{
+103 ⎥                 .src_path = .{
+104 ⎥                     .owner = b,
+105 ⎥                     .sub_path = "src/deps/message/api.zig",
+106 ⎥                 },
+107 ⎥             },
+108 ⎥         },
+109 ⎥     );
+110 ⎥ 
+111 ⎥     // modal_params_mod. A framework deps/ module.
+112 ⎥     const modal_params_mod = b.addModule(
+113 ⎥         "modal_params",
+114 ⎥         .{
+115 ⎥             .root_source_file = .{
+116 ⎥                 .src_path = .{
+117 ⎥                     .owner = b,
+118 ⎥                     .sub_path = "src/deps/modal_params/api.zig",
+119 ⎥                 },
+120 ⎥             },
+121 ⎥         },
+122 ⎥     );
+123 ⎥ 
+124 ⎥     // screen_pointers_mod. A framework frontend/ module.
+125 ⎥     const screen_pointers_mod = b.addModule(
+126 ⎥         "screen_pointers",
+127 ⎥         .{
+128 ⎥             .root_source_file = .{
+129 ⎥                 .src_path = .{
+130 ⎥                     .owner = b,
+131 ⎥                     .sub_path = "src/frontend/screen_pointers.zig",
+132 ⎥                 },
+133 ⎥             },
+134 ⎥         },
+135 ⎥     );
+136 ⎥ 
+137 ⎥     // startup_mod. A framework deps/ module.
+138 ⎥     const startup_mod = b.addModule(
+139 ⎥         "startup",
+140 ⎥         .{
+141 ⎥             .root_source_file = .{
+142 ⎥                 .src_path = .{
+143 ⎥                     .owner = b,
+144 ⎥                     .sub_path = "src/deps/startup/api.zig",
+145 ⎥                 },
+146 ⎥             },
+147 ⎥         },
+148 ⎥     );
+149 ⎥ 
+150 ⎥     // various_mod. A framework deps/ module.
+151 ⎥     const various_mod = b.addModule(
+152 ⎥         "various",
+153 ⎥         .{
+154 ⎥             .root_source_file = .{
+155 ⎥                 .src_path = .{
+156 ⎥                     .owner = b,
+157 ⎥                     .sub_path = "src/deps/various/api.zig",
+158 ⎥                 },
+159 ⎥             },
+160 ⎥         },
+161 ⎥     );
+162 ⎥ 
+163 ⎥     // widget_mod. A framework deps/ module.
+164 ⎥     const widget_mod = b.addModule(
+165 ⎥         "widget",
+166 ⎥         .{
+167 ⎥             .root_source_file = .{
+168 ⎥                 .src_path = .{
+169 ⎥                     .owner = b,
+170 ⎥                     .sub_path = "src/deps/widget/api.zig",
+171 ⎥                 },
+172 ⎥             },
+173 ⎥         },
+174 ⎥     );
+175 ⎥ 
+176 ⎥     // My modules.
+177 ⎥ 
+178 ⎥     // my deps/store/ module.
+179 ⎥     const store_mod = b.addModule(
+180 ⎥         "store",
+181 ⎥         .{
+182 ⎥             .root_source_file = .{
+183 ⎥                 .src_path = .{
+184 ⎥                     .owner = b,
+185 ⎥                     .sub_path = "src/deps/store/api.zig",
+186 ⎥                 },
+187 ⎥             },
+188 ⎥         },
+189 ⎥     );
+190 ⎥ 
+191 ⎥     // my deps/record/ module.
+192 ⎥     const record_mod = b.addModule(
+193 ⎥         "record",
+194 ⎥         .{
+195 ⎥             .root_source_file = .{
+196 ⎥                 .src_path = .{
+197 ⎥                     .owner = b,
+198 ⎥                     .sub_path = "src/deps/record/api.zig",
+199 ⎥                 },
+200 ⎥             },
+201 ⎥         },
+202 ⎥     );
+203 ⎥ 
+204 ⎥     // Framework module dependencies.
 205 ⎥ 
-206 ⎥     // MY MODULES DEPENDENCIES.
-207 ⎥ 
-208 ⎥     // Dependencies for record_mod. My deps/ module.
-209 ⎥     try record_mod.dependencies.put("counter", counter_mod);
-210 ⎥ 
-211 ⎥     // Dependencies for store_mod. My deps/ module.
-212 ⎥     try store_mod.dependencies.put("record", record_mod);
-213 ⎥     try store_mod.dependencies.put("sqlite", sqlite_mod);
-214 ⎥ 
-215 ⎥     const examples = [_][]const u8{
-216 ⎥         "standalone-sdl",
-217 ⎥     };
-218 ⎥ 
-219 ⎥     inline for (examples) |ex| {
-220 ⎥         const exe = b.addExecutable(.{
-221 ⎥             .name = ex,
-222 ⎥             .root_source_file = .{ .path = ex ++ ".zig" },
-223 ⎥             .target = target,
-224 ⎥             .optimize = optimize,
-225 ⎥         });
-226 ⎥ 
-227 ⎥         // vendor/dvui module.
-228 ⎥         exe.addModule("dvui", dvui_mod);
-229 ⎥         exe.addModule("SDLBackend", sdl_mod);
-230 ⎥ 
-231 ⎥         // vendor/zig-sqlite/ module.
-232 ⎥         exe.addModule("sqlite", sqlite_mod);
-233 ⎥ 
-234 ⎥         // deps modules.
-235 ⎥         exe.addModule("various", various_mod);
-236 ⎥         exe.addModule("screen_pointers", screen_pointers_mod);
-237 ⎥         exe.addModule("counter", counter_mod);
-238 ⎥         exe.addModule("closer", closer_mod);
-239 ⎥         exe.addModule("closedownjobs", closedownjobs_mod);
-240 ⎥         exe.addModule("channel", channel_mod);
-241 ⎥         exe.addModule("lock", lock_mod);
-242 ⎥         exe.addModule("framers", framers_mod);
-243 ⎥         exe.addModule("message", message_mod);
-244 ⎥         exe.addModule("modal_params", modal_params_mod);
-245 ⎥         exe.addModule("startup", startup_mod);
-246 ⎥         exe.addModule("widget", widget_mod);
-247 ⎥ 
-248 ⎥         // my deps modules.
-249 ⎥         exe.addModule("record", record_mod);
-250 ⎥         exe.addModule("store", store_mod);
-251 ⎥ 
-252 ⎥         // links the bundled sqlite3, so leave this out if you link the system one
-253 ⎥         exe.linkLibrary(sqlite);
-254 ⎥         exe.addIncludePath(.{ .path = "src/vendor/zig-sqlite/c" });
-255 ⎥         // exe.addAnonymousModule("sqlite", .{
-256 ⎥         //     .source_file = .{ .path = "src/vendor/zig-sqlite/sqlite.zig" },
-257 ⎥         // });
-258 ⎥ 
-259 ⎥         exe.linkLibrary(lib_bundle);
-260 ⎥         add_include_paths(b, exe);
-261 ⎥ 
-262 ⎥         const compile_step = b.step(ex, "Compile " ++ ex);
-263 ⎥         compile_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
-264 ⎥         b.getInstallStep().dependOn(compile_step);
-265 ⎥ 
-266 ⎥         const run_cmd = b.addRunArtifact(exe);
-267 ⎥         run_cmd.step.dependOn(compile_step);
-268 ⎥ 
-269 ⎥         const run_step = b.step("run-" ++ ex, "Run " ++ ex);
-270 ⎥         run_step.dependOn(&run_cmd.step);
-271 ⎥     }
-272 ⎥ }
-273 ⎥ 
-274 ⎥ pub fn link_deps(b: *std.Build, exe: *std.Build.Step.Compile) void {
-275 ⎥     // TODO: remove this part about freetype (pulling it from the dvui_dep
-276 ⎥     // sub-builder) once https://github.com/ziglang/zig/pull/14731 lands
-277 ⎥     const freetype_dep = b.dependency("freetype", .{
-278 ⎥         .target = exe.target,
-279 ⎥         .optimize = exe.optimize,
-280 ⎥     });
-281 ⎥     exe.linkLibrary(freetype_dep.artifact("freetype"));
-282 ⎥ 
-283 ⎥     if (exe.target.cpu_arch == .wasm32) {
-284 ⎥         // nothing
-285 ⎥     } else if (exe.target.isWindows()) {
-286 ⎥         const sdl_dep = b.dependency("sdl", .{
-287 ⎥             .target = exe.target,
-288 ⎥             .optimize = exe.optimize,
-289 ⎥         });
-290 ⎥         exe.linkLibrary(sdl_dep.artifact("SDL2"));
-291 ⎥ 
-292 ⎥         exe.linkSystemLibrary("setupapi");
-293 ⎥         exe.linkSystemLibrary("winmm");
-294 ⎥         exe.linkSystemLibrary("gdi32");
-295 ⎥         exe.linkSystemLibrary("imm32");
-296 ⎥         exe.linkSystemLibrary("version");
-297 ⎥         exe.linkSystemLibrary("oleaut32");
-298 ⎥         exe.linkSystemLibrary("ole32");
-299 ⎥     } else {
-300 ⎥         if (exe.target.isDarwin()) {
-301 ⎥             exe.linkSystemLibrary("z");
-302 ⎥             exe.linkSystemLibrary("bz2");
-303 ⎥             exe.linkSystemLibrary("iconv");
-304 ⎥             exe.linkFramework("AppKit");
-305 ⎥             exe.linkFramework("AudioToolbox");
-306 ⎥             exe.linkFramework("Carbon");
-307 ⎥             exe.linkFramework("Cocoa");
-308 ⎥             exe.linkFramework("CoreAudio");
-309 ⎥             exe.linkFramework("CoreFoundation");
-310 ⎥             exe.linkFramework("CoreGraphics");
-311 ⎥             exe.linkFramework("CoreHaptics");
-312 ⎥             exe.linkFramework("CoreVideo");
-313 ⎥             exe.linkFramework("ForceFeedback");
-314 ⎥             exe.linkFramework("GameController");
-315 ⎥             exe.linkFramework("IOKit");
-316 ⎥             exe.linkFramework("Metal");
-317 ⎥         }
-318 ⎥ 
-319 ⎥         exe.linkSystemLibrary("SDL2");
-320 ⎥         //exe.addIncludePath(.{.path = "/Users/dvanderson/SDL2-2.24.1/include"});
-321 ⎥         //exe.addObjectFile(.{.path = "/Users/dvanderson/SDL2-2.24.1/build/.libs/libSDL2.a"});
-322 ⎥     }
-323 ⎥ }
+206 ⎥     // Dependencies for channel_mod. A framework deps/ module.
+207 ⎥     channel_mod.addImport("message", message_mod);
+208 ⎥     channel_mod.addImport("various", various_mod);
+209 ⎥ 
+210 ⎥     // Dependencies for closedownjobs_mod. A framework deps/ module.
+211 ⎥     closedownjobs_mod.addImport("counter", counter_mod);
+212 ⎥ 
+213 ⎥     // Dependencies for closer_mod. A framework deps/ module.
+214 ⎥     closer_mod.addImport("closedownjobs", closedownjobs_mod);
+215 ⎥     closer_mod.addImport("dvui", dvui_dep.module("dvui"));
+216 ⎥     closer_mod.addImport("framers", framers_mod);
+217 ⎥     closer_mod.addImport("lock", lock_mod);
+218 ⎥     closer_mod.addImport("modal_params", modal_params_mod);
+219 ⎥     closer_mod.addImport("various", various_mod);
+220 ⎥ 
+221 ⎥     // Dependencies for framers_mod. A framework deps/ module.
+222 ⎥     framers_mod.addImport("startup", startup_mod);
+223 ⎥     framers_mod.addImport("dvui", dvui_dep.module("dvui"));
+224 ⎥     framers_mod.addImport("modal_params", modal_params_mod);
+225 ⎥     framers_mod.addImport("various", various_mod);
+226 ⎥     framers_mod.addImport("lock", lock_mod);
+227 ⎥ 
+228 ⎥     // Dependencies for message_mod. A framework deps/ module.
+229 ⎥     message_mod.addImport("counter", counter_mod);
+230 ⎥     message_mod.addImport("closedownjobs", closedownjobs_mod);
+231 ⎥     message_mod.addImport("framers", framers_mod);
+232 ⎥     message_mod.addImport("record", record_mod);
+233 ⎥     message_mod.addImport("various", various_mod);
+234 ⎥ 
+235 ⎥     // Dependencies for modal_params_mod. A framework deps/ module.
+236 ⎥     modal_params_mod.addImport("closedownjobs", closedownjobs_mod);
+237 ⎥ 
+238 ⎥     // Dependencies for screen_pointers_mod. A framework frontend/ module.
+239 ⎥     screen_pointers_mod.addImport("channel", channel_mod);
+240 ⎥     screen_pointers_mod.addImport("closedownjobs", closedownjobs_mod);
+241 ⎥     screen_pointers_mod.addImport("closer", closer_mod);
+242 ⎥     screen_pointers_mod.addImport("dvui", dvui_dep.module("dvui"));
+243 ⎥     screen_pointers_mod.addImport("framers", framers_mod);
+244 ⎥     screen_pointers_mod.addImport("lock", lock_mod);
+245 ⎥     screen_pointers_mod.addImport("message", message_mod);
+246 ⎥     screen_pointers_mod.addImport("modal_params", modal_params_mod);
+247 ⎥     screen_pointers_mod.addImport("record", record_mod);
+248 ⎥     screen_pointers_mod.addImport("screen_pointers", screen_pointers_mod);
+249 ⎥     screen_pointers_mod.addImport("startup", startup_mod);
+250 ⎥     screen_pointers_mod.addImport("various", various_mod);
+251 ⎥     screen_pointers_mod.addImport("widget", widget_mod);
+252 ⎥ 
+253 ⎥     // Dependencies for startup_mod. A framework deps/ module.
+254 ⎥     startup_mod.addImport("channel", channel_mod);
+255 ⎥     startup_mod.addImport("closedownjobs", closedownjobs_mod);
+256 ⎥     startup_mod.addImport("dvui", dvui_dep.module("dvui"));
+257 ⎥     startup_mod.addImport("framers", framers_mod);
+258 ⎥     startup_mod.addImport("modal_params", modal_params_mod);
+259 ⎥     startup_mod.addImport("various", various_mod);
+260 ⎥     startup_mod.addImport("screen_pointers", screen_pointers_mod);
+261 ⎥     startup_mod.addImport("store", store_mod);
+262 ⎥ 
+263 ⎥     // Dependencies for widget_mod. A framework deps/ module.
+264 ⎥     widget_mod.addImport("dvui", dvui_dep.module("dvui"));
+265 ⎥     widget_mod.addImport("lock", lock_mod);
+266 ⎥     widget_mod.addImport("framers", framers_mod);
+267 ⎥     widget_mod.addImport("startup", startup_mod);
+268 ⎥     widget_mod.addImport("various", various_mod);
+269 ⎥ 
+270 ⎥     // MY MODULES DEPENDENCIES.
+271 ⎥ 
+272 ⎥     // Dependencies for record_mod. My deps/ module.
+273 ⎥     record_mod.addImport("counter", counter_mod);
+274 ⎥ 
+275 ⎥     // Dependencies for store_mod. My deps/ module.
+276 ⎥     store_mod.addImport("record", record_mod);
+277 ⎥     store_mod.addImport("sqlite", sqlite_dep.module("fridge"));
+278 ⎥ 
+279 ⎥     const exe = b.addExecutable(.{
+280 ⎥         .name = "crud",
+281 ⎥         .root_source_file = .{
+282 ⎥             .src_path = .{
+283 ⎥                 .owner = b,
+284 ⎥                 .sub_path = "src/main.zig",
+285 ⎥             },
+286 ⎥         },
+287 ⎥         .target = target,
+288 ⎥         .optimize = optimize,
+289 ⎥     });
+290 ⎥ 
+291 ⎥     exe.root_module.addImport("dvui", dvui_dep.module("dvui"));
+292 ⎥     exe.root_module.addImport("SDLBackend", dvui_dep.module("SDLBackend"));
+293 ⎥ 
+294 ⎥     // Framework modules.
+295 ⎥     exe.root_module.addImport("channel", channel_mod);
+296 ⎥     exe.root_module.addImport("closedownjobs", closedownjobs_mod);
+297 ⎥     exe.root_module.addImport("closer", closer_mod);
+298 ⎥     exe.root_module.addImport("counter", counter_mod);
+299 ⎥     exe.root_module.addImport("framers", framers_mod);
+300 ⎥     exe.root_module.addImport("lock", lock_mod);
+301 ⎥     exe.root_module.addImport("message", message_mod);
+302 ⎥     exe.root_module.addImport("modal_params", modal_params_mod);
+303 ⎥     exe.root_module.addImport("screen_pointers", screen_pointers_mod);
+304 ⎥     exe.root_module.addImport("startup", startup_mod);
+305 ⎥     exe.root_module.addImport("various", various_mod);
+306 ⎥     exe.root_module.addImport("widget", widget_mod);
+307 ⎥ 
+308 ⎥     // my deps modules.
+309 ⎥     exe.root_module.addImport("record", record_mod);
+310 ⎥     exe.root_module.addImport("store", store_mod);
+311 ⎥ 
+312 ⎥     // vendor/fridge/ module.
+313 ⎥     exe.root_module.addImport("sqlite", sqlite_dep.module("fridge"));
+314 ⎥ 
+315 ⎥     // This declares intent for the executable to be installed into the
+316 ⎥     // standard location when the user invokes the "install" step (the default
+317 ⎥     // step when running `zig build`).
+318 ⎥     b.installArtifact(exe);
+319 ⎥ 
+320 ⎥     // This *creates* a Run step in the build graph, to be executed when another
+321 ⎥     // step is evaluated that depends on it. The next line below will establish
+322 ⎥     // such a dependency.
+323 ⎥     const run_cmd = b.addRunArtifact(exe);
 324 ⎥ 
-325 ⎥ const build_runner = @import("root");
-326 ⎥ const deps = build_runner.dependencies;
-327 ⎥ 
-328 ⎥ pub fn get_dependency_build_root(dep_prefix: []const u8, name: []const u8) []const u8 {
-329 ⎥     inline for (@typeInfo(deps.imports).Struct.decls) |decl| {
-330 ⎥         if (std.mem.startsWith(u8, decl.name, dep_prefix) and
-331 ⎥             std.mem.endsWith(u8, decl.name, name) and
-332 ⎥             decl.name.len == dep_prefix.len + name.len)
-333 ⎥         {
-334 ⎥             return @field(deps.build_root, decl.name);
-335 ⎥         }
-336 ⎥     }
-337 ⎥ 
-338 ⎥     std.debug.print("no dependency named '{s}'\n", .{name});
-339 ⎥     std.process.exit(1);
-340 ⎥ }
-341 ⎥ 
-342 ⎥ /// prefix: library prefix. e.g. "dvui."
-343 ⎥ pub fn add_include_paths(b: *std.Build, exe: *std.Build.CompileStep) void {
-344 ⎥     exe.addIncludePath(.{ .path = b.fmt("{s}{s}", .{ get_dependency_build_root(b.dep_prefix, "stb_image"), "/include" }) });
-345 ⎥     exe.addIncludePath(.{ .path = b.fmt("{s}{s}", .{ get_dependency_build_root(b.dep_prefix, "freetype"), "/include" }) });
-346 ⎥     exe.addIncludePath(.{ .path = b.fmt("{s}/src/stb", .{b.build_root.path.?}) });
-347 ⎥ }
-348 ⎥ 
+325 ⎥     // By making the run step depend on the install step, it will be run from the
+326 ⎥     // installation directory rather than directly from within the cache directory.
+327 ⎥     // This is not necessary, however, if the application depends on other installed
+328 ⎥     // files, this ensures they will be present and in the expected location.
+329 ⎥     run_cmd.step.dependOn(b.getInstallStep());
+330 ⎥ 
+331 ⎥     // This allows the user to pass arguments to the application in the build
+332 ⎥     // command itself, like this: `zig build run -- arg1 arg2 etc`
+333 ⎥     if (b.args) |args| {
+334 ⎥         run_cmd.addArgs(args);
+335 ⎥     }
+336 ⎥ 
+337 ⎥     // This creates a build step. It will be visible in the `zig build --help` menu,
+338 ⎥     // and can be selected like this: `zig build run`
+339 ⎥     // This will evaluate the `run` step rather than the default, which is "install".
+340 ⎥     const run_step = b.step("run", "Run the app");
+341 ⎥     run_step.dependOn(&run_cmd.step);
+342 ⎥ 
+343 ⎥     // Creates a step for unit testing. This only builds the test executable
+344 ⎥     // but does not run it.
+345 ⎥     const sep_test = b.addTest(.{
+346 ⎥         .root_source_file = b.path("src/root.zig"),
+347 ⎥         .target = target,
+348 ⎥         .optimize = optimize,
+349 ⎥     });
+350 ⎥ 
+351 ⎥     const run_sep_unit_tests = b.addRunArtifact(sep_test);
+352 ⎥ 
+353 ⎥     const exe_unit_tests = b.addTest(.{
+354 ⎥         .root_source_file = b.path("src/main.zig"),
+355 ⎥         .target = target,
+356 ⎥         .optimize = optimize,
+357 ⎥     });
+358 ⎥ 
+359 ⎥     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
+360 ⎥ 
+361 ⎥     // Similar to creating the run step earlier, this exposes a `test` step to
+362 ⎥     // the `zig build --help` menu, providing a way for the user to request
+363 ⎥     // running the unit tests.
+364 ⎥     const test_step = b.step("test", "Run unit tests");
+365 ⎥     test_step.dependOn(&run_exe_unit_tests.step);
+366 ⎥     test_step.dependOn(&run_sep_unit_tests.step);
+367 ⎥ }
+368 ⎥ 
 ```

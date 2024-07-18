@@ -9,7 +9,7 @@ The contacts panel screen will have:
 
 ```shell
 ＄ kickzig screen add-panel Contacts Select Add Edit Remove
-Added the front-end «Contacts» Panel screen at /home/nil/zig/misc/crud/src/@This/frontend/screen/panel/Contacts/screen.zig:1:1:
+Added the front-end «Contacts» Panel screen at /home/nil/zig/misc/crud/src/frontend/screen/panel/Contacts/screen.zig:1:1:
 ```
 
 ## The select panel
@@ -21,9 +21,9 @@ Below that is the scrolling list of buttons. Each button displays a contact reco
 I added the following lines.
 
 * line 8, 9 & 12
-* lines 47 - 77
-* lines 105 - 181
-* line 197
+* lines 41 - 86
+* lines 121 - 198
+* line 214
 
 ```zig
   1 ⎥ const std = @import("std");
@@ -66,166 +66,183 @@ I added the following lines.
  38 ⎥         self.lock.lock();
  39 ⎥         defer self.lock.unlock();
  40 ⎥ 
- 41 ⎥         var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
- 42 ⎥         defer scroller.deinit();
- 43 ⎥ 
- 44 ⎥         var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
- 45 ⎥         defer layout.deinit();
- 46 ⎥ 
- 47 ⎥         {
- 48 ⎥             // Row 1: The screen's name.
- 49 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{ .expand = .horizontal });
- 50 ⎥             defer row.deinit();
- 51 ⎥ 
- 52 ⎥             try dvui.labelNoFmt(@src(), "Select a Contact.", .{ .font_style = .title, .gravity_x = 0.0 });
- 53 ⎥             if (try dvui.buttonIcon(@src(), "AddAContactButton", dvui.entypo.add_to_list, .{}, .{ .gravity_x = 1.0 })) {
- 54 ⎥                 self.all_panels.setCurrentToAdd();
- 55 ⎥             }
- 56 ⎥         }
- 57 ⎥         {
- 58 ⎥             // Row 2: List of contacts.
- 59 ⎥             var contact_list_scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
- 60 ⎥             defer contact_list_scroller.deinit();
- 61 ⎥ 
- 62 ⎥             {
- 63 ⎥                 var contact_list_scroller_layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{ .expand = .horizontal });
- 64 ⎥                 defer contact_list_scroller_layout.deinit();
- 65 ⎥ 
- 66 ⎥                 if (self.contact_list_records) |contact_list_records| {
- 67 ⎥                     for (contact_list_records, 0..) |contact_list_record, i| {
- 68 ⎥                         var label = try std.fmt.allocPrint(arena, "{s}\n{s}\n{s}, {s} {s}", .{ contact_list_record.name.?, contact_list_record.address.?, contact_list_record.city.?, contact_list_record.state.?, contact_list_record.zip.? });
- 69 ⎥                         if (try dvui.button(@src(), label, .{}, .{ .expand = .both, .id_extra = i })) {
- 70 ⎥                             // user selected this contact.
- 71 ⎥                             const contact_copy = try contact_list_record.copy();
- 72 ⎥                             try self.handleClick(contact_copy);
- 73 ⎥                         }
- 74 ⎥                     }
- 75 ⎥                 }
- 76 ⎥             }
- 77 ⎥         }
- 78 ⎥     }
- 79 ⎥ 
- 80 ⎥     pub fn deinit(self: *Panel) void {
- 81 ⎥         // The screen will deinit the container.
- 82 ⎥         self.lock.deinit();
- 83 ⎥         self.allocator.destroy(self);
- 84 ⎥     }
- 85 ⎥ 
- 86 ⎥     /// refresh only if this panel and ( container or screen ) are showing.
- 87 ⎥     pub fn refresh(self: *Panel) void {
- 88 ⎥         if (self.all_panels.current_panel_tag == .Select) {
- 89 ⎥             // This is the current panel.
- 90 ⎥             if (self.container) |container| {
- 91 ⎥                 // Refresh the container.
- 92 ⎥                 // The container will refresh only if it's the currently viewed screen.
- 93 ⎥                 container.refresh();
- 94 ⎥             } else {
- 95 ⎥                 // Main view will refresh only if this is the currently viewed screen.
- 96 ⎥                 self.main_view.refreshContacts();
- 97 ⎥             }
- 98 ⎥         }
- 99 ⎥     }
-100 ⎥ 
-101 ⎥     pub fn setContainer(self: *Panel, container: *_various_.Container) void {
-102 ⎥         self.container = container;
-103 ⎥     }
-104 ⎥ 
-105 ⎥     pub fn has_records(self: *Panel) bool {
-106 ⎥         self.lock.lock();
-107 ⎥         defer self.lock.unlock();
-108 ⎥ 
-109 ⎥         return (self.contact_list_records != null);
-110 ⎥     }
-111 ⎥ 
-112 ⎥     // set is called by the messenger.
-113 ⎥     // on handles and returns any error.
-114 ⎥     // Param contact_list_records is owned by this fn.
-115 ⎥     pub fn set(self: *Panel, contact_list_records: ?[]const *const ContactList) !void {
-116 ⎥         self.lock.lock();
-117 ⎥         defer self.lock.unlock();
-118 ⎥         defer self.refresh();
-119 ⎥ 
-120 ⎥         // deinit the old records.
-121 ⎥         if (self.contact_list_records) |deinit_contact_list_records| {
-122 ⎥             for (deinit_contact_list_records) |deinit_contact_list_record| {
-123 ⎥                 deinit_contact_list_record.deinit();
-124 ⎥             }
-125 ⎥             self.allocator.free(deinit_contact_list_records);
-126 ⎥         }
-127 ⎥         // add the new records;
-128 ⎥         self.contact_list_records = contact_list_records;
-129 ⎥     }
-130 ⎥ 
-131 ⎥     // handleClick owns param contact_list_record.
-132 ⎥     fn handleClick(self: *Panel, contact_list_record: *const ContactList) !void {
-133 ⎥         // Build the arguments for the modal call.
-134 ⎥         // Modal args are owned by the modal screen. So do not deinit here.
-135 ⎥         var choice_modal_args: *ModalParams = try ModalParams.init(self.allocator, contact_list_record.name.?);
-136 ⎥         // Add each choice.
-137 ⎥         try choice_modal_args.addChoiceItem(
-138 ⎥             "Edit",
-139 ⎥             self,
-140 ⎥             @constCast(contact_list_record),
-141 ⎥             &Panel.modalEditFn,
-142 ⎥         );
-143 ⎥         try choice_modal_args.addChoiceItem(
-144 ⎥             "Remove",
-145 ⎥             self,
-146 ⎥             @constCast(contact_list_record),
-147 ⎥             &Panel.modalRemoveFn,
-148 ⎥         );
-149 ⎥         try choice_modal_args.addChoiceItem(
-150 ⎥             "Cancel",
-151 ⎥             null,
-152 ⎥             null,
-153 ⎥             null,
-154 ⎥         );
-155 ⎥         // Show the Choice modal screen.
-156 ⎥         self.main_view.showChoice(choice_modal_args);
-157 ⎥     }
-158 ⎥ 
-159 ⎥     // Param context is owned by modalRemoveFn.
-160 ⎥     fn modalEditFn(implementor: ?*anyopaque, context: ?*anyopaque) anyerror!void {
-161 ⎥         var self: *Panel = @alignCast(@ptrCast(implementor.?));
-162 ⎥         const contact_list_record: *const ContactList = @alignCast(@ptrCast(context.?));
-163 ⎥         defer contact_list_record.deinit();
-164 ⎥         // Pass a copy of the contact_list_record to the edit panel's fn set.
-165 ⎥         const edit_panel_contact_copy: *const ContactList = try contact_list_record.copy();
-166 ⎥         self.all_panels.Edit.?.set(edit_panel_contact_copy);
-167 ⎥         self.all_panels.setCurrentToEdit();
-168 ⎥     }
-169 ⎥ 
-170 ⎥     // Param context is owned by modalRemoveFn.
-171 ⎥     fn modalRemoveFn(implementor: ?*anyopaque, context: ?*anyopaque) anyerror!void {
-172 ⎥         var self: *Panel = @alignCast(@ptrCast(implementor.?));
-173 ⎥         const contact_list_record: *const ContactList = @alignCast(@ptrCast(context.?));
-174 ⎥         defer contact_list_record.deinit();
-175 ⎥         const remove_panel_contact_copy: *const ContactList = contact_list_record.copy() catch |err| {
-176 ⎥             self.exit(@src(), err, "contact_list_record.copy()");
-177 ⎥             return err;
-178 ⎥         };
-179 ⎥         self.all_panels.Remove.?.set(remove_panel_contact_copy);
-180 ⎥         self.all_panels.setCurrentToRemove();
-181 ⎥     }
-182 ⎥ };
-183 ⎥ 
-184 ⎥ pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
-185 ⎥     var panel: *Panel = try allocator.create(Panel);
-186 ⎥     panel.lock = try _lock_.init(allocator);
-187 ⎥     errdefer {
-188 ⎥         allocator.destroy(panel);
-189 ⎥     }
-190 ⎥     panel.container = null;
-191 ⎥     panel.allocator = allocator;
-192 ⎥     panel.main_view = main_view;
-193 ⎥     panel.all_panels = all_panels;
-194 ⎥     panel.messenger = messenger;
-195 ⎥     panel.exit = exit;
-196 ⎥     panel.window = window;
-197 ⎥     panel.contact_list_records = null;
-198 ⎥     return panel;
-199 ⎥ }
+ 41 ⎥         {
+ 42 ⎥             // Row 1: The screen's name.
+ 43 ⎥             // Use the same background as the scroller.
+ 44 ⎥             var row: *dvui.BoxWidget = try dvui.box(
+ 45 ⎥                 @src(),
+ 46 ⎥                 .horizontal,
+ 47 ⎥                 .{
+ 48 ⎥                     .expand = .horizontal,
+ 49 ⎥                     .background = true,
+ 50 ⎥                 },
+ 51 ⎥             );
+ 52 ⎥             defer row.deinit();
+ 53 ⎥ 
+ 54 ⎥             try dvui.labelNoFmt(@src(), "Select a Contact.", .{ .font_style = .title, .gravity_x = 0.0 });
+ 55 ⎥             if (try dvui.buttonIcon(@src(), "AddAContactButton", dvui.entypo.add_to_list, .{}, .{ .gravity_x = 1.0 })) {
+ 56 ⎥                 self.all_panels.Add.?.clearBuffer();
+ 57 ⎥                 self.all_panels.setCurrentToAdd();
+ 58 ⎥             }
+ 59 ⎥         }
+ 60 ⎥         {
+ 61 ⎥             // Row 2: List of contacts.
+ 62 ⎥             const scroller = try dvui.scrollArea(
+ 63 ⎥                 @src(),
+ 64 ⎥                 .{},
+ 65 ⎥                 .{
+ 66 ⎥                     .expand = .both,
+ 67 ⎥                 },
+ 68 ⎥             );
+ 69 ⎥             defer scroller.deinit();
+ 70 ⎥ 
+ 71 ⎥             {
+ 72 ⎥                 var scroller_layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{ .expand = .both });
+ 73 ⎥                 defer scroller_layout.deinit();
+ 74 ⎥ 
+ 75 ⎥                 if (self.contact_list_records) |contact_list_records| {
+ 76 ⎥                     for (contact_list_records, 0..) |contact_list_record, i| {
+ 77 ⎥                         const label = try std.fmt.allocPrint(arena, "{s}\n{s}\n{s}, {s} {s}", .{ contact_list_record.name.?, contact_list_record.address.?, contact_list_record.city.?, contact_list_record.state.?, contact_list_record.zip.? });
+ 78 ⎥                         if (try dvui.button(@src(), label, .{}, .{ .expand = .both, .id_extra = i })) {
+ 79 ⎥                             // user selected this contact.
+ 80 ⎥                             const contact_copy = try contact_list_record.copy();
+ 81 ⎥                             try self.handleClick(contact_copy);
+ 82 ⎥                         }
+ 83 ⎥                     }
+ 84 ⎥                 }
+ 85 ⎥             }
+ 86 ⎥         }
+ 87 ⎥     }
+ 88 ⎥ 
+ 89 ⎥     pub fn deinit(self: *Panel) void {
+ 90 ⎥         // The screen will deinit the container.
+ 91 ⎥ 
+ 92 ⎥         if (self.contact_list_records) |deinit_contact_list_records| {
+ 93 ⎥             for (deinit_contact_list_records) |deinit_contact_list_record| {
+ 94 ⎥                 deinit_contact_list_record.deinit();
+ 95 ⎥             }
+ 96 ⎥             self.allocator.free(deinit_contact_list_records);
+ 97 ⎥         }
+ 98 ⎥         self.lock.deinit();
+ 99 ⎥         self.allocator.destroy(self);
+100 ⎥     }
+101 ⎥ 
+102 ⎥     /// refresh only if this panel and ( container or screen ) are showing.
+103 ⎥     pub fn refresh(self: *Panel) void {
+104 ⎥         if (self.all_panels.current_panel_tag == .Select) {
+105 ⎥             // This is the current panel.
+106 ⎥             if (self.container) |container| {
+107 ⎥                 // Refresh the container.
+108 ⎥                 // The container will refresh only if it's the currently viewed screen.
+109 ⎥                 container.refresh();
+110 ⎥             } else {
+111 ⎥                 // Main view will refresh only if this is the currently viewed screen.
+112 ⎥                 self.main_view.refreshContacts();
+113 ⎥             }
+114 ⎥         }
+115 ⎥     }
+116 ⎥ 
+117 ⎥     pub fn setContainer(self: *Panel, container: *_various_.Container) void {
+118 ⎥         self.container = container;
+119 ⎥     }
+120 ⎥ 
+121 ⎥     // has_records returns if there are records in the list to display.
+122 ⎥     pub fn has_records(self: *Panel) bool {
+123 ⎥         self.lock.lock();
+124 ⎥         defer self.lock.unlock();
+125 ⎥ 
+126 ⎥         return (self.contact_list_records != null);
+127 ⎥     }
+128 ⎥ 
+129 ⎥     // set is called by the messenger.
+130 ⎥     // on handles and returns any error.
+131 ⎥     // Param contact_list_records is owned by this fn.
+132 ⎥     pub fn set(self: *Panel, contact_list_records: ?[]const *const ContactList) !void {
+133 ⎥         self.lock.lock();
+134 ⎥         defer self.lock.unlock();
+135 ⎥         defer self.refresh();
+136 ⎥ 
+137 ⎥         // deinit the old records.
+138 ⎥         if (self.contact_list_records) |deinit_contact_list_records| {
+139 ⎥             for (deinit_contact_list_records) |deinit_contact_list_record| {
+140 ⎥                 deinit_contact_list_record.deinit();
+141 ⎥             }
+142 ⎥             self.allocator.free(deinit_contact_list_records);
+143 ⎥         }
+144 ⎥         // add the new records;
+145 ⎥         self.contact_list_records = contact_list_records;
+146 ⎥     }
+147 ⎥ 
+148 ⎥     // handleClick owns param contact_list_record.
+149 ⎥     fn handleClick(self: *Panel, contact_list_record: *const ContactList) !void {
+150 ⎥         // Build the arguments for the modal call.
+151 ⎥         // Modal args are owned by the modal screen. So do not deinit here.
+152 ⎥         var choice_modal_args: *ModalParams = try ModalParams.init(self.allocator, contact_list_record.name.?);
+153 ⎥         // Add each choice.
+154 ⎥         try choice_modal_args.addChoiceItem(
+155 ⎥             "Edit",
+156 ⎥             self,
+157 ⎥             @constCast(contact_list_record),
+158 ⎥             &Panel.modalEditFn,
+159 ⎥         );
+160 ⎥         try choice_modal_args.addChoiceItem(
+161 ⎥             "Remove",
+162 ⎥             self,
+163 ⎥             @constCast(contact_list_record),
+164 ⎥             &Panel.modalRemoveFn,
+165 ⎥         );
+166 ⎥         try choice_modal_args.addChoiceItem(
+167 ⎥             "Cancel",
+168 ⎥             null,
+169 ⎥             null,
+170 ⎥             null,
+171 ⎥         );
+172 ⎥         // Show the Choice modal screen.
+173 ⎥         self.main_view.showChoice(choice_modal_args);
+174 ⎥     }
+175 ⎥ 
+176 ⎥     // Param context is owned by modalEditFn.
+177 ⎥     fn modalEditFn(implementor: ?*anyopaque, context: ?*anyopaque) anyerror!void {
+178 ⎥         var self: *Panel = @alignCast(@ptrCast(implementor.?));
+179 ⎥         const contact_list_record: *const ContactList = @alignCast(@ptrCast(context.?));
+180 ⎥         defer contact_list_record.deinit();
+181 ⎥         // Pass a copy of the contact_list_record to the edit panel's fn set.
+182 ⎥         const edit_panel_contact_copy: *const ContactList = try contact_list_record.copy();
+183 ⎥         self.all_panels.Edit.?.set(edit_panel_contact_copy);
+184 ⎥         self.all_panels.setCurrentToEdit();
+185 ⎥     }
+186 ⎥ 
+187 ⎥     // Param context is owned by modalRemoveFn.
+188 ⎥     fn modalRemoveFn(implementor: ?*anyopaque, context: ?*anyopaque) anyerror!void {
+189 ⎥         var self: *Panel = @alignCast(@ptrCast(implementor.?));
+190 ⎥         const contact_list_record: *const ContactList = @alignCast(@ptrCast(context.?));
+191 ⎥         defer contact_list_record.deinit();
+192 ⎥         const remove_panel_contact_copy: *const ContactList = contact_list_record.copy() catch |err| {
+193 ⎥             self.exit(@src(), err, "contact_list_record.copy()");
+194 ⎥             return err;
+195 ⎥         };
+196 ⎥         self.all_panels.Remove.?.set(remove_panel_contact_copy);
+197 ⎥         self.all_panels.setCurrentToRemove();
+198 ⎥     }
+199 ⎥ };
 200 ⎥ 
+201 ⎥ pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
+202 ⎥     var panel: *Panel = try allocator.create(Panel);
+203 ⎥     panel.lock = try _lock_.init(allocator);
+204 ⎥     errdefer {
+205 ⎥         allocator.destroy(panel);
+206 ⎥     }
+207 ⎥     panel.container = null;
+208 ⎥     panel.allocator = allocator;
+209 ⎥     panel.main_view = main_view;
+210 ⎥     panel.all_panels = all_panels;
+211 ⎥     panel.messenger = messenger;
+212 ⎥     panel.exit = exit;
+213 ⎥     panel.window = window;
+214 ⎥     panel.contact_list_records = null;
+215 ⎥     return panel;
+216 ⎥ }
+217 ⎥ 
 ```
 
 ## The Add panel
@@ -236,9 +253,10 @@ I added the following lines.
 
 * line 8
 * lines 30 - 34
-* lines 51 - 124
-* lines 158 - 206
-* lines 223 - 229
+* lines 45 - 133
+* lines 137 - 141
+* lines 167 - 215
+* lines 232 - 238
 
 ```zig
   1 ⎥ const std = @import("std");
@@ -285,196 +303,204 @@ I added the following lines.
  42 ⎥         self.lock.lock();
  43 ⎥         defer self.lock.unlock();
  44 ⎥ 
- 45 ⎥         var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
- 46 ⎥         defer scroller.deinit();
- 47 ⎥ 
- 48 ⎥         var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
- 49 ⎥         defer layout.deinit();
- 50 ⎥ 
- 51 ⎥         {
- 52 ⎥             // Row 1: The screen's name.
- 53 ⎥             // var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 54 ⎥             // defer row.deinit();
- 55 ⎥ 
- 56 ⎥             try dvui.labelNoFmt(@src(), "Add a new contact.", .{ .font_style = .title });
- 57 ⎥         }
- 58 ⎥         {
- 59 ⎥             // Row 2: This contact's name.
- 60 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 61 ⎥             defer row.deinit();
- 62 ⎥ 
- 63 ⎥             try dvui.labelNoFmt(@src(), "Name:", .{ .font_style = .heading });
- 64 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.name_buffer }, .{});
- 65 ⎥             defer input.deinit();
- 66 ⎥         }
+ 45 ⎥         {
+ 46 ⎥             // Row 1: The screen's name.
+ 47 ⎥             // This row has a background because the scroller has a background.
+ 48 ⎥             var row: *dvui.BoxWidget = try dvui.box(
+ 49 ⎥                 @src(),
+ 50 ⎥                 .horizontal,
+ 51 ⎥                 .{
+ 52 ⎥                     .expand = .horizontal,
+ 53 ⎥                     .background = true,
+ 54 ⎥                 },
+ 55 ⎥             );
+ 56 ⎥             defer row.deinit();
+ 57 ⎥ 
+ 58 ⎥             try dvui.labelNoFmt(@src(), "Add a new contact.", .{ .font_style = .title });
+ 59 ⎥         }
+ 60 ⎥ 
+ 61 ⎥         var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
+ 62 ⎥         defer scroller.deinit();
+ 63 ⎥ 
+ 64 ⎥         var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
+ 65 ⎥         defer layout.deinit();
+ 66 ⎥ 
  67 ⎥         {
- 68 ⎥             // Row 3: This contact's address.
+ 68 ⎥             // Row 2: This contact's name.
  69 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
  70 ⎥             defer row.deinit();
  71 ⎥ 
- 72 ⎥             try dvui.labelNoFmt(@src(), "Address:", .{ .font_style = .heading });
- 73 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.address_buffer }, .{});
+ 72 ⎥             try dvui.labelNoFmt(@src(), "Name:", .{ .font_style = .heading });
+ 73 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.name_buffer }, .{});
  74 ⎥             defer input.deinit();
  75 ⎥         }
  76 ⎥         {
- 77 ⎥             // Row 4: This contact's city.
+ 77 ⎥             // Row 3: This contact's address.
  78 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
  79 ⎥             defer row.deinit();
  80 ⎥ 
- 81 ⎥             try dvui.labelNoFmt(@src(), "City:", .{ .font_style = .heading });
- 82 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.city_buffer }, .{});
+ 81 ⎥             try dvui.labelNoFmt(@src(), "Address:", .{ .font_style = .heading });
+ 82 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.address_buffer }, .{});
  83 ⎥             defer input.deinit();
  84 ⎥         }
  85 ⎥         {
- 86 ⎥             // Row 5: This contact's state.
+ 86 ⎥             // Row 4: This contact's city.
  87 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
  88 ⎥             defer row.deinit();
  89 ⎥ 
- 90 ⎥             try dvui.labelNoFmt(@src(), "State:", .{ .font_style = .heading });
- 91 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.state_buffer }, .{});
+ 90 ⎥             try dvui.labelNoFmt(@src(), "City:", .{ .font_style = .heading });
+ 91 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.city_buffer }, .{});
  92 ⎥             defer input.deinit();
  93 ⎥         }
  94 ⎥         {
- 95 ⎥             // Row 6: This contact's zip.
+ 95 ⎥             // Row 5: This contact's state.
  96 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
  97 ⎥             defer row.deinit();
  98 ⎥ 
- 99 ⎥             try dvui.labelNoFmt(@src(), "Zip:", .{ .font_style = .heading });
-100 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.zip_buffer }, .{});
+ 99 ⎥             try dvui.labelNoFmt(@src(), "State:", .{ .font_style = .heading });
+100 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.state_buffer }, .{});
 101 ⎥             defer input.deinit();
 102 ⎥         }
 103 ⎥         {
-104 ⎥             // Row 7: Submit button.
+104 ⎥             // Row 6: This contact's zip.
 105 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
 106 ⎥             defer row.deinit();
-107 ⎥             // Submit button.
-108 ⎥             if (try dvui.button(@src(), "Submit.", .{}, .{})) {
-109 ⎥                 // Submit this form.
-110 ⎥                 // Create an add contact record to send to the back-end.
-111 ⎥                 const contact_add_record: *Contact = try self.bufferToContact();
-112 ⎥                 // sendAddContact owns contact_add_record.
-113 ⎥                 try self.messenger.sendAddContact(contact_add_record);
-114 ⎥             }
-115 ⎥             // Row 8: Cancel button.
-116 ⎥             if (try dvui.button(@src(), "Cancel.", .{}, .{})) {
-117 ⎥                 // Clear the form.
-118 ⎥                 self.clearBuffer();
-119 ⎥                 // Switch to the select panel if there are contacts.
-120 ⎥                 if (self.all_panels.Select.?.has_records()) {
-121 ⎥                     self.all_panels.setCurrentToSelect();
-122 ⎥                 }
+107 ⎥ 
+108 ⎥             try dvui.labelNoFmt(@src(), "Zip:", .{ .font_style = .heading });
+109 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.zip_buffer }, .{});
+110 ⎥             defer input.deinit();
+111 ⎥         }
+112 ⎥         {
+113 ⎥             // Row 7: Submit button.
+114 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+115 ⎥             defer row.deinit();
+116 ⎥             // Submit button.
+117 ⎥             if (try dvui.button(@src(), "Submit.", .{}, .{})) {
+118 ⎥                 // Submit this form.
+119 ⎥                 // Create an add contact record to send to the back-end.
+120 ⎥                 const contact_add_record: *Contact = try self.bufferToContact();
+121 ⎥                 // sendAddContact owns contact_add_record.
+122 ⎥                 try self.messenger.sendAddContact(contact_add_record);
 123 ⎥             }
-124 ⎥         }
-125 ⎥     }
-126 ⎥ 
-127 ⎥     pub fn deinit(self: *Panel) void {
-128 ⎥         self.allocator.free(self.name_buffer);
-129 ⎥         self.allocator.free(self.address_buffer);
-130 ⎥         self.allocator.free(self.city_buffer);
-131 ⎥         self.allocator.free(self.state_buffer);
-132 ⎥         self.allocator.free(self.zip_buffer);
-133 ⎥ 
-134 ⎥         // The screen will deinit the container.
-135 ⎥         self.lock.deinit();
-136 ⎥         self.allocator.destroy(self);
-137 ⎥     }
-138 ⎥ 
-139 ⎥     /// refresh only if this panel and ( container or screen ) are showing.
-140 ⎥     pub fn refresh(self: *Panel) void {
-141 ⎥         if (self.all_panels.current_panel_tag == .Add) {
-142 ⎥             // This is the current panel.
-143 ⎥             if (self.container) |container| {
-144 ⎥                 // Refresh the container.
-145 ⎥                 // The container will refresh only if it's the currently viewed screen.
-146 ⎥                 container.refresh();
-147 ⎥             } else {
-148 ⎥                 // Main view will refresh only if this is the currently viewed screen.
-149 ⎥                 self.main_view.refreshContacts();
-150 ⎥             }
-151 ⎥         }
-152 ⎥     }
-153 ⎥ 
-154 ⎥     pub fn setContainer(self: *Panel, container: *_various_.Container) void {
-155 ⎥         self.container = container;
-156 ⎥     }
-157 ⎥ 
-158 ⎥     pub fn clearBuffer(self: *Panel) void {
-159 ⎥         @memset(self.name_buffer, 0);
-160 ⎥         @memset(self.address_buffer, 0);
-161 ⎥         @memset(self.city_buffer, 0);
-162 ⎥         @memset(self.state_buffer, 0);
-163 ⎥         @memset(self.zip_buffer, 0);
-164 ⎥     }
-165 ⎥ 
-166 ⎥     fn bufferToContact(self: *Panel) !*Contact {
-167 ⎥         var name_buffer_len: usize = std.mem.indexOf(u8, self.name_buffer, &[1]u8{0}) orelse self.name_buffer.len;
-168 ⎥         var address_buffer_len: usize = std.mem.indexOf(u8, self.address_buffer, &[1]u8{0}) orelse self.address_buffer.len;
-169 ⎥         var city_buffer_len: usize = std.mem.indexOf(u8, self.city_buffer, &[1]u8{0}) orelse self.city_buffer.len;
-170 ⎥         var state_buffer_len: usize = std.mem.indexOf(u8, self.state_buffer, &[1]u8{0}) orelse self.state_buffer.len;
-171 ⎥         var zip_buffer_len: usize = std.mem.indexOf(u8, self.zip_buffer, &[1]u8{0}) orelse self.zip_buffer.len;
-172 ⎥ 
-173 ⎥         var name: ?[]const u8 = switch (name_buffer_len) {
-174 ⎥             0 => null,
-175 ⎥             else => self.name_buffer[0..name_buffer_len],
-176 ⎥         };
-177 ⎥         var address: ?[]const u8 = switch (address_buffer_len) {
-178 ⎥             0 => null,
-179 ⎥             else => self.address_buffer[0..address_buffer_len],
-180 ⎥         };
-181 ⎥         var city: ?[]const u8 = switch (city_buffer_len) {
-182 ⎥             0 => null,
-183 ⎥             else => self.city_buffer[0..city_buffer_len],
-184 ⎥         };
-185 ⎥         var state: ?[]const u8 = switch (state_buffer_len) {
-186 ⎥             0 => null,
-187 ⎥             else => self.state_buffer[0..state_buffer_len],
-188 ⎥         };
-189 ⎥         var zip: ?[]const u8 = switch (zip_buffer_len) {
-190 ⎥             0 => null,
-191 ⎥             else => self.zip_buffer[0..zip_buffer_len],
-192 ⎥         };
-193 ⎥ 
-194 ⎥         const contact: *Contact = Contact.init(
-195 ⎥             self.allocator,
-196 ⎥             name,
-197 ⎥             address,
-198 ⎥             city,
-199 ⎥             state,
-200 ⎥             zip,
-201 ⎥         ) catch |err| {
-202 ⎥             self.exit(@src(), err, "Contact.init(...)");
-203 ⎥             return err;
-204 ⎥         };
-205 ⎥         return contact;
-206 ⎥     }
-207 ⎥ };
-208 ⎥ 
-209 ⎥ pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
-210 ⎥     var panel: *Panel = try allocator.create(Panel);
-211 ⎥     panel.lock = try _lock_.init(allocator);
-212 ⎥     errdefer {
-213 ⎥         allocator.destroy(panel);
-214 ⎥     }
-215 ⎥     panel.container = null;
-216 ⎥     panel.allocator = allocator;
-217 ⎥     panel.main_view = main_view;
-218 ⎥     panel.all_panels = all_panels;
-219 ⎥     panel.messenger = messenger;
-220 ⎥     panel.exit = exit;
-221 ⎥     panel.window = window;
-222 ⎥ 
-223 ⎥     // The input buffers.
-224 ⎥     panel.name_buffer = try allocator.alloc(u8, 255);
-225 ⎥     panel.address_buffer = try allocator.alloc(u8, 255);
-226 ⎥     panel.city_buffer = try allocator.alloc(u8, 255);
-227 ⎥     panel.state_buffer = try allocator.alloc(u8, 255);
-228 ⎥     panel.zip_buffer = try allocator.alloc(u8, 255);
-229 ⎥     panel.clearBuffer();
-230 ⎥ 
-231 ⎥     return panel;
-232 ⎥ }
-233 ⎥ 
-```
+124 ⎥             // Row 8: Cancel button.
+125 ⎥             if (try dvui.button(@src(), "Cancel.", .{}, .{})) {
+126 ⎥                 // Clear the form.
+127 ⎥                 self.clearBuffer();
+128 ⎥                 // Switch to the select panel if there are contacts.
+129 ⎥                 if (self.all_panels.Select.?.has_records()) {
+130 ⎥                     self.all_panels.setCurrentToSelect();
+131 ⎥                 }
+132 ⎥             }
+133 ⎥         }
+134 ⎥     }
+135 ⎥ 
+136 ⎥     pub fn deinit(self: *Panel) void {
+137 ⎥         self.allocator.free(self.name_buffer);
+138 ⎥         self.allocator.free(self.address_buffer);
+139 ⎥         self.allocator.free(self.city_buffer);
+140 ⎥         self.allocator.free(self.state_buffer);
+141 ⎥         self.allocator.free(self.zip_buffer);
+142 ⎥ 
+143 ⎥         // The screen will deinit the container.
+144 ⎥         self.lock.deinit();
+145 ⎥         self.allocator.destroy(self);
+146 ⎥     }
+147 ⎥ 
+148 ⎥     /// refresh only if this panel and ( container or screen ) are showing.
+149 ⎥     pub fn refresh(self: *Panel) void {
+150 ⎥         if (self.all_panels.current_panel_tag == .Add) {
+151 ⎥             // This is the current panel.
+152 ⎥             if (self.container) |container| {
+153 ⎥                 // Refresh the container.
+154 ⎥                 // The container will refresh only if it's the currently viewed screen.
+155 ⎥                 container.refresh();
+156 ⎥             } else {
+157 ⎥                 // Main view will refresh only if this is the currently viewed screen.
+158 ⎥                 self.main_view.refreshContacts();
+159 ⎥             }
+160 ⎥         }
+161 ⎥     }
+162 ⎥ 
+163 ⎥     pub fn setContainer(self: *Panel, container: *_various_.Container) void {
+164 ⎥         self.container = container;
+165 ⎥     }
+166 ⎥ 
+167 ⎥     pub fn clearBuffer(self: *Panel) void {
+168 ⎥         @memset(self.name_buffer, 0);
+169 ⎥         @memset(self.address_buffer, 0);
+170 ⎥         @memset(self.city_buffer, 0);
+171 ⎥         @memset(self.state_buffer, 0);
+172 ⎥         @memset(self.zip_buffer, 0);
+173 ⎥     }
+174 ⎥ 
+175 ⎥     fn bufferToContact(self: *Panel) !*Contact {
+176 ⎥         const name_buffer_len: usize = std.mem.indexOf(u8, self.name_buffer, &[1]u8{0}) orelse self.name_buffer.len;
+177 ⎥         const address_buffer_len: usize = std.mem.indexOf(u8, self.address_buffer, &[1]u8{0}) orelse self.address_buffer.len;
+178 ⎥         const city_buffer_len: usize = std.mem.indexOf(u8, self.city_buffer, &[1]u8{0}) orelse self.city_buffer.len;
+179 ⎥         const state_buffer_len: usize = std.mem.indexOf(u8, self.state_buffer, &[1]u8{0}) orelse self.state_buffer.len;
+180 ⎥         const zip_buffer_len: usize = std.mem.indexOf(u8, self.zip_buffer, &[1]u8{0}) orelse self.zip_buffer.len;
+181 ⎥ 
+182 ⎥         const name: ?[]const u8 = switch (name_buffer_len) {
+183 ⎥             0 => null,
+184 ⎥             else => self.name_buffer[0..name_buffer_len],
+185 ⎥         };
+186 ⎥         const address: ?[]const u8 = switch (address_buffer_len) {
+187 ⎥             0 => null,
+188 ⎥             else => self.address_buffer[0..address_buffer_len],
+189 ⎥         };
+190 ⎥         const city: ?[]const u8 = switch (city_buffer_len) {
+191 ⎥             0 => null,
+192 ⎥             else => self.city_buffer[0..city_buffer_len],
+193 ⎥         };
+194 ⎥         const state: ?[]const u8 = switch (state_buffer_len) {
+195 ⎥             0 => null,
+196 ⎥             else => self.state_buffer[0..state_buffer_len],
+197 ⎥         };
+198 ⎥         const zip: ?[]const u8 = switch (zip_buffer_len) {
+199 ⎥             0 => null,
+200 ⎥             else => self.zip_buffer[0..zip_buffer_len],
+201 ⎥         };
+202 ⎥ 
+203 ⎥         const contact: *Contact = Contact.init(
+204 ⎥             self.allocator,
+205 ⎥             name,
+206 ⎥             address,
+207 ⎥             city,
+208 ⎥             state,
+209 ⎥             zip,
+210 ⎥         ) catch |err| {
+211 ⎥             self.exit(@src(), err, "Contact.init(...)");
+212 ⎥             return err;
+213 ⎥         };
+214 ⎥         return contact;
+215 ⎥     }
+216 ⎥ };
+217 ⎥ 
+218 ⎥ pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
+219 ⎥     var panel: *Panel = try allocator.create(Panel);
+220 ⎥     panel.lock = try _lock_.init(allocator);
+221 ⎥     errdefer {
+222 ⎥         allocator.destroy(panel);
+223 ⎥     }
+224 ⎥     panel.container = null;
+225 ⎥     panel.allocator = allocator;
+226 ⎥     panel.main_view = main_view;
+227 ⎥     panel.all_panels = all_panels;
+228 ⎥     panel.messenger = messenger;
+229 ⎥     panel.exit = exit;
+230 ⎥     panel.window = window;
+231 ⎥ 
+232 ⎥     // The input buffers.
+233 ⎥     panel.name_buffer = try allocator.alloc(u8, 255);
+234 ⎥     panel.address_buffer = try allocator.alloc(u8, 255);
+235 ⎥     panel.city_buffer = try allocator.alloc(u8, 255);
+236 ⎥     panel.state_buffer = try allocator.alloc(u8, 255);
+237 ⎥     panel.zip_buffer = try allocator.alloc(u8, 255);
+238 ⎥     panel.clearBuffer();
+239 ⎥ 
+240 ⎥     return panel;
+241 ⎥ }
+242 ⎥ ```
 
 ## The Edit panel
 
@@ -483,12 +509,11 @@ The edit panels is just a form displaying a current record. The submit button pa
 I added the following lines.
 
 * lines 8 - 9
-* line 31
-* lines 33 - 37
-* lines 54 - 125
-* lines 129 - 136
-* lines 162 - 245
-* lines 262 - 271
+* line 31 - 37
+* lines 48 - 134
+* lines 141 - 145
+* lines 171 - 254
+* lines 271 - 280
 
 ```zig
   1 ⎥ const std = @import("std");
@@ -538,234 +563,243 @@ I added the following lines.
  45 ⎥         self.lock.lock();
  46 ⎥         defer self.lock.unlock();
  47 ⎥ 
- 48 ⎥         var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
- 49 ⎥         defer scroller.deinit();
- 50 ⎥ 
- 51 ⎥         var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
- 52 ⎥         defer layout.deinit();
- 53 ⎥ 
- 54 ⎥         {
- 55 ⎥             // Row 1: The screen's name.
- 56 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 57 ⎥             defer row.deinit();
- 58 ⎥ 
- 59 ⎥             try dvui.labelNoFmt(@src(), "Edit a contact.", .{ .font_style = .title });
- 60 ⎥         }
- 61 ⎥         {
- 62 ⎥             // Row 2: This contact's name.
- 63 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 64 ⎥             defer row.deinit();
- 65 ⎥ 
- 66 ⎥             try dvui.labelNoFmt(@src(), "Name:", .{ .font_style = .heading });
- 67 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.name_buffer }, .{});
- 68 ⎥             defer input.deinit();
- 69 ⎥         }
+ 48 ⎥         {
+ 49 ⎥             // Row 1: The screen's name.
+ 50 ⎥             // Use the same background as the scroller.
+ 51 ⎥             var row: *dvui.BoxWidget = try dvui.box(
+ 52 ⎥                 @src(),
+ 53 ⎥                 .horizontal,
+ 54 ⎥                 .{
+ 55 ⎥                     .expand = .horizontal,
+ 56 ⎥                     .background = true,
+ 57 ⎥                 },
+ 58 ⎥             );
+ 59 ⎥             defer row.deinit();
+ 60 ⎥ 
+ 61 ⎥             try dvui.labelNoFmt(@src(), "Edit a contact.", .{ .font_style = .title });
+ 62 ⎥         }
+ 63 ⎥ 
+ 64 ⎥         var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
+ 65 ⎥         defer scroller.deinit();
+ 66 ⎥ 
+ 67 ⎥         var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
+ 68 ⎥         defer layout.deinit();
+ 69 ⎥ 
  70 ⎥         {
- 71 ⎥             // Row 3: This contact's address.
+ 71 ⎥             // Row 2: This contact's name.
  72 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
  73 ⎥             defer row.deinit();
  74 ⎥ 
- 75 ⎥             try dvui.labelNoFmt(@src(), "Address:", .{ .font_style = .heading });
- 76 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.address_buffer }, .{});
+ 75 ⎥             try dvui.labelNoFmt(@src(), "Name:", .{ .font_style = .heading });
+ 76 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.name_buffer }, .{});
  77 ⎥             defer input.deinit();
  78 ⎥         }
  79 ⎥         {
- 80 ⎥             // Row 4: This contact's city.
+ 80 ⎥             // Row 3: This contact's address.
  81 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
  82 ⎥             defer row.deinit();
  83 ⎥ 
- 84 ⎥             try dvui.labelNoFmt(@src(), "City:", .{ .font_style = .heading });
- 85 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.city_buffer }, .{});
+ 84 ⎥             try dvui.labelNoFmt(@src(), "Address:", .{ .font_style = .heading });
+ 85 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.address_buffer }, .{});
  86 ⎥             defer input.deinit();
  87 ⎥         }
  88 ⎥         {
- 89 ⎥             // Row 5: This contact's state.
+ 89 ⎥             // Row 4: This contact's city.
  90 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
  91 ⎥             defer row.deinit();
  92 ⎥ 
- 93 ⎥             try dvui.labelNoFmt(@src(), "State:", .{ .font_style = .heading });
- 94 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.state_buffer }, .{});
+ 93 ⎥             try dvui.labelNoFmt(@src(), "City:", .{ .font_style = .heading });
+ 94 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.city_buffer }, .{});
  95 ⎥             defer input.deinit();
  96 ⎥         }
  97 ⎥         {
- 98 ⎥             // Row 6: This contact's zip.
+ 98 ⎥             // Row 5: This contact's state.
  99 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
 100 ⎥             defer row.deinit();
 101 ⎥ 
-102 ⎥             try dvui.labelNoFmt(@src(), "Zip:", .{ .font_style = .heading });
-103 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.zip_buffer }, .{});
+102 ⎥             try dvui.labelNoFmt(@src(), "State:", .{ .font_style = .heading });
+103 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.state_buffer }, .{});
 104 ⎥             defer input.deinit();
 105 ⎥         }
 106 ⎥         {
-107 ⎥             // Row 7: Submit or Cancel.
+107 ⎥             // Row 6: This contact's zip.
 108 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
 109 ⎥             defer row.deinit();
-110 ⎥             // Submit button.
-111 ⎥             if (try dvui.button(@src(), "Submit.", .{}, .{})) {
-112 ⎥                 // Submit this form.
-113 ⎥                 var contact_edit_record: *const ContactEdit = try self.bufferToContact();
-114 ⎥                 try self.messenger.sendEditContact(contact_edit_record);
-115 ⎥             }
-116 ⎥             // Cancel button which switches to the select panel.
-117 ⎥             if (try dvui.button(@src(), "Cancel.", .{}, .{})) {
-118 ⎥                 // Switch to the select panel or the add panel.
-119 ⎥                 if (self.all_panels.Select.?.has_records()) {
-120 ⎥                     self.all_panels.setCurrentToSelect();
-121 ⎥                 } else {
-122 ⎥                     self.all_panels.setCurrentToAdd();
-123 ⎥                 }
+110 ⎥ 
+111 ⎥             try dvui.labelNoFmt(@src(), "Zip:", .{ .font_style = .heading });
+112 ⎥             var input = try dvui.textEntry(@src(), .{ .text = self.zip_buffer }, .{});
+113 ⎥             defer input.deinit();
+114 ⎥         }
+115 ⎥         {
+116 ⎥             // Row 7: Submit or Cancel.
+117 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+118 ⎥             defer row.deinit();
+119 ⎥             // Submit button.
+120 ⎥             if (try dvui.button(@src(), "Submit.", .{}, .{})) {
+121 ⎥                 // Submit this form.
+122 ⎥                 const contact_edit_record: *const ContactEdit = try self.bufferToContact();
+123 ⎥                 try self.messenger.sendEditContact(contact_edit_record);
 124 ⎥             }
-125 ⎥         }
-126 ⎥     }
-127 ⎥ 
-128 ⎥     pub fn deinit(self: *Panel) void {
-129 ⎥         if (self.contact_list_record) |contact_list_record| {
-130 ⎥             contact_list_record.deinit();
-131 ⎥         }
-132 ⎥         self.allocator.free(self.name_buffer);
-133 ⎥         self.allocator.free(self.address_buffer);
-134 ⎥         self.allocator.free(self.city_buffer);
-135 ⎥         self.allocator.free(self.state_buffer);
-136 ⎥         self.allocator.free(self.zip_buffer);
-137 ⎥ 
-138 ⎥         // The screen will deinit the container.
-139 ⎥         self.lock.deinit();
-140 ⎥         self.allocator.destroy(self);
-141 ⎥     }
-142 ⎥ 
-143 ⎥     /// refresh only if this panel and ( container or screen ) are showing.
-144 ⎥     pub fn refresh(self: *Panel) void {
-145 ⎥         if (self.all_panels.current_panel_tag == .Edit) {
-146 ⎥             // This is the current panel.
-147 ⎥             if (self.container) |container| {
-148 ⎥                 // Refresh the container.
-149 ⎥                 // The container will refresh only if it's the currently viewed screen.
-150 ⎥                 container.refresh();
-151 ⎥             } else {
-152 ⎥                 // Main view will refresh only if this is the currently viewed screen.
-153 ⎥                 self.main_view.refreshContacts();
-154 ⎥             }
-155 ⎥         }
-156 ⎥     }
-157 ⎥ 
-158 ⎥     pub fn setContainer(self: *Panel, container: *_various_.Container) void {
-159 ⎥         self.container = container;
-160 ⎥     }
-161 ⎥ 
-162 ⎥     // set is called by the select panel's modalEditFn.
-163 ⎥     // handles and returns any error.
-164 ⎥     // Param contact_list_record is owned by this fn. See Panel.deinit();
-165 ⎥     pub fn set(self: *Panel, contact_list_record: *const ContactList) void {
-166 ⎥         self.lock.lock();
-167 ⎥         defer self.lock.unlock();
-168 ⎥         defer self.refresh();
-169 ⎥ 
-170 ⎥         if (self.contact_list_record) |old_contact_list_record| {
-171 ⎥             old_contact_list_record.deinit();
-172 ⎥         }
-173 ⎥         self.contact_list_record = contact_list_record;
-174 ⎥         self.contactToBuffer();
-175 ⎥     }
-176 ⎥ 
-177 ⎥     pub fn contactToBuffer(self: *Panel) void {
-178 ⎥         self.clearBuffer();
-179 ⎥         for (self.contact_list_record.?.name.?, 0..) |b, i| {
-180 ⎥             self.name_buffer[i] = b;
+125 ⎥             // Cancel button which switches to the select panel.
+126 ⎥             if (try dvui.button(@src(), "Cancel.", .{}, .{})) {
+127 ⎥                 // Switch to the select panel or the add panel.
+128 ⎥                 if (self.all_panels.Select.?.has_records()) {
+129 ⎥                     self.all_panels.setCurrentToSelect();
+130 ⎥                 } else {
+131 ⎥                     self.all_panels.setCurrentToAdd();
+132 ⎥                 }
+133 ⎥             }
+134 ⎥         }
+135 ⎥     }
+136 ⎥ 
+137 ⎥     pub fn deinit(self: *Panel) void {
+138 ⎥         if (self.contact_list_record) |contact_list_record| {
+139 ⎥             contact_list_record.deinit();
+140 ⎥         }
+141 ⎥         self.allocator.free(self.name_buffer);
+142 ⎥         self.allocator.free(self.address_buffer);
+143 ⎥         self.allocator.free(self.city_buffer);
+144 ⎥         self.allocator.free(self.state_buffer);
+145 ⎥         self.allocator.free(self.zip_buffer);
+146 ⎥ 
+147 ⎥         // The screen will deinit the container.
+148 ⎥         self.lock.deinit();
+149 ⎥         self.allocator.destroy(self);
+150 ⎥     }
+151 ⎥ 
+152 ⎥     /// refresh only if this panel and ( container or screen ) are showing.
+153 ⎥     pub fn refresh(self: *Panel) void {
+154 ⎥         if (self.all_panels.current_panel_tag == .Edit) {
+155 ⎥             // This is the current panel.
+156 ⎥             if (self.container) |container| {
+157 ⎥                 // Refresh the container.
+158 ⎥                 // The container will refresh only if it's the currently viewed screen.
+159 ⎥                 container.refresh();
+160 ⎥             } else {
+161 ⎥                 // Main view will refresh only if this is the currently viewed screen.
+162 ⎥                 self.main_view.refreshContacts();
+163 ⎥             }
+164 ⎥         }
+165 ⎥     }
+166 ⎥ 
+167 ⎥     pub fn setContainer(self: *Panel, container: *_various_.Container) void {
+168 ⎥         self.container = container;
+169 ⎥     }
+170 ⎥ 
+171 ⎥     // set is called by the select panel's modalEditFn.
+172 ⎥     // handles and returns any error.
+173 ⎥     // Param contact_list_record is owned by this fn. See Panel.deinit();
+174 ⎥     pub fn set(self: *Panel, contact_list_record: *const ContactList) void {
+175 ⎥         self.lock.lock();
+176 ⎥         defer self.lock.unlock();
+177 ⎥         defer self.refresh();
+178 ⎥ 
+179 ⎥         if (self.contact_list_record) |old_contact_list_record| {
+180 ⎥             old_contact_list_record.deinit();
 181 ⎥         }
-182 ⎥         for (self.contact_list_record.?.address.?, 0..) |b, i| {
-183 ⎥             self.address_buffer[i] = b;
-184 ⎥         }
-185 ⎥         for (self.contact_list_record.?.city.?, 0..) |b, i| {
-186 ⎥             self.city_buffer[i] = b;
-187 ⎥         }
-188 ⎥         for (self.contact_list_record.?.state.?, 0..) |b, i| {
-189 ⎥             self.state_buffer[i] = b;
+182 ⎥         self.contact_list_record = contact_list_record;
+183 ⎥         self.contactToBuffer();
+184 ⎥     }
+185 ⎥ 
+186 ⎥     pub fn contactToBuffer(self: *Panel) void {
+187 ⎥         self.clearBuffer();
+188 ⎥         for (self.contact_list_record.?.name.?, 0..) |b, i| {
+189 ⎥             self.name_buffer[i] = b;
 190 ⎥         }
-191 ⎥         for (self.contact_list_record.?.zip.?, 0..) |b, i| {
-192 ⎥             self.zip_buffer[i] = b;
+191 ⎥         for (self.contact_list_record.?.address.?, 0..) |b, i| {
+192 ⎥             self.address_buffer[i] = b;
 193 ⎥         }
-194 ⎥     }
-195 ⎥ 
-196 ⎥     fn bufferToContact(self: *Panel) !*const ContactEdit {
-197 ⎥         var name_buffer_len: usize = std.mem.indexOf(u8, self.name_buffer, &[1]u8{0}) orelse self.name_buffer.len;
-198 ⎥         var address_buffer_len: usize = std.mem.indexOf(u8, self.address_buffer, &[1]u8{0}) orelse self.address_buffer.len;
-199 ⎥         var city_buffer_len: usize = std.mem.indexOf(u8, self.city_buffer, &[1]u8{0}) orelse self.city_buffer.len;
-200 ⎥         var state_buffer_len: usize = std.mem.indexOf(u8, self.state_buffer, &[1]u8{0}) orelse self.state_buffer.len;
-201 ⎥         var zip_buffer_len: usize = std.mem.indexOf(u8, self.zip_buffer, &[1]u8{0}) orelse self.zip_buffer.len;
-202 ⎥ 
-203 ⎥         var name: ?[]const u8 = switch (name_buffer_len) {
-204 ⎥             0 => null,
-205 ⎥             else => self.name_buffer[0..name_buffer_len],
-206 ⎥         };
-207 ⎥         var address: ?[]const u8 = switch (address_buffer_len) {
-208 ⎥             0 => null,
-209 ⎥             else => self.address_buffer[0..address_buffer_len],
-210 ⎥         };
-211 ⎥         var city: ?[]const u8 = switch (city_buffer_len) {
-212 ⎥             0 => null,
-213 ⎥             else => self.city_buffer[0..city_buffer_len],
-214 ⎥         };
-215 ⎥         var state: ?[]const u8 = switch (state_buffer_len) {
-216 ⎥             0 => null,
-217 ⎥             else => self.state_buffer[0..state_buffer_len],
-218 ⎥         };
-219 ⎥         var zip: ?[]const u8 = switch (zip_buffer_len) {
-220 ⎥             0 => null,
-221 ⎥             else => self.zip_buffer[0..zip_buffer_len],
-222 ⎥         };
-223 ⎥ 
-224 ⎥         const contact: *const ContactEdit = ContactEdit.init(
-225 ⎥             self.allocator,
-226 ⎥             self.contact_list_record.?.id,
-227 ⎥             name,
-228 ⎥             address,
-229 ⎥             city,
-230 ⎥             state,
-231 ⎥             zip,
-232 ⎥         ) catch |err| {
-233 ⎥             self.exit(@src(), err, "ContactEdit.init(...)");
-234 ⎥             return err;
-235 ⎥         };
-236 ⎥         return contact;
-237 ⎥     }
-238 ⎥ 
-239 ⎥     fn clearBuffer(self: *Panel) void {
-240 ⎥         @memset(self.name_buffer, 0);
-241 ⎥         @memset(self.address_buffer, 0);
-242 ⎥         @memset(self.city_buffer, 0);
-243 ⎥         @memset(self.state_buffer, 0);
-244 ⎥         @memset(self.zip_buffer, 0);
-245 ⎥     }
-246 ⎥ };
+194 ⎥         for (self.contact_list_record.?.city.?, 0..) |b, i| {
+195 ⎥             self.city_buffer[i] = b;
+196 ⎥         }
+197 ⎥         for (self.contact_list_record.?.state.?, 0..) |b, i| {
+198 ⎥             self.state_buffer[i] = b;
+199 ⎥         }
+200 ⎥         for (self.contact_list_record.?.zip.?, 0..) |b, i| {
+201 ⎥             self.zip_buffer[i] = b;
+202 ⎥         }
+203 ⎥     }
+204 ⎥ 
+205 ⎥     fn bufferToContact(self: *Panel) !*const ContactEdit {
+206 ⎥         const name_buffer_len: usize = std.mem.indexOf(u8, self.name_buffer, &[1]u8{0}) orelse self.name_buffer.len;
+207 ⎥         const address_buffer_len: usize = std.mem.indexOf(u8, self.address_buffer, &[1]u8{0}) orelse self.address_buffer.len;
+208 ⎥         const city_buffer_len: usize = std.mem.indexOf(u8, self.city_buffer, &[1]u8{0}) orelse self.city_buffer.len;
+209 ⎥         const state_buffer_len: usize = std.mem.indexOf(u8, self.state_buffer, &[1]u8{0}) orelse self.state_buffer.len;
+210 ⎥         const zip_buffer_len: usize = std.mem.indexOf(u8, self.zip_buffer, &[1]u8{0}) orelse self.zip_buffer.len;
+211 ⎥ 
+212 ⎥         const name: ?[]const u8 = switch (name_buffer_len) {
+213 ⎥             0 => null,
+214 ⎥             else => self.name_buffer[0..name_buffer_len],
+215 ⎥         };
+216 ⎥         const address: ?[]const u8 = switch (address_buffer_len) {
+217 ⎥             0 => null,
+218 ⎥             else => self.address_buffer[0..address_buffer_len],
+219 ⎥         };
+220 ⎥         const city: ?[]const u8 = switch (city_buffer_len) {
+221 ⎥             0 => null,
+222 ⎥             else => self.city_buffer[0..city_buffer_len],
+223 ⎥         };
+224 ⎥         const state: ?[]const u8 = switch (state_buffer_len) {
+225 ⎥             0 => null,
+226 ⎥             else => self.state_buffer[0..state_buffer_len],
+227 ⎥         };
+228 ⎥         const zip: ?[]const u8 = switch (zip_buffer_len) {
+229 ⎥             0 => null,
+230 ⎥             else => self.zip_buffer[0..zip_buffer_len],
+231 ⎥         };
+232 ⎥ 
+233 ⎥         const contact: *const ContactEdit = ContactEdit.init(
+234 ⎥             self.allocator,
+235 ⎥             self.contact_list_record.?.id,
+236 ⎥             name,
+237 ⎥             address,
+238 ⎥             city,
+239 ⎥             state,
+240 ⎥             zip,
+241 ⎥         ) catch |err| {
+242 ⎥             self.exit(@src(), err, "ContactEdit.init(...)");
+243 ⎥             return err;
+244 ⎥         };
+245 ⎥         return contact;
+246 ⎥     }
 247 ⎥ 
-248 ⎥ pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
-249 ⎥     var panel: *Panel = try allocator.create(Panel);
-250 ⎥     panel.lock = try _lock_.init(allocator);
-251 ⎥     errdefer {
-252 ⎥         allocator.destroy(panel);
-253 ⎥     }
-254 ⎥     panel.container = null;
-255 ⎥     panel.allocator = allocator;
-256 ⎥     panel.main_view = main_view;
-257 ⎥     panel.all_panels = all_panels;
-258 ⎥     panel.messenger = messenger;
-259 ⎥     panel.exit = exit;
-260 ⎥     panel.window = window;
-261 ⎥ 
-262 ⎥     // The contact list record.
-263 ⎥     panel.contact_list_record = null;
-264 ⎥ 
-265 ⎥     // The input buffers.
-266 ⎥     panel.name_buffer = try allocator.alloc(u8, 255);
-267 ⎥     panel.address_buffer = try allocator.alloc(u8, 255);
-268 ⎥     panel.city_buffer = try allocator.alloc(u8, 255);
-269 ⎥     panel.state_buffer = try allocator.alloc(u8, 255);
-270 ⎥     panel.zip_buffer = try allocator.alloc(u8, 255);
-271 ⎥     panel.clearBuffer();
-272 ⎥ 
-273 ⎥     return panel;
-274 ⎥ }
-275 ⎥ 
+248 ⎥     fn clearBuffer(self: *Panel) void {
+249 ⎥         @memset(self.name_buffer, 0);
+250 ⎥         @memset(self.address_buffer, 0);
+251 ⎥         @memset(self.city_buffer, 0);
+252 ⎥         @memset(self.state_buffer, 0);
+253 ⎥         @memset(self.zip_buffer, 0);
+254 ⎥     }
+255 ⎥ };
+256 ⎥ 
+257 ⎥ pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
+258 ⎥     var panel: *Panel = try allocator.create(Panel);
+259 ⎥     panel.lock = try _lock_.init(allocator);
+260 ⎥     errdefer {
+261 ⎥         allocator.destroy(panel);
+262 ⎥     }
+263 ⎥     panel.container = null;
+264 ⎥     panel.allocator = allocator;
+265 ⎥     panel.main_view = main_view;
+266 ⎥     panel.all_panels = all_panels;
+267 ⎥     panel.messenger = messenger;
+268 ⎥     panel.exit = exit;
+269 ⎥     panel.window = window;
+270 ⎥ 
+271 ⎥     // The contact list record.
+272 ⎥     panel.contact_list_record = null;
+273 ⎥ 
+274 ⎥     // The input buffers.
+275 ⎥     panel.name_buffer = try allocator.alloc(u8, 255);
+276 ⎥     panel.address_buffer = try allocator.alloc(u8, 255);
+277 ⎥     panel.city_buffer = try allocator.alloc(u8, 255);
+278 ⎥     panel.state_buffer = try allocator.alloc(u8, 255);
+279 ⎥     panel.zip_buffer = try allocator.alloc(u8, 255);
+280 ⎥     panel.clearBuffer();
+281 ⎥ 
+282 ⎥     return panel;
+283 ⎥ }
+284 ⎥ 
 ```
 
 ## The Remove panel
@@ -776,10 +810,10 @@ I added the following lines.
 
 * lines 8 - 9
 * line 31, 33
-* lines 50 - 119
-* lines 123 - 125
-* lines 151 - 162
-* lines 179 - 180
+* lines 44 - 128
+* lines 132 - 134
+* lines 160 - 171
+* lines 188 - 189
 
 ```zig
   1 ⎥ const std = @import("std");
@@ -825,147 +859,156 @@ I added the following lines.
  41 ⎥         self.lock.lock();
  42 ⎥         defer self.lock.unlock();
  43 ⎥ 
- 44 ⎥         var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
- 45 ⎥         defer scroller.deinit();
- 46 ⎥ 
- 47 ⎥         var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
- 48 ⎥         defer layout.deinit();
- 49 ⎥ 
- 50 ⎥         {
- 51 ⎥             // Row 1: The screen's name.
- 52 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 53 ⎥             defer row.deinit();
- 54 ⎥ 
- 55 ⎥             try dvui.labelNoFmt(@src(), "Remove a contact.", .{ .font_style = .title });
- 56 ⎥         }
- 57 ⎥         {
- 58 ⎥             // Row 2: This contact's name.
- 59 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 60 ⎥             defer row.deinit();
- 61 ⎥ 
- 62 ⎥             try dvui.labelNoFmt(@src(), "Name:", .{ .font_style = .heading });
- 63 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.name.?, .{});
- 64 ⎥         }
- 65 ⎥         {
- 66 ⎥             // Row 3: This contact's address.
- 67 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 68 ⎥             defer row.deinit();
- 69 ⎥ 
- 70 ⎥             try dvui.labelNoFmt(@src(), "Address:", .{ .font_style = .heading });
- 71 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.address.?, .{});
- 72 ⎥         }
- 73 ⎥         {
- 74 ⎥             // Row 4: This contact's city.
- 75 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 76 ⎥             defer row.deinit();
- 77 ⎥ 
- 78 ⎥             try dvui.labelNoFmt(@src(), "City:", .{ .font_style = .heading });
- 79 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.city.?, .{});
- 80 ⎥         }
- 81 ⎥         {
- 82 ⎥             // Row 5: This contact's state.
- 83 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 84 ⎥             defer row.deinit();
- 85 ⎥ 
- 86 ⎥             try dvui.labelNoFmt(@src(), "State:", .{ .font_style = .heading });
- 87 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.state.?, .{});
- 88 ⎥         }
- 89 ⎥         {
- 90 ⎥             // Row 6: This contact's zip.
- 91 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
- 92 ⎥             defer row.deinit();
- 93 ⎥ 
- 94 ⎥             try dvui.labelNoFmt(@src(), "Zip:", .{ .font_style = .heading });
- 95 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.zip.?, .{});
- 96 ⎥         }
- 97 ⎥         {
- 98 ⎥             // Row 7: Submit or Cancel.
- 99 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
-100 ⎥             defer row.deinit();
-101 ⎥             // Submit button.
-102 ⎥             if (try dvui.button(@src(), "Submit.", .{}, .{})) {
-103 ⎥                 // Submit this form.
-104 ⎥                 var contact_remove_record: *ContactRemove = try ContactRemove.init(
-105 ⎥                     self.allocator,
-106 ⎥                     self.contact_list_record.?.id,
-107 ⎥                 );
-108 ⎥                 try self.messenger.sendRemoveContact(contact_remove_record);
-109 ⎥             }
-110 ⎥             // Cancel button which switches to the select panel.
-111 ⎥             if (try dvui.button(@src(), "Cancel.", .{}, .{})) {
-112 ⎥                 // Switch to the select panel or the add panel.
-113 ⎥                 if (self.all_panels.Select.?.has_records()) {
-114 ⎥                     self.all_panels.setCurrentToSelect();
-115 ⎥                 } else {
-116 ⎥                     self.all_panels.setCurrentToAdd();
-117 ⎥                 }
+ 44 ⎥         {
+ 45 ⎥             // Row 1: The screen's name.
+ 46 ⎥             // Use the same background as the scroller.
+ 47 ⎥             var row: *dvui.BoxWidget = try dvui.box(
+ 48 ⎥                 @src(),
+ 49 ⎥                 .horizontal,
+ 50 ⎥                 .{
+ 51 ⎥                     .expand = .horizontal,
+ 52 ⎥                     .background = true,
+ 53 ⎥                 },
+ 54 ⎥             );
+ 55 ⎥             defer row.deinit();
+ 56 ⎥ 
+ 57 ⎥             try dvui.labelNoFmt(@src(), "Remove a contact.", .{ .font_style = .title });
+ 58 ⎥         }
+ 59 ⎥ 
+ 60 ⎥         var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
+ 61 ⎥         defer scroller.deinit();
+ 62 ⎥ 
+ 63 ⎥         var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
+ 64 ⎥         defer layout.deinit();
+ 65 ⎥ 
+ 66 ⎥         {
+ 67 ⎥             // Row 2: This contact's name.
+ 68 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+ 69 ⎥             defer row.deinit();
+ 70 ⎥ 
+ 71 ⎥             try dvui.labelNoFmt(@src(), "Name:", .{ .font_style = .heading });
+ 72 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.name.?, .{});
+ 73 ⎥         }
+ 74 ⎥         {
+ 75 ⎥             // Row 3: This contact's address.
+ 76 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+ 77 ⎥             defer row.deinit();
+ 78 ⎥ 
+ 79 ⎥             try dvui.labelNoFmt(@src(), "Address:", .{ .font_style = .heading });
+ 80 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.address.?, .{});
+ 81 ⎥         }
+ 82 ⎥         {
+ 83 ⎥             // Row 4: This contact's city.
+ 84 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+ 85 ⎥             defer row.deinit();
+ 86 ⎥ 
+ 87 ⎥             try dvui.labelNoFmt(@src(), "City:", .{ .font_style = .heading });
+ 88 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.city.?, .{});
+ 89 ⎥         }
+ 90 ⎥         {
+ 91 ⎥             // Row 5: This contact's state.
+ 92 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+ 93 ⎥             defer row.deinit();
+ 94 ⎥ 
+ 95 ⎥             try dvui.labelNoFmt(@src(), "State:", .{ .font_style = .heading });
+ 96 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.state.?, .{});
+ 97 ⎥         }
+ 98 ⎥         {
+ 99 ⎥             // Row 6: This contact's zip.
+100 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+101 ⎥             defer row.deinit();
+102 ⎥ 
+103 ⎥             try dvui.labelNoFmt(@src(), "Zip:", .{ .font_style = .heading });
+104 ⎥             try dvui.labelNoFmt(@src(), self.contact_list_record.?.zip.?, .{});
+105 ⎥         }
+106 ⎥         {
+107 ⎥             // Row 7: Submit or Cancel.
+108 ⎥             var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+109 ⎥             defer row.deinit();
+110 ⎥             // Submit button.
+111 ⎥             if (try dvui.button(@src(), "Submit.", .{}, .{})) {
+112 ⎥                 // Submit this form.
+113 ⎥                 const contact_remove_record: *ContactRemove = try ContactRemove.init(
+114 ⎥                     self.allocator,
+115 ⎥                     self.contact_list_record.?.id,
+116 ⎥                 );
+117 ⎥                 try self.messenger.sendRemoveContact(contact_remove_record);
 118 ⎥             }
-119 ⎥         }
-120 ⎥     }
-121 ⎥ 
-122 ⎥     pub fn deinit(self: *Panel) void {
-123 ⎥         if (self.contact_list_record) |contact_list_record| {
-124 ⎥             contact_list_record.deinit();
-125 ⎥         }
-126 ⎥ 
-127 ⎥         // The screen will deinit the container.
-128 ⎥         self.lock.deinit();
-129 ⎥         self.allocator.destroy(self);
-130 ⎥     }
-131 ⎥ 
-132 ⎥     /// refresh only if this panel and ( container or screen ) are showing.
-133 ⎥     pub fn refresh(self: *Panel) void {
-134 ⎥         if (self.all_panels.current_panel_tag == .Remove) {
-135 ⎥             // This is the current panel.
-136 ⎥             if (self.container) |container| {
-137 ⎥                 // Refresh the container.
-138 ⎥                 // The container will refresh only if it's the currently viewed screen.
-139 ⎥                 container.refresh();
-140 ⎥             } else {
-141 ⎥                 // Main view will refresh only if this is the currently viewed screen.
-142 ⎥                 self.main_view.refreshContacts();
-143 ⎥             }
-144 ⎥         }
-145 ⎥     }
-146 ⎥ 
-147 ⎥     pub fn setContainer(self: *Panel, container: *_various_.Container) void {
-148 ⎥         self.container = container;
-149 ⎥     }
-150 ⎥ 
-151 ⎥     // set is called by the select panel's modalRemoveFn.
-152 ⎥     // Param contact_list_record is owned by this fn. See Panel.deinit();
-153 ⎥     pub fn set(self: *Panel, contact_list_record: *const ContactList) void {
-154 ⎥         self.lock.lock();
-155 ⎥         defer self.lock.unlock();
-156 ⎥         defer self.refresh();
-157 ⎥ 
-158 ⎥         if (self.contact_list_record) |old_contact_list_record| {
-159 ⎥             old_contact_list_record.deinit();
-160 ⎥         }
-161 ⎥         self.contact_list_record = contact_list_record;
-162 ⎥     }
-163 ⎥ };
-164 ⎥ 
-165 ⎥ pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
-166 ⎥     var panel: *Panel = try allocator.create(Panel);
-167 ⎥     panel.lock = try _lock_.init(allocator);
-168 ⎥     errdefer {
-169 ⎥         allocator.destroy(panel);
-170 ⎥     }
-171 ⎥     panel.container = null;
-172 ⎥     panel.allocator = allocator;
-173 ⎥     panel.main_view = main_view;
-174 ⎥     panel.all_panels = all_panels;
-175 ⎥     panel.messenger = messenger;
-176 ⎥     panel.exit = exit;
-177 ⎥     panel.window = window;
-178 ⎥ 
-179 ⎥     // The contact list record.
-180 ⎥     panel.contact_list_record = null;
-181 ⎥ 
-182 ⎥     return panel;
-183 ⎥ }
-184 ⎥ 
+119 ⎥             // Cancel button which switches to the select panel.
+120 ⎥             if (try dvui.button(@src(), "Cancel.", .{}, .{})) {
+121 ⎥                 // Switch to the select panel or the add panel.
+122 ⎥                 if (self.all_panels.Select.?.has_records()) {
+123 ⎥                     self.all_panels.setCurrentToSelect();
+124 ⎥                 } else {
+125 ⎥                     self.all_panels.setCurrentToAdd();
+126 ⎥                 }
+127 ⎥             }
+128 ⎥         }
+129 ⎥     }
+130 ⎥ 
+131 ⎥     pub fn deinit(self: *Panel) void {
+132 ⎥         if (self.contact_list_record) |contact_list_record| {
+133 ⎥             contact_list_record.deinit();
+134 ⎥         }
+135 ⎥ 
+136 ⎥         // The screen will deinit the container.
+137 ⎥         self.lock.deinit();
+138 ⎥         self.allocator.destroy(self);
+139 ⎥     }
+140 ⎥ 
+141 ⎥     /// refresh only if this panel and ( container or screen ) are showing.
+142 ⎥     pub fn refresh(self: *Panel) void {
+143 ⎥         if (self.all_panels.current_panel_tag == .Remove) {
+144 ⎥             // This is the current panel.
+145 ⎥             if (self.container) |container| {
+146 ⎥                 // Refresh the container.
+147 ⎥                 // The container will refresh only if it's the currently viewed screen.
+148 ⎥                 container.refresh();
+149 ⎥             } else {
+150 ⎥                 // Main view will refresh only if this is the currently viewed screen.
+151 ⎥                 self.main_view.refreshContacts();
+152 ⎥             }
+153 ⎥         }
+154 ⎥     }
+155 ⎥ 
+156 ⎥     pub fn setContainer(self: *Panel, container: *_various_.Container) void {
+157 ⎥         self.container = container;
+158 ⎥     }
+159 ⎥ 
+160 ⎥     // set is called by the select panel's modalRemoveFn.
+161 ⎥     // Param contact_list_record is owned by this fn. See Panel.deinit();
+162 ⎥     pub fn set(self: *Panel, contact_list_record: *const ContactList) void {
+163 ⎥         self.lock.lock();
+164 ⎥         defer self.lock.unlock();
+165 ⎥         defer self.refresh();
+166 ⎥ 
+167 ⎥         if (self.contact_list_record) |old_contact_list_record| {
+168 ⎥             old_contact_list_record.deinit();
+169 ⎥         }
+170 ⎥         self.contact_list_record = contact_list_record;
+171 ⎥     }
+172 ⎥ };
+173 ⎥ 
+174 ⎥ pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *_panels_.Panels, messenger: *_messenger_.Messenger, exit: ExitFn, window: *dvui.Window) !*Panel {
+175 ⎥     var panel: *Panel = try allocator.create(Panel);
+176 ⎥     panel.lock = try _lock_.init(allocator);
+177 ⎥     errdefer {
+178 ⎥         allocator.destroy(panel);
+179 ⎥     }
+180 ⎥     panel.container = null;
+181 ⎥     panel.allocator = allocator;
+182 ⎥     panel.main_view = main_view;
+183 ⎥     panel.all_panels = all_panels;
+184 ⎥     panel.messenger = messenger;
+185 ⎥     panel.exit = exit;
+186 ⎥     panel.window = window;
+187 ⎥ 
+188 ⎥     // The contact list record.
+189 ⎥     panel.contact_list_record = null;
+190 ⎥ 
+191 ⎥     return panel;
+192 ⎥ }
+193 ⎥ 
 ```
 
 ## The messenger

@@ -1,6 +1,6 @@
 ## fn kickStart() !void
 
-The back-end code begins at **src/@This/backend/api.zig. The file contains a fn kickStart() which starts the back-end after the front-end is up and running.
+The back-end code begins at **src/backend/api.zig. The file contains a fn kickStart() which starts the back-end after the front-end is up and running.
 
 I want the app's contact list to load when the app starts.
 

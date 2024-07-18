@@ -1,5 +1,5 @@
 
-The local sqlite store is initialized in standalone-sdl.zig and then added to the back-end's startup params so that the back-end has access to the store.
+The local sqlite store is initialized in main.zig and then added to the back-end's startup params so that the back-end has access to the store.
 
 ## Additions related to Store
 
@@ -16,11 +16,11 @@ The local sqlite store is initialized in standalone-sdl.zig and then added to th
   6 ⎥ const dvui = @import("dvui");
   7 ⎥ const SDLBackend = @import("SDLBackend");
   8 ⎥ 
-  9 ⎥ const _backend_ = @import("src/@This/backend/api.zig");
+  9 ⎥ const _backend_ = @import("src/backend/api.zig");
  10 ⎥ const _channel_ = @import("channel");
  11 ⎥ const _closer_ = @import("closer");
  12 ⎥ const _closedownjobs_ = @import("closedownjobs");
- 13 ⎥ const _frontend_ = @import("src/@This/frontend/api.zig");
+ 13 ⎥ const _frontend_ = @import("src/frontend/api.zig");
  14 ⎥ const _modal_params_ = @import("modal_params");
  15 ⎥ const _startup_ = @import("startup");
  16 ⎥ const ExitFn = @import("various").ExitFn;
@@ -92,7 +92,7 @@ The local sqlite store is initialized in standalone-sdl.zig and then added to th
  82 ⎥     defer store.deinit();
  83 ⎥ 
  84 ⎥     // Initialize the front end.
- 85 ⎥     // See src/@This/deps/startup/api.zig
+ 85 ⎥     // See src/deps/startup/api.zig
  86 ⎥     var startup_frontend: _startup_.Frontend = _startup_.Frontend{
  87 ⎥         .allocator = gpa,
  88 ⎥         .window = &win,

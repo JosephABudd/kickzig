@@ -10,6 +10,7 @@ My edited frontend/main_menu.zig file is shown below. I edited the following lin
 * line 8  // Set the startup screen to Contacts.
 * line 13 // Turn off the main menu.
 * line 18 // Removed .HelloWorld from the main menu.
+* line 23 // Turn off developer menu items. This is not required because the main menu is off.
 
 ```zig
   1 ⎥ /// This is the front-end's main menu data.
@@ -34,6 +35,6 @@ My edited frontend/main_menu.zig file is shown below. I edited the following lin
  20 ⎥ /// KICKZIG TODO:
  21 ⎥ /// if true, the dvui developer menu items are displayed in the main menu.
  22 ⎥ /// if false, the dvui developer menu items are not displayed in the main menu.
- 23 ⎥ pub const show_developer_menu_items: bool = true;
+ 23 ⎥ pub const show_developer_menu_items: bool = false;
  24 ⎥ 
 ```

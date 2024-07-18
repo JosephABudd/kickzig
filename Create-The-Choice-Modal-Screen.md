@@ -6,8 +6,8 @@ The Choice modal screen also has modal params.
 
 ```shell
 ＄ kickzig screen add-modal Choice Choice
-Added the front-end «Choice» Modal screen at /home/nil/zig/crud/src/@This/frontend/screen/modal/Choice/screen.zig:1:1:
-Added the deps «Choice» Modal Params at /home/nil/zig/crud/src/@This/deps/modal_params/Choice.zig:1:1:
+Added the front-end «Choice» Modal screen at /home/nil/zig/crud/src/frontend/screen/modal/Choice/screen.zig:1:1:
+Added the deps «Choice» Modal Params at /home/nil/zig/crud/src/deps/modal_params/Choice.zig:1:1:
 ```
 
 ## Choice modal params
@@ -16,10 +16,10 @@ My edited deps/modal_params/Choice.zig file is shown below. I added the followin
 
 * lines 3 - 31
 * lines 43 - 45
-* lines 47 - 49
-* line 54 & 57 - 67
-* lines 73 - 79
-* lines 83 - 107
+* line 50 & 53 - 57
+* lines 62 - 68
+* lines 72 - 96
+* lines 98 - 100
 
 ```zig
   1 ⎥ const std = @import("std");
@@ -29,7 +29,7 @@ My edited deps/modal_params/Choice.zig file is shown below. I added the followin
   5 ⎥     label: []const u8,
   6 ⎥     implementor: ?*anyopaque,
   7 ⎥     context: ?*anyopaque,
-  8 ⎥     call_back: ?*const fn (implementor: *anyopaque, context: *anyopaque) anyerror!void,
+  8 ⎥     call_back: ?*const fn (implementor: ?*anyopaque, context: ?*anyopaque) anyerror!void,
   9 ⎥ 
  10 ⎥     fn deinit(self: *ChoiceItem) void {
  11 ⎥         self.allocator.free(self.label);
@@ -41,7 +41,7 @@ My edited deps/modal_params/Choice.zig file is shown below. I added the followin
  17 ⎥         label: []const u8,
  18 ⎥         implementor: ?*anyopaque,
  19 ⎥         context: ?*anyopaque,
- 20 ⎥         call_back: ?*const fn (implementor: *anyopaque, context: *anyopaque) anyerror!void,
+ 20 ⎥         call_back: ?*const fn (implementor: ?*anyopaque, context: ?*anyopaque) anyerror!void,
  21 ⎥     ) !*const ChoiceItem {
  22 ⎥         const self: *ChoiceItem = try allocator.create(ChoiceItem);
  23 ⎥         self.label = try allocator.alloc(u8, label.len);
@@ -55,11 +55,11 @@ My edited deps/modal_params/Choice.zig file is shown below. I added the followin
  31 ⎥ };
  32 ⎥ 
  33 ⎥ /// Params is the parameters for the Choice modal screen's state.
- 34 ⎥ /// See src/@This/frontend/screen/modal/Choice/screen.zig setState.
+ 34 ⎥ /// See src/frontend/screen/modal/Choice/screen.zig setState.
  35 ⎥ /// Your arguments are the values assigned to each Params member.
  36 ⎥ /// For examples:
  37 ⎥ /// * See OK.zig for a Params example.
- 38 ⎥ /// * See src/@This/frontend/screen/modal/OK/screen.zig setState.
+ 38 ⎥ /// * See src/frontend/screen/modal/OK/screen.zig setState.
  39 ⎥ pub const Params = struct {
  40 ⎥     allocator: std.mem.Allocator,
  41 ⎥ 
@@ -68,69 +68,62 @@ My edited deps/modal_params/Choice.zig file is shown below. I added the followin
  44 ⎥     choices: []*const ChoiceItem,
  45 ⎥     choices_index: usize,
  46 ⎥ 
- 47 ⎥     pub fn choiceItems(self: *Params) []*const ChoiceItem {
- 48 ⎥         return self.choices[0..self.choices_index];
- 49 ⎥     }
- 50 ⎥ 
- 51 ⎥     /// The caller owns the returned value.
- 52 ⎥     pub fn init(
- 53 ⎥         allocator: std.mem.Allocator,
- 54 ⎥         title: []const u8,
- 55 ⎥     ) !*Params {
- 56 ⎥         var args: *Params = try allocator.create(Params);
- 57 ⎥         args.title = try allocator.alloc(u8, title.len);
- 58 ⎥         errdefer {
- 59 ⎥             allocator.destroy(args);
- 60 ⎥         }
- 61 ⎥         @memcpy(@constCast(args.title), title);
- 62 ⎥         args.choices = try allocator.alloc(*ChoiceItem, 5);
- 63 ⎥         errdefer {
- 64 ⎥             allocator.free(args.title);
- 65 ⎥             allocator.destroy(args);
- 66 ⎥         }
- 67 ⎥         args.choices_index = 0;
- 68 ⎥         args.allocator = allocator;
- 69 ⎥         return args;
+ 47 ⎥     /// The caller owns the returned value.
+ 48 ⎥     pub fn init(
+ 49 ⎥         allocator: std.mem.Allocator,
+ 50 ⎥         title: []const u8,
+ 51 ⎥     ) !*Params {
+ 52 ⎥         var args: *Params = try allocator.create(Params);
+ 53 ⎥         args.title = try allocator.alloc(u8, title.len);
+ 54 ⎥         @memcpy(@constCast(args.title), title);
+ 55 ⎥         args.allocator = allocator;
+ 56 ⎥         args.choices = try allocator.alloc(*ChoiceItem, 5);
+ 57 ⎥         args.choices_index = 0;
+ 58 ⎥         return args;
+ 59 ⎥     }
+ 60 ⎥ 
+ 61 ⎥     pub fn deinit(self: *Params) void {
+ 62 ⎥         for (self.choices, 0..) |choice, i| {
+ 63 ⎥             if (i == self.choices_index) {
+ 64 ⎥                 break;
+ 65 ⎥             }
+ 66 ⎥             @constCast(choice).deinit();
+ 67 ⎥         }
+ 68 ⎥         self.allocator.free(self.choices);
+ 69 ⎥         self.allocator.destroy(self);
  70 ⎥     }
  71 ⎥ 
- 72 ⎥     pub fn deinit(self: *Params) void {
- 73 ⎥         for (self.choices, 0..) |choice, i| {
- 74 ⎥             if (i == self.choices_index) {
- 75 ⎥                 break;
- 76 ⎥             }
- 77 ⎥             @constCast(choice).deinit();
- 78 ⎥         }
- 79 ⎥         self.allocator.free(self.choices);
- 80 ⎥         self.allocator.destroy(self);
- 81 ⎥     }
- 82 ⎥ 
- 83 ⎥     pub fn addChoiceItem(
- 84 ⎥         self: *Params,
- 85 ⎥         label: []const u8,
- 86 ⎥         implementor: ?*anyopaque,
- 87 ⎥         context: ?*anyopaque,
- 88 ⎥         call_back: ?*const fn (implementor: *anyopaque, context: *anyopaque) anyerror!void,
- 89 ⎥     ) !void {
- 90 ⎥         const choice_item: *const ChoiceItem = try ChoiceItem.init(
- 91 ⎥             self.allocator,
- 92 ⎥             label,
- 93 ⎥             implementor,
- 94 ⎥             context,
- 95 ⎥             call_back,
- 96 ⎥         );
- 97 ⎥         if (self.choices_index == self.choices.len) {
- 98 ⎥             var temps = self.choices;
- 99 ⎥             defer self.allocator.free(temps);
-100 ⎥             self.choices = try self.allocator.alloc(*const ChoiceItem, temps.len + 5);
-101 ⎥             for (temps, 0..) |temp, i| {
-102 ⎥                 self.choices[i] = temp;
-103 ⎥             }
-104 ⎥         }
-105 ⎥         self.choices[self.choices_index] = choice_item;
-106 ⎥         self.choices_index += 1;
-107 ⎥     }
-108 ⎥ };
-109 ⎥ 
+ 72 ⎥     pub fn addChoiceItem(
+ 73 ⎥         self: *Params,
+ 74 ⎥         label: []const u8,
+ 75 ⎥         implementor: ?*anyopaque,
+ 76 ⎥         context: ?*anyopaque,
+ 77 ⎥         call_back: ?*const fn (implementor: ?*anyopaque, context: ?*anyopaque) anyerror!void,
+ 78 ⎥     ) !void {
+ 79 ⎥         const choice_item: *const ChoiceItem = try ChoiceItem.init(
+ 80 ⎥             self.allocator,
+ 81 ⎥             label,
+ 82 ⎥             implementor,
+ 83 ⎥             context,
+ 84 ⎥             call_back,
+ 85 ⎥         );
+ 86 ⎥         if (self.choices_index == self.choices.len) {
+ 87 ⎥             const temps = self.choices;
+ 88 ⎥             defer self.allocator.free(temps);
+ 89 ⎥             self.choices = try self.allocator.alloc(*const ChoiceItem, temps.len + 5);
+ 90 ⎥             for (temps, 0..) |temp, i| {
+ 91 ⎥                 self.choices[i] = temp;
+ 92 ⎥             }
+ 93 ⎥         }
+ 94 ⎥         self.choices[self.choices_index] = choice_item;
+ 95 ⎥         self.choices_index += 1;
+ 96 ⎥     }
+ 97 ⎥ 
+ 98 ⎥     pub fn choiceItems(self: *Params) []*const ChoiceItem {
+ 99 ⎥         return self.choices[0..self.choices_index];
+100 ⎥     }
+101 ⎥ };
+102 ⎥ 
 ```
 
 My edited frontend/screens/modal/Choice/Choice_panel.zig file is shown below. I added the following lines.
@@ -196,7 +189,7 @@ My edited frontend/screens/modal/Choice/Choice_panel.zig file is shown below. I 
  56 ⎥         self.lock.lock();
  57 ⎥         defer self.lock.unlock();
  58 ⎥ 
- 59 ⎥         var theme: *dvui.Theme = dvui.themeGet();
+ 59 ⎥         const theme: *dvui.Theme = dvui.themeGet();
  60 ⎥ 
  61 ⎥         const padding_options = .{
  62 ⎥             .expand = .both,

@@ -7,7 +7,7 @@
 
 ### Additional vendored remote packages
 
-* [[More Vendored Packages.|More-Vendored-Packages]]
+* [[The Vendored Package.|The-Vendored-Package]]
 
 ### Local dependencies
 
@@ -29,5 +29,5 @@
 ## Appendix
 
 * [[build.zig|build.zig]]
-* [[standalone-sdl.zig|standalone--sdl.zig]]
+* [[main.zig|main.zig]]
 * [[Screen Shots.|Screen-Shots]]
