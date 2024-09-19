@@ -30,7 +30,12 @@ pub fn isNewScreenName(allocator: std.mem.Allocator, new_name: []const u8) bool 
 
 // Panel name.
 
-/// isNewScreenName returns if the screen name is unique.
+/// isValidScreenPanelName returns if the screen name is valid.
+pub fn isValidScreenPanelName(name: []const u8) bool {
+    return strings.isValid(name);
+}
+
+/// isNewScreenPanelName returns if the screen name is unique.
 pub fn isNewScreenPanelName(allocator: std.mem.Allocator, screen_name: []const u8, panel_name: []const u8) bool {
     const names: [][]const u8 = try filenames.allPanelScreenFileNames(allocator, screen_name) catch {
         return false;

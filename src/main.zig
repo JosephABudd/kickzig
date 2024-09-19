@@ -7,6 +7,8 @@ const _framework_commands_ = @import("commands/framework/api.zig");
 const _screen_commands_ = @import("commands/screen/api.zig");
 const _message_commands_ = @import("commands/message/api.zig");
 
+const use_messenger: bool = true;
+
 pub fn main() !void {
     // Memory allocator.
     var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
@@ -55,7 +57,7 @@ fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, command: []
             };
             return;
         }
-        return _screen_commands_.handleCommand(allocator, cli_name, remaining_args);
+        return _screen_commands_.handleCommand(allocator, cli_name, remaining_args, use_messenger);
     }
 
     // message command.
@@ -67,7 +69,7 @@ fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, command: []
             };
             return;
         }
-        return _message_commands_.handleCommand(allocator, cli_name, remaining_args);
+        return _message_commands_.handleCommand(allocator, cli_name, remaining_args, use_messenger);
     }
 
     // unknown user input.

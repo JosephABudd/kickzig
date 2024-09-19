@@ -52,7 +52,7 @@ pub const Template = struct {
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
         try lines.appendSlice(line_start);
-        var names: [][]const u8 = self.message_names[0..self.message_names_index];
+        const names: [][]const u8 = self.message_names[0..self.message_names_index];
         for (names) |name| {
             line = try fmt.allocPrint(self.allocator, line_import_member, .{name});
             defer self.allocator.free(line);
@@ -71,20 +71,10 @@ pub const Template = struct {
             try lines.appendSlice(line);
         }
         try lines.appendSlice(line_fn_deinit_end_fn_init_start);
-        for (names, 0..) |name, i| {
-            {
-                line = try fmt.allocPrint(self.allocator, line_member_init, .{name});
-                defer self.allocator.free(line);
-                try lines.appendSlice(line);
-            }
-            try lines.appendSlice(line_member_init_errdefer_start);
-            const deinit_names: [][]const u8 = names[0..i];
-            for (deinit_names) |deinit_name| {
-                line = try fmt.allocPrint(self.allocator, line_member_init_member_deinit, .{deinit_name});
-                defer self.allocator.free(line);
-                try lines.appendSlice(line);
-            }
-            try lines.appendSlice(line_member_init_errdefer_end);
+        for (names) |name| {
+            line = try fmt.allocPrint(self.allocator, line_member_init, .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
         try lines.appendSlice(line_end);
         const temp: []const u8 = try lines.toOwnedSlice();
@@ -103,7 +93,7 @@ const line_start: []const u8 =
     \\
 ;
 const line_import_member: []const u8 =
-    \\const _{0s}_ = @import("{0s}.zig");
+    \\const {0s}Messenger = @import("{0s}.zig").Messenger;
     \\
 ;
 
@@ -117,7 +107,7 @@ const line_messenger_struct_start: []const u8 =
 ;
 
 const line_messenger_struct_member: []const u8 =
-    \\    {0s}: *_{0s}_.Messenger,
+    \\    {0s}_messenger: ?*{0s}Messenger,
     \\
 ;
 
@@ -128,49 +118,36 @@ const line_fn_deinit: []const u8 =
 ;
 
 const line_deinit_member: []const u8 =
-    \\        self.{0s}.deinit();
+    \\        if (self.{0s}_messenger) |member| {{
+    \\            member.deinit();
+    \\        }}
     \\
 ;
 
 const line_fn_deinit_end_fn_init_start: []const u8 =
     \\        self.allocator.destroy(self);
     \\    }
-    \\};
     \\
-    \\/// init constructs a Messenger.
-    \\/// It initializes each unique message handler.
-    \\pub fn init(startup: _startup_.Backend) !*Messenger {
-    \\    var messenger: *Messenger = try startup.allocator.create(Messenger);
-    \\    errdefer {
-    \\        startup.allocator.destroy(messenger);
-    \\    }
-    \\    messenger.allocator = startup.allocator;
+    \\    /// init constructs a Messenger.
+    \\    /// It initializes each unique message handler.
+    \\    pub fn init(startup: _startup_.Backend) !*Messenger {
+    \\        var messenger: *Messenger = try startup.allocator.create(Messenger);
+    \\        errdefer {
+    \\            startup.allocator.destroy(messenger);
+    \\        }
+    \\        messenger.allocator = startup.allocator;
     \\
 ;
 
 const line_member_init: []const u8 =
-    \\    messenger.{0s} = try _{0s}_.init(startup);
-    \\
-;
-
-const line_member_init_errdefer_start: []const u8 =
-    \\    errdefer {
-    \\
-;
-
-const line_member_init_member_deinit: []const u8 =
-    \\        messenger.{0s}.deinit();
-    \\
-;
-
-const line_member_init_errdefer_end: []const u8 =
-    \\        messenger.allocator.destroy(messenger);
-    \\    }
+    \\        messenger.{0s}_messenger = try {0s}Messenger.init(startup);
+    \\        errdefer messenger.deinit();
     \\
 ;
 
 const line_end: []const u8 =
-    \\    return messenger;
-    \\}
+    \\        return messenger;
+    \\    }
+    \\};
     \\
 ;

@@ -14,11 +14,11 @@ pub const backend = _src_backend_;
 pub const deps = _src_deps_;
 
 /// recreate rebuilds root/ entirely.
-pub fn recreate(allocator: std.mem.Allocator, app_name: []const u8) !void {
-    try create(allocator, app_name);
+pub fn recreate(allocator: std.mem.Allocator, app_name: []const u8, use_messenger: bool) !void {
+    try create(allocator, app_name, use_messenger);
 }
 
-pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
+pub fn create(allocator: std.mem.Allocator, app_name: []const u8, use_messenger: bool) !void {
     // Open the write folder.
     const folders = try paths.folders();
     defer folders.deinit();
@@ -57,6 +57,6 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
     }
 
     try _src_backend_.create(allocator);
-    try _src_frontend_.create(allocator, app_name);
+    try _src_frontend_.create(allocator, app_name, use_messenger);
     try _src_deps_.create(allocator);
 }

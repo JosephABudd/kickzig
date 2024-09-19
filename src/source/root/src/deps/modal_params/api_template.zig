@@ -46,17 +46,21 @@ pub const Template = struct {
     }
 
     pub fn content(self: *Template) ![]const u8 {
-        var line: []u8 = undefined;
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
+        var line: []u8 = undefined;
+
         try lines.appendSlice(line_start);
-        const names: [][]const u8 = self.modal_param_names[0..self.modal_param_names_index];
-        for (names) |name| {
-            line = try fmt.allocPrint(self.allocator, line_import, .{name});
+
+        const modal_param_names: [][]const u8 = self.modal_param_names[0..self.modal_param_names_index];
+        for (modal_param_names) |name| {
+            line = try fmt.allocPrint(self.allocator, line_import_modal_param_f, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
+
         try lines.appendSlice(line_end);
+
         return try lines.toOwnedSlice();
     }
 };
@@ -68,7 +72,8 @@ const line_start =
     \\
 ;
 
-const line_import =
+// modal param name {0s}
+const line_import_modal_param_f =
     \\pub const {0s} = @import("{0s}.zig").Params;
     \\
 ;

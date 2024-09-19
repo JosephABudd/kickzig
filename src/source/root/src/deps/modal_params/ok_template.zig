@@ -35,4 +35,5 @@ pub const content =
     \\        self.allocator.destroy(self);
     \\    }
     \\};
+    \\
 ;

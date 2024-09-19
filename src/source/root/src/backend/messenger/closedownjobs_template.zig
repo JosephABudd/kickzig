@@ -17,6 +17,24 @@ pub const content =
     \\    send_channels: *_channel_.BackendToFrontend,
     \\    receive_channels: *_channel_.FrontendToBackend,
     \\
+    \\    pub fn init(startup: _startup_.Backend) !*Messenger {
+    \\        var messenger: *Messenger = try startup.allocator.create(Messenger);
+    \\        messenger.allocator = startup.allocator;
+    \\        messenger.send_channels = startup.send_channels;
+    \\        messenger.receive_channels = startup.receive_channels;
+    \\        var receive_behavior = try startup.receive_channels.CloseDownJobs.initBehavior();
+    \\        errdefer {
+    \\            messenger.deinit();
+    \\        }
+    \\        receive_behavior.implementor = messenger;
+    \\        receive_behavior.receiveFn = &Messenger.receiveCloseDownJobsFn;
+    \\        try startup.receive_channels.CloseDownJobs.subscribe(receive_behavior);
+    \\        errdefer {
+    \\            messenger.deinit();
+    \\        }
+    \\        return messenger;
+    \\    }
+    \\
     \\    pub fn deinit(self: *Messenger) void {
     \\        self.allocator.destroy(self);
     \\    }
@@ -50,11 +68,19 @@ pub const content =
     \\                var return_message: *_message_.CloseDownJobs.Message = try message.copy();
     \\                const status_update: []u8 = try std.fmt.allocPrint(self.allocator, "Finishing up. Completed {d} of {d} jobs.", .{ (i + 1), jobs.len });
     \\                defer self.allocator.free(status_update);
-    \\                try return_message.backend_payload.set(.{
-    \\                    .status_update = status_update,
-    \\                    .completed = (i == last),
-    \\                    .progress = current_f32 / last_f32,
-    \\                });
+    \\                if (i == 0) {
+    \\                    try return_message.backend_payload.set(.{
+    \\                        .status_update = status_update,
+    \\                        .completed = (i == last),
+    \\                        .progress = current_f32 / last_f32,
+    \\                    });
+    \\                } else {
+    \\                    try return_message.backend_payload.reset(.{
+    \\                        .status_update = status_update,
+    \\                        .completed = (i == last),
+    \\                        .progress = current_f32 / last_f32,
+    \\                    });
+    \\                }
     \\                try self.send_channels.CloseDownJobs.send(return_message);
     \\            }
     \\        } else {
@@ -66,21 +92,4 @@ pub const content =
     \\    }
     \\};
     \\
-    \\pub fn init(startup: _startup_.Backend) !*Messenger {
-    \\    var messenger: *Messenger = try startup.allocator.create(Messenger);
-    \\    messenger.allocator = startup.allocator;
-    \\    messenger.send_channels = startup.send_channels;
-    \\    messenger.receive_channels = startup.receive_channels;
-    \\    var receive_behavior = try startup.receive_channels.CloseDownJobs.initBehavior();
-    \\    errdefer {
-    \\        messenger.deinit();
-    \\    }
-    \\    receive_behavior.implementor = messenger;
-    \\    receive_behavior.receiveFn = &Messenger.receiveCloseDownJobsFn;
-    \\    try startup.receive_channels.CloseDownJobs.subscribe(receive_behavior);
-    \\    errdefer {
-    \\        messenger.deinit();
-    \\    }
-    \\    return messenger;
-    \\}
 ;

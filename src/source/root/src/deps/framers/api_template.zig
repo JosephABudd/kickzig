@@ -164,6 +164,7 @@ pub const Template = struct {
         }
 
         try lines.appendSlice(line_eoj);
+        try lines.appendSlice(line_container_interface_fns);
 
         const temp: []const u8 = try lines.toOwnedSlice();
         line = try self.allocator.alloc(u8, temp.len);
@@ -176,16 +177,19 @@ const line_import =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
-    \\const _lock_ = @import("lock");
     \\const _modal_params_ = @import("modal_params");
     \\const _startup_ = @import("startup");
+    \\const sorted_main_menu_screen_tags = @import("main_menu").sorted_main_menu_screen_tags;
+    \\
+    \\const Container = @import("various").Container;
     \\const ExitFn = @import("various").ExitFn;
+    \\
     \\pub const ScreenTags = @import("screen_tags.zig").ScreenTags;
     \\
     \\/// MainView is each and every screen.
     \\pub const MainView = struct {
     \\    allocator: std.mem.Allocator,
-    \\    lock: *_lock_.ThreadLock,
+    \\    lock: std.Thread.Mutex,
     \\    window: *dvui.Window,
     \\    exit: ExitFn,
     \\    current: ?ScreenTags,
@@ -196,8 +200,7 @@ const line_import =
     \\
     \\    pub fn init(startup: _startup_.Frontend) !*MainView {
     \\        var self: *MainView = try startup.allocator.create(MainView);
-    \\        self.lock = try _lock_.init(startup.allocator);
-    \\        errdefer startup.allocator.destroy(self);
+    \\        self.lock = std.Thread.Mutex{};
     \\
     \\        self.allocator = startup.allocator;
     \\        self.exit = startup.exit;
@@ -213,7 +216,6 @@ const line_import =
     \\    }
     \\
     \\    pub fn deinit(self: *MainView) void {
-    \\        self.lock.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
@@ -249,6 +251,7 @@ const line_import =
     \\        return modal_args;
     \\    }
     \\
+    \\
 ;
 
 const line_show_start =
@@ -257,13 +260,17 @@ const line_show_start =
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
     \\
+    \\        if (!MainView.isMainMenuTag(screen)) {
+    \\            return error.NotAMainMenuTag;
+    \\        }
+    \\
     \\        // Only show if not a modal screen.
     \\        return switch (screen) {
     \\
 ;
 
 const line_show_not_modal =
-    \\            .{{ screen_name }} => self.show{{ screen_name }}(),
+    \\            .{{ screen_name }} => self._show{{ screen_name }}(),
     \\
 ;
 
@@ -285,7 +292,7 @@ const line_refresh_start =
 ;
 
 const line_refresh_screen_tag =
-    \\            .{{ screen_name }} => self.refresh{{ screen_name }}(),
+    \\            .{{ screen_name }} => self._refresh{{ screen_name }}(),
     \\
 ;
 
@@ -293,6 +300,16 @@ const line_refresh_end =
     \\            else => {}, // EOJ.
     \\        }
     \\    }
+    \\
+    \\    fn isMainMenuTag(screen: ScreenTags) bool {
+    \\        for (sorted_main_menu_screen_tags) |tag| {
+    \\            if (tag == screen) {
+    \\                return true;
+    \\            }
+    \\        }
+    \\        return false;
+    \\    }
+    \\
     \\
 ;
 
@@ -304,6 +321,16 @@ const line_show_refresh_not_modal =
     \\    pub fn show{{ screen_name }}(self: *MainView) void {
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
+    \\
+    \\        self._show{{ screen_name }}();
+    \\    }
+    \\
+    \\    /// _show{{ screen_name }} makes the {{ screen_name }} screen to the current one.
+    \\    fn _show{{ screen_name }}(self: *MainView) void {
+    \\        if (!isMainMenuTag(.{{ screen_name }})) {
+    \\            // The .{{ screen_name }} tag is not in the main menu.
+    \\            return;
+    \\        }
     \\
     \\        if (!self.current_is_modal) {
     \\            // The current screen is not modal so replace it.
@@ -317,6 +344,11 @@ const line_show_refresh_not_modal =
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
     \\
+    \\        self._refresh{{ screen_name }}();
+    \\    }
+    \\
+    \\    /// _refresh{{ screen_name }} refreshes the window if the {{ screen_name }} screen is the current one.
+    \\    pub fn _refresh{{ screen_name }}(self: *MainView) void {
     \\        if (self.current) |current| {
     \\            if (current == .{{ screen_name }}) {
     \\                // {{ screen_name }} is the current screen.
@@ -325,6 +357,21 @@ const line_show_refresh_not_modal =
     \\        }
     \\    }
     \\
+    \\    /// refresh{{ screen_name }}ContainerFn refreshes the window if the {{ screen_name }} screen is the current one.
+    \\    pub fn refresh{{ screen_name }}ContainerFn(implementor: *anyopaque) void {
+    \\        var self: *MainView = @alignCast(@ptrCast(implementor));
+    \\        self.refresh{{ screen_name }}();
+    \\    }
+    \\
+    \\    /// Convert MainView to a Container interface for the {{ screen_name }} screen.
+    \\    pub fn as{{ screen_name }}Container(self: *MainView) anyerror!*Container {
+    \\        return Container.init(
+    \\            self.allocator,
+    \\            self,
+    \\            null,
+    \\            MainView.refresh{{ screen_name }}ContainerFn,
+    \\        );
+    \\    }
 ;
 
 const line_show_hide_refresh_modal =
@@ -377,6 +424,22 @@ const line_show_hide_refresh_modal =
     \\                dvui.refresh(self.window, @src(), null);
     \\            }
     \\        }
+    \\    }
+    \\
+    \\    /// refresh{{ screen_name }}ContainerFn refreshes the window if the {{ screen_name }} screen is the current one.
+    \\    pub fn refresh{{ screen_name }}ContainerFn(implementor: *anyopaque) void {
+    \\        var self: *MainView = @alignCast(@ptrCast(implementor));
+    \\        self.refresh{{ screen_name }}();
+    \\    }
+    \\
+    \\    /// Convert MainView to a Container interface for the {{ screen_name }} screen.
+    \\    pub fn as{{ screen_name }}Container(self: *MainView) anyerror!*Container {
+    \\        return Container.init(
+    \\            self.allocator,
+    \\            self,
+    \\            null,
+    \\            MainView.refresh{{ screen_name }}ContainerFn,
+    \\        );
     \\    }
     \\
 ;
@@ -445,5 +508,11 @@ const line_eoj =
     \\            }
     \\        }
     \\    }
+    \\
+    \\
+;
+
+const line_container_interface_fns =
     \\};
+    \\
 ;

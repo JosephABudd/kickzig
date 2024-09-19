@@ -102,12 +102,34 @@ pub const content =
     \\    }
     \\
     \\    // Returns an error if already set.
+    \\    // Called only before the first ExitFn has completed to show current progress.
+    \\    // See backend/messenger/CloseDownJobs.zig.
     \\    pub fn set(self: *BackendPayload, values: Settings) !void {
     \\        if (self.is_set) {
     \\            return error.CloseDownJobsBackendPayloadAlreadySet;
     \\        }
     \\        self.is_set = true;
     \\        if (values.status_update) |status_update| {
+    \\            self.status_update = try self.allocator.alloc(u8, status_update.len);
+    \\            @memcpy(@constCast(self.status_update.?), status_update);
+    \\        }
+    \\        if (values.completed) |completed| {
+    \\            self.completed = completed;
+    \\        }
+    \\        if (values.progress) |progress| {
+    \\            self.progress = progress;
+    \\        }
+    \\    }
+    \\
+    \\    // Allows the message to be reset.
+    \\    // Called after each ExitFn has completed to show current progress.
+    \\    // See backend/messenger/CloseDownJobs.zig.
+    \\    pub fn reset(self: *BackendPayload, values: Settings) !void {
+    \\        self.is_set = true;
+    \\        if (values.status_update) |status_update| {
+    \\            if (self.status_update) |current_status_update| {
+    \\                self.allocator.free(current_status_update);
+    \\            }
     \\            self.status_update = try self.allocator.alloc(u8, status_update.len);
     \\            @memcpy(@constCast(self.status_update.?), status_update);
     \\        }
@@ -126,6 +148,29 @@ pub const content =
     \\    count_pointers: *Counter,
     \\    frontend_payload: *FrontendPayload,
     \\    backend_payload: *BackendPayload,
+    \\
+    \\    /// init creates an original message.
+    \\    pub fn init(allocator: std.mem.Allocator) !*Message {
+    \\        var self: *Message = try allocator.create(Message);
+    \\        self.frontend_payload = try FrontendPayload.init(allocator);
+    \\        errdefer {
+    \\            allocator.destroy(self);
+    \\        }
+    \\        self.backend_payload = try BackendPayload.init(allocator);
+    \\        errdefer {
+    \\            self.frontend_payload.deinit();
+    \\            allocator.destroy(self);
+    \\        }
+    \\        self.count_pointers = try Counter.init(allocator);
+    \\        errdefer {
+    \\            self.backend_payload.deinit();
+    \\            self.frontend_payload.deinit();
+    \\            allocator.destroy(self);
+    \\        }
+    \\        _ = self.count_pointers.inc();
+    \\        self.allocator = allocator;
+    \\        return self;
+    \\    }
     \\
     \\    // deinit does not deinit until self is the final pointer to Message.
     \\    pub fn deinit(self: *Message) void {
@@ -171,26 +216,4 @@ pub const content =
     \\    }
     \\};
     \\
-    \\/// init creates an original message.
-    \\pub fn init(allocator: std.mem.Allocator) !*Message {
-    \\    var self: *Message = try allocator.create(Message);
-    \\    self.frontend_payload = try FrontendPayload.init(allocator);
-    \\    errdefer {
-    \\        allocator.destroy(self);
-    \\    }
-    \\    self.backend_payload = try BackendPayload.init(allocator);
-    \\    errdefer {
-    \\        self.frontend_payload.deinit();
-    \\        allocator.destroy(self);
-    \\    }
-    \\    self.count_pointers = try Counter.init(allocator);
-    \\    errdefer {
-    \\        self.backend_payload.deinit();
-    \\        self.frontend_payload.deinit();
-    \\        allocator.destroy(self);
-    \\    }
-    \\    _ = self.count_pointers.inc();
-    \\    self.allocator = allocator;
-    \\    return self;
-    \\}
 ;

@@ -2,41 +2,37 @@
 
 Still, very much a work in progress.
 
-## June 20, 2024: version 0.2.0
+## Sep 18, 2024: version 0.3.0
+
+### As I've been learning zig and dvui, I've been getting a feel for the code patterns that I favor
+
+* I have regulated my code by implementing those patterns.
+* I have simplified the initialization and interaction of screens in the front-end using techniques and patterns I found in dvui.
+* The tab-bar's have been upgraded and bugs fixed.
 
 Works with [dvui](https://github.com/david-vanderson/dvui) and zig v. 0.13.0.
+
+## Next Plan
+
+1. Make the framework buildable with or without messages.
 
 ## Summary
 
 ### kickzig is a CLI. It does 3 things
 
-1. **Generates the source code**, of an application framework, written in zig. The framework which uses the beautiful [dvui](https://github.com/david-vanderson/dvui) graphics framework in the front-end. That said, kickzig also requires the developer to understand how to use the dvui widgets. The framework source code contains various widget examples. (That's why it runs right out of the box.) You will find some in the framework source code. Also see the dvui [Examples.zig](https://github.com/david-vanderson/dvui/blob/main/src/Examples.zig) or the [dvui demo](https://github.com/david-vanderson/dvui-demo).
+1. **Generates the source code**, of an application framework, written in zig.
+   * The framework uses the beautiful and well documented [dvui](https://github.com/david-vanderson/dvui) graphics framework at the front-end. That said, kickzig also requires the developer to understand how to use the dvui widgets.
+   * The framework's back-end only contains message handlers.
 1. **Adds and removes screens** in the source code.
-   * Screens are the framework's front-end packages that display content to the user and receive input from the user.
-   * Different types of screens do that in their own unique way.
-   * A screen may have one or more panels. Panels are where the developer designs a display and receives input from the user.
-   * A screen has a messenger which communicates with the back-end. The developer subscribes the messenger to the channels of messages that need to be received. The developer adds functions to send and receive messages.
+   * Screens are the framework's front-end packages. Each type of screen is unique in how it lays out panels.
+   * Each panel is unique in how it displays visual output to the user and receive input from the user.
+   * A screen has a messenger that handles communications between the screen's panels and the back-end.
 1. **Adds and removes messages** in the source code.
       * Messages are how the framework's front-end and back-end communicate.
-      * The developer will customize each message.
-        * A message's front-end payload is what the front-end sends to the back-end. The developer will want to customize the front-end payload.
-        * A message's back-end payload is what the back-end sends to the front-end. By default, the back-end payload only returns an optional error message for the user. The developer is free to cutomize the back-end payload.
-      * Each front-end screen has a messenger that can send and receive any or all messages with the back-end.
-        * The developer will subscribe a screen messenger to a message's receive channel in order to receive that message.
-        * The developer will send a message through it's send channel.
-        * The developer will create the messenger's send and receive functions.
-      * The back-end has 1 messenger for each message.
-        * A back-end messenger by default
-          * is already subscribed to it's message's receive channel.
-          * is already receiving it's messages through that receive channel.
-          * is already returning it's message through it's send channel.
-          * is already handling errors.
-        * So what does the developer have to do?
-          * For back-end messengers which receive a message, the developer must provide the required functionality for processing the message in the messenger's fn **receiveJob**.
-          * For back-end messengers which can be triggered, the developer must provide the required functionality for creating a new message in the messenger's fn **triggerJob**.
-        * Those messengers which receive a message can also trigger other back-end messengers to send their message. For example, an **AddContact** messenger can trigger a **RebuildContactList** messenger to send the updated list of contacts to the front end.
+      * Messages are sent and received through channels.
+      * Each message has it's own back-end handler which receives and/or returns the message.
 
-The [wiki](https://github.com/JosephABudd/kickzig/wiki) documents building a CRUD with an previous version of kickzig. It will be updated using the current version of kickzig as time allows.
+The [wiki](https://github.com/JosephABudd/kickzig/wiki) documents building a CRUD with an previous version of kickzig. It will be updated using the current version of kickzig as time allows. Currently the wiki is not caught up to the current changes to kickzig.
 
 ## Example: Creating a framework, building and running an application
 
@@ -48,7 +44,7 @@ Nota Bene: Currently, the kickzig generated framework must be built using zig ve
 ＄ mkdir myapp
 ＄ cd myapp
 ＄ kickzig framework
-＄ zig fetch https://github.com/david-vanderson/dvui/archive/8b29569d96fe3f037ec2fc707be53c4e0a0ad2d1.tar.gz --save
+＄ zig fetch https://github.com/david-vanderson/dvui/archive/afc277df749f9794d4cce17e257cf1d5b7e9c4f7.tar.gz --save
 ＄ zig build -freference-trace=255
 ＄ ./zig-out/bin/myapp
 ```
@@ -67,57 +63,35 @@ Nota Bene: Currently, the kickzig generated framework must be built using zig ve
 
 ## kickzig for the front-end
 
-kickzig is mostly a tool for the application's front-end. The framework's front-end is a collection of screens. Each screen is a collection of panels. Panel's are displayed one at a time.
-
-A screen is a collection of panels and has it's own messenger which communicates with the back-end.
+kickzig is mostly a tool for the application's front-end. The framework's front-end is a collection of screens. Each screen is a layout. A layout of panels. The panels communicate with the back-end using the screen's messenger.
 
 Whenever the developer adds any type of screen with kickzig, it functions perfectly.
 
 ### Panel screens
 
-A Panel screen is the simplest type of screen. It only displays one of it's panels at any one time. Panel screens always function when the developer creates them although the panels display the screen name and panel name by default.
-
-The Panel screens are useful for creating other types of screens. They are the first screens that I created. I used the Panel screens to create each of the other types of screens.
-
-### Content screens
-
-A Content screen is really just another Panel screen. That's why it's in the panel/ folder with the other panel-screens. The difference is that a content screen is only going to be used for a tab's content.
-
-### The differences between panel screens and content screens
-
-1. **Implementation**
-   * A **content screen** implementation:
-     1. is initialized by the tab that uses the screen for content.
-   * A **panel screen** implementation:
-     1. is initialized by the app at startup and should there fore, be added to the main menu.
-     1. can also be initialized by a tab that is using the screen for content.
-1. **Framing** is when a screen is drawn and user input is received.
-   * A **content screen** frames:
-     1. in a tab's content area.
-   * A **panel screen** frames:
-     1. in the app's main view.
-     1. in a tab's content area.
+A Panel screen only lays out and displays one of it's panels at any one time.
 
 ### Examples
 
 `kickzig screen add-panel Edit Select Edit` creates a panel screen named **Edit** in the panel/ folder. The default panel is named **Select** and another panel is named **Edit**. By default the Select and Edit panels each display their screen and panel name. It's the developers job to edit any panel's file to achieve the propper functionality.
 
-`kickzig screen add-content Remove Select Confirm` creates a content screen named **Remove** in the panel/ folder. The default panel is named **Select** and another panel named **Confirm**. By default the Select and Confirm panels each display their screen and panel name. Again, it's the developers job to edit any panel's file to achieve the propper functionality.
+`kickzig screen add-panel Remove Select Confirm` creates a panel screen named **Remove** in the panel/ folder. The default panel is named **Select** and another panel named **Confirm**. By default the Select and Confirm panels each display their screen and panel name. Again, it's the developers job to edit any panel's file to achieve the propper functionality.
 
 ### tab-bar screens
 
 1. A tab-bar screen always functions when the developer creates it.
-1. Contains one example tab for each tab-type that the developer named. However, the developer may have 0 or more tabs of each tab-type in the tab-bar. For example: My tab-bar has a Log tab-type which will display a log from an IRC Chat room. I can open a Log tab-type for each chat room the user joins. Each tab can also close when the user leaves the chat room.
+1. Contains one example tab for each tab-type that the developer named. However, the developer may have 0 or more tabs of each tab-type in the tab-bar. For example, lets say, my tab-bar has a Log tab-type which will display a log from an IRC Chat room. I can open a Log tab-type whenever the user joins a chat room. A tab can also close when the user leaves the tab's chat room. A tab-bar screen with no visible tabs will not display by default.
 1. Defaults to:
    * A .horizontal bar direction that the user can toggle between .horizontal and .vertical.
    * User closable tabs.
    * User movable tabs.
+   * A visible vertical tab-bar that the user can toggle between visible and not visible.
 
-Horizontal tab-bar screens have a horizontal tab-bar above where the selected tab's content is displayed.
+A horizontal tab-bar layout lays the horizontal tab-bar above where the selected tab's content is displayed.
 
-Vertical tab-bar screens have a vertical tab-bar left of where the selected tab's content is displayed.
+A vertical tab-bar layout lays the vertical tab-bar left of where the selected tab's content is displayed.
 
-A tab's content can be one of the screen's own panels or a tab's content can be any screen in the panel/ folder.
+A tab's content can be any other screen of a panel in the same screen package.
 
 #### Example
 
@@ -134,6 +108,10 @@ Below is the Contacts screen with the horizontal layout. Notice that the **Remov
 Below is the Contacts screen with the vertical layout. Notice that the **Edit** tab is selected and is displaying the **Edit** panel-screen.
 
 ![The app's vertical tab bar screen.](images/myapp_vertical_tab.png)
+
+Below is the Contacts screen with the vertical layout. Notice that the tab-bar is closed even though the **Edit** tab is selected and is displaying the **Edit** panel-screen.
+
+![The app's vertical tab bar screen with a closed tab-bar.](images/myapp_vertical_tab_closed.png)
 
 ### Modal screens
 

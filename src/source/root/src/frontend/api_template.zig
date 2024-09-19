@@ -8,12 +8,10 @@ pub const Template = struct {
     _tab_screen_names: [][]const u8,
     _panel_screen_names: [][]const u8,
     _modal_screen_names: [][]const u8,
-    _book_screen_names: [][]const u8,
 
     _tab_screen_names_index: usize,
     _panel_screen_names_index: usize,
     _modal_screen_names_index: usize,
-    _book_screen_names_index: usize,
 
     _app_name: []const u8,
 
@@ -41,14 +39,6 @@ pub const Template = struct {
             self.allocator.free(name);
         }
         self.allocator.free(self._modal_screen_names);
-
-        for (self._book_screen_names, 0..) |name, i| {
-            if (i == self._book_screen_names_index) {
-                break;
-            }
-            self.allocator.free(name);
-        }
-        self.allocator.free(self._book_screen_names);
 
         self.allocator.free(self._app_name);
         self.allocator.destroy(self);
@@ -84,22 +74,6 @@ pub const Template = struct {
         self._panel_screen_names[self._panel_screen_names_index] = try self.allocator.alloc(u8, new_screen_name.len);
         @memcpy(@constCast(self._panel_screen_names[self._panel_screen_names_index]), new_screen_name);
         self._panel_screen_names_index += 1;
-    }
-
-    pub fn addBookScreenName(self: *Template, new_screen_name: []const u8) !void {
-        if (self._book_screen_names_index == self._book_screen_names.len) {
-            // Full list so create a new bigger one.
-            var new_screen_names: [][]const u8 = try self.allocator.alloc([]const u8, (self._book_screen_names.len + 5));
-            for (self._book_screen_names, 0..) |book_screen_name, i| {
-                new_screen_names[i] = book_screen_name;
-            }
-            // Replace the old list with the new bigger one.
-            self.allocator.free(self._book_screen_names);
-            self._book_screen_names = new_screen_names;
-        }
-        self._book_screen_names[self._book_screen_names_index] = try self.allocator.alloc(u8, new_screen_name.len);
-        @memcpy(@constCast(self._book_screen_names[self._book_screen_names_index]), new_screen_name);
-        self._book_screen_names_index += 1;
     }
 
     pub fn addModalScreenName(self: *Template, new_screen_name: []const u8) !void {
@@ -140,13 +114,6 @@ pub const Template = struct {
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-        // book screens.
-        const book_screen_names: [][]const u8 = self._book_screen_names[0..self._book_screen_names_index];
-        for (book_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line1_not_modal, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
         // modal screens.
         const modal_screen_names: [][]const u8 = self._modal_screen_names[0..self._modal_screen_names_index];
         for (modal_screen_names) |name| {
@@ -170,13 +137,6 @@ pub const Template = struct {
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-        // All non modal screens: book screens.
-        // Will frame is a book screen option.
-        for (book_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line2_not_modal_will_frame, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
         try lines.appendSlice(line2b);
         // tab screens.
         for (tab_screen_names) |name| {
@@ -186,12 +146,6 @@ pub const Template = struct {
         }
         // panel screens.
         for (panel_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line2_label, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
-        // book screens.
-        for (book_screen_names) |name| {
             line = try fmt.allocPrint(self.allocator, line2_label, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
@@ -217,12 +171,6 @@ pub const Template = struct {
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-        // book screens.
-        for (book_screen_names) |name| {
-            line = try fmt.allocPrint(self.allocator, line3_not_modal, .{name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
 
         try lines.appendSlice(line4);
 
@@ -244,27 +192,28 @@ pub fn init(allocator: std.mem.Allocator, app_name: []const u8) !*Template {
     self._tab_screen_names = try allocator.alloc([]const u8, 5);
     self._panel_screen_names = try allocator.alloc([]const u8, 5);
     self._modal_screen_names = try allocator.alloc([]const u8, 5);
-    self._book_screen_names = try allocator.alloc([]const u8, 5);
     self._tab_screen_names_index = 0;
     self._panel_screen_names_index = 0;
     self._modal_screen_names_index = 0;
-    self._book_screen_names_index = 0;
     return self;
 }
 
-const line1 =
+const line1: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
-    \\const _main_menu_ = @import("main_menu.zig");
+    \\const _main_menu_ = @import("main_menu");
     \\const _modal_params_ = @import("modal_params");
     \\const _startup_ = @import("startup");
+    \\
     \\const MainView = @import("framers").MainView;
     \\const ScreenPointers = @import("screen_pointers").ScreenPointers;
     \\
     \\var allocator: std.mem.Allocator = undefined;
     \\var main_view: *MainView = undefined; // standalone-sdl will deinit.
     \\var screen_pointers: *ScreenPointers = undefined;
+    \\
+    \\pub var main_menu_key_pressed: bool = false;
     \\
     \\pub fn init(startup: *_startup_.Frontend) !void {
     \\    // Set up each all screens.
@@ -273,6 +222,7 @@ const line1 =
     \\    screen_pointers = try ScreenPointers.init(startup.*);
     \\    startup.screen_pointers = screen_pointers;
     \\    try screen_pointers.init_screens(startup.*);
+    \\    errdefer screen_pointers.deinit();
     \\
     \\    // Initialze the example demo window.
     \\    // KICKZIG TODO:
@@ -294,11 +244,11 @@ const line1 =
     \\
 ;
 
-const line1_not_modal =
+const line1_not_modal: []const u8 =
     \\            .{0s} => {{
     \\                if (screen_pointers.{0s}.?.willFrame()) {{
     \\                    // The tab screen will frame.
-    \\                    try frame_main_menu();
+    \\                    try frame_main_menu(arena);
     \\                    try screen_pointers.{0s}.?.frame(arena);
     \\                }} else {{
     \\                    // This tab screen will not frame.
@@ -312,15 +262,7 @@ const line1_not_modal =
     \\
 ;
 
-// const line1_not_modal =
-//     \\            .{0s} => {{
-//     \\                try frame_main_menu();
-//     \\                try screen_pointers.{0s}.?.frame(arena);
-//     \\            }},
-//     \\
-// ;
-
-const line1_modal =
+const line1_modal: []const u8 =
     \\            .{0s} => {{
     \\                if (main_view.isNewModal()) {{
     \\                    const modal_args: *_modal_params_.{0s} = @alignCast(@ptrCast(main_view.modalArgs()));
@@ -330,24 +272,13 @@ const line1_modal =
     \\            }},
     \\
 ;
-// .HelloWorld => {
-//     try frame_main_menu();
-//     try screen_pointers.HelloWorld.?.frame(arena);
-// },
-// .YesNo => {
-//     if (main_view.isNewModal()) {
-//         const modal_args: *_modal_params_.YesNo = @alignCast(@ptrCast(main_view.modalArgs()));
-//         try screen_pointers.YesNo.?.setState(modal_args);
-//     }
-//     try screen_pointers.YesNo.?.frame(arena);
-// },
 
-const line2a =
+const line2a: []const u8 =
     \\        }
     \\    }
     \\}
     \\
-    \\pub fn frame_main_menu() !void {
+    \\pub fn frame_main_menu(arena: std.mem.Allocator) !void {
     \\    if (!_main_menu_.show_main_menu) {
     \\        // Not showing the main menu in this app.
     \\        return;
@@ -363,7 +294,7 @@ const line2a =
     \\            const will_frame: bool = switch (screen_tag) {
     \\
 ;
-const line2_not_modal_will_frame =
+const line2_not_modal_will_frame: []const u8 =
     \\                .{0s} => blk: {{
     \\                    if (screen_pointers.{0s}) |screen| {{
     \\                        break :blk screen.willFrame();
@@ -372,7 +303,7 @@ const line2_not_modal_will_frame =
     \\                    }}
     \\                }},
 ;
-const line2b =
+const line2b: []const u8 =
     \\                else => false,
     \\            };
     \\            if (!will_frame) {
@@ -382,19 +313,14 @@ const line2b =
     \\            const label: []const u8 = switch (screen_tag) {
     \\
 ;
-const line2_label =
-    \\                .{0s} => screen_pointers.{0s}.?.label(),
+const line2_label: []const u8 =
+    \\                .{0s} => try screen_pointers.{0s}.?.label(arena),
     \\
 ;
-// .Contacts => screen_pointers.Contacts.?.label(),
-// .HelloWorld => screen_pointers.HelloWorld.?.label(),
-// .Choice => screen_pointers.Choice.?.label(),
-// .YesNo => screen_pointers.YesNo.?.label(),
-// .OK => screen_pointers.OK.?.label(),
-// .EOJ => screen_pointers.EOJ.?.label(),
 
-const line3 =
+const line3: []const u8 =
     \\            };
+    \\            defer arena.free(label);
     \\
     \\            if (try dvui.menuItemLabel(@src(), label, .{}, .{ .id_extra = id_extra }) != null) {
     \\                m.close();
@@ -403,15 +329,15 @@ const line3 =
     \\
 ;
 
-const line3_not_modal =
+const line3_not_modal: []const u8 =
     \\                    .{0s} => main_view.show(screen_tag),
     \\
 ;
 
-const line4 =
+const line4: []const u8 =
     \\                    else => blk: {
     \\                        const yesno_args = try _modal_params_.OK.init(
-    \\                            allocator,
+    \\                            arena,
     \\                            "That won't work.",
     \\                            "Can not open modals from the main menu.",
     \\                        );

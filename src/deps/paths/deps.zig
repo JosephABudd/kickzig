@@ -2,27 +2,27 @@ const std = @import("std");
 const fspath = std.fs.path;
 
 const folder_name_src: []const u8 = "src";
-pub const folder_name_deps: []const u8 = "deps";
 
+pub const folder_name_backtofront: []const u8 = "backtofront";
+pub const folder_name_bf: []const u8 = "bf";
+pub const folder_name_bf_fbf: []const u8 = "bf_fbf";
 const folder_name_channel: []const u8 = "channel";
 const folder_name_closer: []const u8 = "closer";
 const folder_name_counter: []const u8 = "counter";
 const folder_name_closedownjobs: []const u8 = "closedownjobs";
+pub const folder_name_deps: []const u8 = "deps";
+pub const folder_name_fbf: []const u8 = "fbf";
 const folder_name_framers: []const u8 = "framers";
-const folder_name_lock: []const u8 = "lock";
+pub const folder_name_fronttoback: []const u8 = "fronttoback";
+const folder_name_main_menu: []const u8 = "main_menu";
 const folder_name_message: []const u8 = "message";
 const folder_name_modal_params: []const u8 = "modal_params";
+// pub const folder_name_root: []const u8 = "root";
 const folder_name_startup: []const u8 = "startup";
+const folder_name_tabbar: []const u8 = "tabbar";
+pub const folder_name_trigger: []const u8 = "trigger";
 const folder_name_various: []const u8 = "various";
 const folder_name_widget: []const u8 = "widget";
-const folder_name_tabbar: []const u8 = "tabbar";
-pub const folder_name_backtofront: []const u8 = "backtofront";
-pub const folder_name_fronttoback: []const u8 = "fronttoback";
-// pub const folder_name_root: []const u8 = "root";
-pub const folder_name_bf: []const u8 = "bf";
-pub const folder_name_bf_fbf: []const u8 = "bf_fbf";
-pub const folder_name_fbf: []const u8 = "fbf";
-pub const folder_name_trigger: []const u8 = "trigger";
 
 /// returns the deps/channel/ path.
 /// The caller owns the returned value.
@@ -88,10 +88,10 @@ pub fn pathFramersFolder(allocator: std.mem.Allocator) ![]const u8 {
     return path;
 }
 
-/// returns the deps/lock/ path.
+/// returns the deps/main_menu/ path.
 /// The caller owns the returned value.
-pub fn pathLockFolder(allocator: std.mem.Allocator) ![]const u8 {
-    const params = [2][]const u8{ folder_name_deps, folder_name_lock };
+pub fn pathMainMenuFolder(allocator: std.mem.Allocator) ![]const u8 {
+    const params = [2][]const u8{ folder_name_deps, folder_name_main_menu };
     const path = try fspath.join(allocator, &params);
     return path;
 }

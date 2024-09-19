@@ -19,7 +19,12 @@ pub const verb_add_fbf: []const u8 = "add-fbf"; // front initializes & sends req
 pub const verb_add_bf_fbf: []const u8 = "add-bf-fbf"; // front initializes & sends request to back, back sends response to front.
 pub const verb_remove: []const u8 = "remove";
 
-pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]u8) !void {
+pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]u8, use_messenger: bool) !void {
+    if (!use_messenger) {
+        // Messages are not allowed.
+        try addMessageError();
+        return;
+    }
     var folder_paths: *_paths_.FolderPaths = try _paths_.folders();
     defer folder_paths.deinit();
     switch (remaining_args.len) {
@@ -156,6 +161,10 @@ fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8) !void {
     const message: []const u8 = try _warning_.syntaxError(allocator, cli_name, command, verb_help);
     defer allocator.free(message);
     try _stdout_.print(message);
+}
+
+pub fn addMessageError() !void {
+    try _stdout_.print(_warning_.addMessageError);
 }
 
 fn help(allocator: std.mem.Allocator, cli_name: []const u8) !void {

@@ -108,14 +108,14 @@ const template =
     \\        },
     \\    );
     \\
-    \\    // lock_mod. A framework deps/ module.
-    \\    const lock_mod = b.addModule(
-    \\        "lock",
+    \\    // main_menu_mod. A framework deps/ module.
+    \\    const main_menu_mod = b.addModule(
+    \\        "main_menu",
     \\        .{
     \\            .root_source_file = .{
     \\                .src_path = .{
     \\                    .owner = b,
-    \\                    .sub_path = "src/deps/lock/api.zig",
+    \\                    .sub_path = "src/deps/main_menu/api.zig",
     \\                },
     \\            },
     \\        },
@@ -212,22 +212,25 @@ const template =
     \\    closer_mod.addImport("closedownjobs", closedownjobs_mod);
     \\    closer_mod.addImport("dvui", dvui_dep.module("dvui"));
     \\    closer_mod.addImport("framers", framers_mod);
-    \\    closer_mod.addImport("lock", lock_mod);
     \\    closer_mod.addImport("modal_params", modal_params_mod);
     \\    closer_mod.addImport("various", various_mod);
     \\
     \\    // Dependencies for framers_mod. A framework deps/ module.
-    \\    framers_mod.addImport("startup", startup_mod);
     \\    framers_mod.addImport("dvui", dvui_dep.module("dvui"));
+    \\    framers_mod.addImport("main_menu", main_menu_mod);
     \\    framers_mod.addImport("modal_params", modal_params_mod);
     \\    framers_mod.addImport("various", various_mod);
-    \\    framers_mod.addImport("lock", lock_mod);
+    \\    framers_mod.addImport("startup", startup_mod);
+    \\    framers_mod.addImport("various", various_mod);
     \\
     \\    // Dependencies for message_mod. A framework deps/ module.
     \\    message_mod.addImport("counter", counter_mod);
     \\    message_mod.addImport("closedownjobs", closedownjobs_mod);
     \\    message_mod.addImport("framers", framers_mod);
     \\    message_mod.addImport("various", various_mod);
+    \\
+    \\    // Dependencies for message_mod. A framework deps/ module.
+    \\    main_menu_mod.addImport("framers", framers_mod);
     \\
     \\    // Dependencies for modal_params_mod. A framework deps/ module.
     \\    modal_params_mod.addImport("closedownjobs", closedownjobs_mod);
@@ -238,10 +241,9 @@ const template =
     \\    screen_pointers_mod.addImport("closer", closer_mod);
     \\    screen_pointers_mod.addImport("dvui", dvui_dep.module("dvui"));
     \\    screen_pointers_mod.addImport("framers", framers_mod);
-    \\    screen_pointers_mod.addImport("lock", lock_mod);
     \\    screen_pointers_mod.addImport("message", message_mod);
+    \\    screen_pointers_mod.addImport("main_menu", main_menu_mod);
     \\    screen_pointers_mod.addImport("modal_params", modal_params_mod);
-    \\    screen_pointers_mod.addImport("screen_pointers", screen_pointers_mod);
     \\    screen_pointers_mod.addImport("startup", startup_mod);
     \\    screen_pointers_mod.addImport("various", various_mod);
     \\    screen_pointers_mod.addImport("widget", widget_mod);
@@ -255,9 +257,12 @@ const template =
     \\    startup_mod.addImport("various", various_mod);
     \\    startup_mod.addImport("screen_pointers", screen_pointers_mod);
     \\
+    \\    // Dependencies for various. A framework deps/ module.
+    \\    // various should not have dependencies but needs counter.
+    \\    various_mod.addImport("counter", counter_mod);
+    \\
     \\    // Dependencies for widget_mod. A framework deps/ module.
     \\    widget_mod.addImport("dvui", dvui_dep.module("dvui"));
-    \\    widget_mod.addImport("lock", lock_mod);
     \\    widget_mod.addImport("framers", framers_mod);
     \\    widget_mod.addImport("startup", startup_mod);
     \\    widget_mod.addImport("various", various_mod);
@@ -283,7 +288,7 @@ const template =
     \\    exe.root_module.addImport("closer", closer_mod);
     \\    exe.root_module.addImport("counter", counter_mod);
     \\    exe.root_module.addImport("framers", framers_mod);
-    \\    exe.root_module.addImport("lock", lock_mod);
+    \\    exe.root_module.addImport("main_menu", main_menu_mod);
     \\    exe.root_module.addImport("message", message_mod);
     \\    exe.root_module.addImport("modal_params", modal_params_mod);
     \\    exe.root_module.addImport("screen_pointers", screen_pointers_mod);

@@ -42,6 +42,8 @@ pub fn notCurrentChannelNameMessage(allocator: std.mem.Allocator, name: []const 
 
 // Message name.
 
+pub const addMessageError: []const u8 = "This framework was intentionally created without messages.\nYou can not add messages now.\n";
+
 /// invalidMessageNameMessage returns a invalid message name message.
 /// The caller controls the returned value.
 pub fn invalidMessageNameMessage(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {

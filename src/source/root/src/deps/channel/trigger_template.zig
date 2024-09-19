@@ -61,6 +61,14 @@ const template =
     \\        return self.allocator.create(Behavior);
     \\    }
     \\
+    \\    pub fn init(allocator: std.mem.Allocator, exit: ExitFn) !*Group {
+    \\        var channel: *Group = try allocator.create(Group);
+    \\        channel.members = std.AutoHashMap(*anyopaque, *Behavior).init(allocator);
+    \\        channel.allocator = allocator;
+    \\        channel.exit = exit;
+    \\        return channel;
+    \\    }
+    \\
     \\    pub fn deinit(self: *Group) void {
     \\        // deint each Behavior.
     \\        var iterator = self.members.iterator();
@@ -114,13 +122,5 @@ const template =
     \\        }
     \\    }
     \\};
-    \\
-    \\pub fn init(allocator: std.mem.Allocator, exit: ExitFn) !*Group {
-    \\    var channel: *Group = try allocator.create(Group);
-    \\    channel.members = std.AutoHashMap(*anyopaque, *Behavior).init(allocator);
-    \\    channel.allocator = allocator;
-    \\    channel.exit = exit;
-    \\    return channel;
-    \\}
     \\
 ;

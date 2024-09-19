@@ -43,4 +43,5 @@ pub const content =
     \\        return self.counter;
     \\    }
     \\};
+    \\
 ;

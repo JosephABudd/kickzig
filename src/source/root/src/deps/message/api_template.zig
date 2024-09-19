@@ -53,7 +53,7 @@ pub const Template = struct {
         try lines.appendSlice(line_start);
         const names: [][]const u8 = self.message_names[0..self.message_names_index];
         for (names) |name| {
-            line = try fmt.allocPrint(self.allocator, line_pub_const_import, .{name});
+            line = try fmt.allocPrint(self.allocator, line_import_message_f, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -74,7 +74,8 @@ pub const line_start =
     \\
 ;
 
-const line_pub_const_import =
+// message name {0s}
+const line_import_message_f =
     \\pub const {0s} = @import("{0s}.zig");
     \\
 ;

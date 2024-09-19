@@ -25,6 +25,7 @@ pub const content =
     \\pub const Frontend = struct {
     \\    allocator: std.mem.Allocator,
     \\    window: *dvui.Window,
+    \\    theme: *dvui.Theme,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
     \\    main_view: *MainView,
@@ -40,4 +41,5 @@ pub const content =
     \\        @constCast(self).screen_pointers = screen_pointers;
     \\    }
     \\};
+    \\
 ;

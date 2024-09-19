@@ -9,8 +9,13 @@ pub const content =
     \\pub const startup_screen_tag: ScreenTags = .HelloWorld;
     \\
     \\/// KICKZIG TODO:
-    \\/// if true, the main menu is displayed.
-    \\/// if false, the main menu is not displayed.
+    \\/// If true:
+    \\///  * The main menu is displayed.
+    \\///  * The startup_screen_tag screen is initialized for the main view.
+    \\///  * All the sorted_main_menu_screen_tags screens are initialized for the main view.
+    \\/// If false:
+    \\///  * The main menu is not displayed.
+    \\///  * Only the startup_screen_tag screen is initialized for the main view.
     \\pub const show_main_menu: bool = true;
     \\
     \\/// KICKZIG TODO:

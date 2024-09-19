@@ -1,0 +1,80 @@
+info: 
+
+line_2_f:const Panels = @import("panels.zig").Panels;
+
+///The Edit screen is a panel screen.
+///Panel screens function by showing only one panel at a time.
+///Panel screens are always content and so they implement Content.
+///You can:
+/// 1. Put this screen in the main menu. Add .Edit to pub const sorted_main_menu_screen_tags in src/deps/main_menu/api.zig.
+/// 2. Use this screen as content for a tab. Example: kickzig add-tab «new-screen-name» *Edit «another-tab-name» ...
+///
+pub const Screen = struct {
+    allocator: std.mem.Allocator,
+    main_view: *MainView,
+    all_panels: ?*Panels,
+
+
+
+Added the front-end «Edit» Panel screen at /home/nil/zig/misc/do2/src/frontend/screen/panel/Edit/screen.zig:1:1:
+info: 
+
+line_2_f:const Panels = @import("panels.zig").Panels;
+
+///The Remove screen is a panel screen.
+///Panel screens function by showing only one panel at a time.
+///Panel screens are always content and so they implement Content.
+///You can:
+/// 1. Put this screen in the main menu. Add .Remove to pub const sorted_main_menu_screen_tags in src/deps/main_menu/api.zig.
+/// 2. Use this screen as content for a tab. Example: kickzig add-tab «new-screen-name» *Remove «another-tab-name» ...
+///
+pub const Screen = struct {
+    allocator: std.mem.Allocator,
+    main_view: *MainView,
+    all_panels: ?*Panels,
+
+
+
+Added the front-end «Remove» Panel screen at /home/nil/zig/misc/do2/src/frontend/screen/panel/Remove/screen.zig:1:1:
+Segmentation fault at address 0x1064bcc
+/usr/local/zig/lib/compiler_rt/memset.zig:19:14: 0x11ecfc0 in memset (compiler_rt)
+            d[0] = c;
+             ^
+/usr/local/zig/lib/std/mem/Allocator.zig:313:26: 0x1094067 in free__anon_3691 (kickzig)
+    @memset(non_const_ptr[0..bytes_len], undefined);
+                         ^
+/home/nil/zig/kickzig/src/source/root/src/frontend/screen/tab/view/any_view_template.zig:109:36: 0x10f6a37 in buildLineStart (kickzig)
+                self.allocator.free(slice);
+                                   ^
+/home/nil/zig/kickzig/src/source/root/src/frontend/screen/tab/view/any_view_template.zig:56:39: 0x10f8259 in content (kickzig)
+        line = try self.buildLineStart();
+                                      ^
+/home/nil/zig/kickzig/src/source/root/src/frontend/screen/tab/framework.zig:90:53: 0x10f8d45 in addAnyView (kickzig)
+    const content: []const u8 = try template.content();
+                                                    ^
+/home/nil/zig/kickzig/src/source/root/src/frontend/screen/tab/framework.zig:38:27: 0x10fce39 in add (kickzig)
+            try addAnyView(allocator, package_view_dir, screen_name, tab_name, use_messenger);
+                          ^
+/home/nil/zig/kickzig/src/source/root/src/frontend/framework.zig:177:38: 0x10fcfe9 in addTabScreen (kickzig)
+    try _src_frontend_tab_screen_.add(allocator, screen_name, tab_names, use_messenger);
+                                     ^
+/home/nil/zig/kickzig/src/commands/screen/api.zig:204:48: 0x110595d in handleCommand (kickzig)
+                try _src_frontend_.addTabScreen(allocator, _paths_.app_name.?, screen_name, tab_names, use_messenger);
+                                               ^
+/home/nil/zig/kickzig/src/main.zig:60:47: 0x1112b01 in handleCommand (kickzig)
+        return _screen_commands_.handleCommand(allocator, cli_name, remaining_args, use_messenger);
+                                              ^
+/home/nil/zig/kickzig/src/main.zig:37:22: 0x111313b in main (kickzig)
+    try handleCommand(gpa, cli_name, command, remaining_args, in_framework_folder);
+                     ^
+/usr/local/zig/lib/std/start.zig:524:37: 0x1091755 in posixCallMainAndExit (kickzig)
+            const result = root.main() catch |err| {
+                                    ^
+/usr/local/zig/lib/std/start.zig:266:5: 0x1091271 in _start (kickzig)
+    asm volatile (switch (native_arch) {
+    ^
+???:?:?: 0x6 in ??? (???)
+Unwind information for `???:0x6` was not available, trace may be incomplete
+
+./rebuild.sh: line 18: 12560 Aborted                 (core dumped) kickzig screen add-tab Contacts Add *Edit *Remove
+nil@NIL:~/zig/misc/do2$ 

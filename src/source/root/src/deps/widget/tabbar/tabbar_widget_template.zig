@@ -26,7 +26,7 @@ pub const content =
     \\    .name = "VerticalTabBar",
     \\    .background = true,
     \\    .color_fill = .{ .name = background_color },
-    \\    .expand = .vertical,
+    \\    .expand = .both,
     \\};
     \\
     \\pub const InitOptions = struct {
@@ -80,7 +80,11 @@ pub const content =
     \\            .vertical = .none,
     \\            .horizontal_bar = .hide,
     \\        },
-    \\        .{ .expand = .horizontal, .color_fill = .{ .name = .fill_window } },
+    \\        .{
+    \\            .name = "horizontalTabScroller",
+    \\            .expand = .horizontal,
+    \\            .color_fill = .{ .name = .fill_window },
+    \\        },
     \\    );
     \\}
     \\
@@ -95,7 +99,10 @@ pub const content =
     \\            .vertical = .auto,
     \\            .vertical_bar = .hide,
     \\        },
-    \\        .{ .expand = .vertical },
+    \\        .{
+    \\            .name = "verticalTabScroller",
+    \\            .expand = .both,
+    \\        },
     \\    );
     \\}
     \\
@@ -106,7 +113,6 @@ pub const content =
     \\pub fn horizontalTabBar(src: std.builtin.SourceLocation) !*TabBarWidget {
     \\    var ret = try dvui.currentWindow().arena.create(TabBarWidget);
     \\    ret.* = TabBarWidget.init(src, .horizontal);
-    \\    // ret.* = TabBarWidget.init(src, .horizontal, .{ .expand = .horizontal });
     \\    try ret.install(.{});
     \\    return ret;
     \\}
@@ -115,8 +121,6 @@ pub const content =
     \\pub fn verticalTabBar(src: std.builtin.SourceLocation) !*TabBarWidget {
     \\    var ret = try dvui.currentWindow().arena.create(TabBarWidget);
     \\    ret.* = TabBarWidget.init(src, .vertical);
-    \\    // ret.* = TabBarWidget.init(src, .vertical, .{ .expand = .vertical });
-    \\    // verticalDefaults
     \\    try ret.install(.{});
     \\    return ret;
     \\}

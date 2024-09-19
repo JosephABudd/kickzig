@@ -25,16 +25,6 @@ pub fn listScreens(allocator: std.mem.Allocator) !void {
         try printScreenNames(allocator, screens);
     }
 
-    // {
-    //     // Book screens.
-    //     var screens: [][]const u8 = try _filenames_.frontend.allBookFolders(allocator);
-    //     defer allocator.free(screens);
-    //     // Heading
-    //     try printScreenNamesHeading(allocator, "Book", screens.len);
-    //     // List
-    //     try printScreenNames(allocator, screens);
-    // }
-
     {
         // Modal screens.
         const screens: [][]const u8 = try _filenames_.frontend.allModalFolders(allocator);

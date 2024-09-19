@@ -8,25 +8,18 @@ const _paths_ = @import("paths");
 const _filenames_ = @import("filenames");
 const _api_template_ = @import("api_template.zig");
 const _screen_pointers_template_ = @import("screen_pointers_template.zig");
-const _main_menu_template_ = @import("main_menu_template.zig");
 const _stdout_ = @import("stdout");
 const _src_frontend_screen_ = @import("screen/framework.zig");
 const _src_frontend_panel_screen_ = @import("screen/panel/framework.zig");
 const _src_frontend_tab_screen_ = @import("screen/tab/framework.zig");
-const _src_frontend_book_screen_ = @import("screen/book/framework.zig");
 const _src_frontend_modal_screen_ = @import("screen/modal/framework.zig");
 const _src_deps_modal_params_ = @import("source_deps").modal_params;
 
-pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
-    // Add the main menu file which is a data file.
-    // It sets the default landing screen.
-    try buildMainMenu();
+pub fn create(allocator: std.mem.Allocator, app_name: []const u8, use_messenger: bool) !void {
     // Add each panel screen and the folder's git keep file.
-    try _src_frontend_panel_screen_.create(allocator);
+    try _src_frontend_panel_screen_.create(allocator, use_messenger);
     // Add each modal screen.
     try _src_frontend_modal_screen_.create(allocator);
-    // Add the book screen folder's git keep file.
-    try _src_frontend_book_screen_.create();
     // Add the tab screen folder's git keep file.
     try _src_frontend_tab_screen_.create();
     // Build api.zig.
@@ -37,20 +30,6 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8) !void {
 
 pub fn listScreens(allocator: std.mem.Allocator) !void {
     return _src_frontend_screen_.listScreens(allocator);
-}
-
-// buildMainMenu builds frontend/main_menu.zig
-fn buildMainMenu() !void {
-    // Open the folder.
-    var folders = try _paths_.folders();
-    defer folders.deinit();
-    var frontend_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_frontend.?, .{});
-    defer frontend_dir.close();
-
-    // Open, write and close the file.
-    var ofile = try frontend_dir.createFile(_filenames_.frontent_main_menu_file_name, .{});
-    defer ofile.close();
-    try ofile.writeAll(_main_menu_template_.content);
 }
 
 fn rebuild(allocator: std.mem.Allocator, app_name: []const u8) !void {
@@ -71,14 +50,6 @@ fn rebuild(allocator: std.mem.Allocator, app_name: []const u8) !void {
         }
         allocator.free(tab_screen_names);
     }
-    // Add the names of each book screen.
-    const book_screen_names: [][]const u8 = try _filenames_.frontend.allBookFolders(allocator);
-    defer {
-        for (book_screen_names) |book_screen_name| {
-            allocator.free(book_screen_name);
-        }
-        allocator.free(book_screen_names);
-    }
     // Add the names of each modal screen.
     const modal_screen_names: [][]const u8 = try _filenames_.frontend.allModalFolders(allocator);
     defer {
@@ -93,7 +64,6 @@ fn rebuild(allocator: std.mem.Allocator, app_name: []const u8) !void {
         app_name,
         panel_screen_names,
         tab_screen_names,
-        book_screen_names,
         modal_screen_names,
     );
     try rebuildScreenPointersZig(
@@ -101,7 +71,6 @@ fn rebuild(allocator: std.mem.Allocator, app_name: []const u8) !void {
         app_name,
         panel_screen_names,
         tab_screen_names,
-        book_screen_names,
         modal_screen_names,
     );
 }
@@ -112,7 +81,6 @@ fn rebuildApiZig(
     app_name: []const u8,
     panel_screen_names: [][]const u8,
     tab_screen_names: [][]const u8,
-    book_screen_names: [][]const u8,
     modal_screen_names: [][]const u8,
 ) !void {
     // Build the template and the content.
@@ -124,9 +92,6 @@ fn rebuildApiZig(
     }
     for (tab_screen_names) |tab_screen_name| {
         try template.addTabScreenName(tab_screen_name);
-    }
-    for (book_screen_names) |book_screen_name| {
-        try template.addBookScreenName(book_screen_name);
     }
     for (modal_screen_names) |modal_screen_name| {
         try template.addModalScreenName(modal_screen_name);
@@ -153,7 +118,6 @@ fn rebuildScreenPointersZig(
     app_name: []const u8,
     panel_screen_names: [][]const u8,
     tab_screen_names: [][]const u8,
-    book_screen_names: [][]const u8,
     modal_screen_names: [][]const u8,
 ) !void {
     // Build the template and the content.
@@ -165,9 +129,6 @@ fn rebuildScreenPointersZig(
     }
     for (tab_screen_names) |tab_screen_name| {
         try template.addTabScreenName(tab_screen_name);
-    }
-    for (book_screen_names) |book_screen_name| {
-        try template.addBookScreenName(book_screen_name);
     }
     for (modal_screen_names) |modal_screen_name| {
         try template.addModalScreenName(modal_screen_name);
@@ -191,8 +152,8 @@ fn rebuildScreenPointersZig(
 // Add or remove panel screens.
 
 /// addPanelScreen creates a panel screen and adds rebuilds api.zig.
-pub fn addPanelScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, panel_names: [][]const u8, only_frame_in_container: bool) !void {
-    try _src_frontend_panel_screen_.createAnyPackage(allocator, screen_name, panel_names, only_frame_in_container);
+pub fn addPanelScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, panel_names: [][]const u8, use_messenger: bool) !void {
+    try _src_frontend_panel_screen_.createAnyPackage(allocator, screen_name, panel_names, use_messenger, false);
     try rebuild(allocator, app_name);
 }
 
@@ -212,8 +173,8 @@ pub fn removePanelScreen(allocator: std.mem.Allocator, app_name: []const u8, scr
 
 // Add or remove tab screens.
 
-pub fn addTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, tab_names: [][]const u8) !void {
-    try _src_frontend_tab_screen_.add(allocator, screen_name, tab_names);
+pub fn addTabScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, tab_names: [][]const u8, use_messenger: bool) !void {
+    try _src_frontend_tab_screen_.add(allocator, screen_name, tab_names, use_messenger);
     try rebuild(allocator, app_name);
 }
 
@@ -226,9 +187,9 @@ pub fn removeTabScreen(allocator: std.mem.Allocator, app_name: []const u8, scree
 }
 
 // Add or remove modal screens.
-pub fn addModalScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, panel_names: [][]const u8) !void {
+pub fn addModalScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, panel_names: [][]const u8, use_messenger: bool) !void {
     // Add the modal screen package.
-    try _src_frontend_modal_screen_.createAnyPackage(allocator, screen_name, panel_names);
+    try _src_frontend_modal_screen_.createAnyPackage(allocator, screen_name, panel_names, use_messenger);
     // Build api.zig.
     try rebuild(allocator, app_name);
     // Add the modal params package.
@@ -237,21 +198,6 @@ pub fn addModalScreen(allocator: std.mem.Allocator, app_name: []const u8, screen
 
 pub fn removeModalScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
     const removed: bool = try _src_frontend_modal_screen_.remove(screen_name);
-    if (removed) {
-        try rebuild(allocator, app_name);
-    }
-    return removed;
-}
-
-// Add or remove book screens.
-
-pub fn addBookScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8, tab_names: [][]const u8) !void {
-    try _src_frontend_book_screen_.add(allocator, screen_name, tab_names);
-    try rebuild(allocator, app_name);
-}
-
-pub fn removeBookScreen(allocator: std.mem.Allocator, app_name: []const u8, screen_name: []const u8) !bool {
-    const removed: bool = try _src_frontend_book_screen_.remove(screen_name);
     if (removed) {
         try rebuild(allocator, app_name);
     }

@@ -3,8 +3,8 @@ const paths = @import("paths");
 pub const backend = @import("backend.zig");
 pub const frontend = @import("frontend.zig");
 pub const deps = @import("deps.zig");
+const verify = @import("verify");
 
-const panel_file_suffix: []const u8 = "_panel.zig";
 const zig_file_extension: []const u8 = ".zig";
 
 pub const api_file_name: []const u8 = "api.zig";
@@ -136,7 +136,6 @@ pub fn frontendScreenPanelFileName(allocator: std.mem.Allocator, panel_name: []c
     var file_name = std.ArrayList(u8).init(allocator);
     defer file_name.deinit();
     try file_name.appendSlice(panel_name);
-    try file_name.appendSlice("_panel");
     try file_name.appendSlice(zig_file_extension);
     return try file_name.toOwnedSlice();
 }
@@ -145,10 +144,16 @@ pub fn frontendScreenPanelFileName(allocator: std.mem.Allocator, panel_name: []c
 // The panel name is a slice of file_name.
 // The caller does not own the returned value.
 pub fn frontendPanelNameFromPanelFileName(file_name: []const u8) ?[]const u8 {
-    if (std.mem.endsWith(u8, file_name, panel_file_suffix)) {
-        const last: usize = file_name.len - panel_file_suffix.len;
+    if (std.mem.endsWith(u8, file_name, zig_file_extension)) {
+        var panel_name: []const u8 = undefined;
+        const last: usize = file_name.len - zig_file_extension.len;
         if (last > 0) {
-            return file_name[0..last];
+            panel_name = file_name[0..last];
+        } else {
+            panel_name = file_name;
+        }
+        if (verify.isValidScreenPanelName(panel_name)) {
+            return panel_name;
         }
     }
     return null;
@@ -191,23 +196,6 @@ pub fn allFrontendModalScreenPanelNames(allocator: std.mem.Allocator, screen_nam
 /// allFrontendTabScreenPanelNames returns the names of each panel-file in a tab-screen.
 pub fn allFrontendTabScreenPanelNames(allocator: std.mem.Allocator, screen_name: []const u8) ![][]const u8 {
     const folder_file_names: [][]const u8 = try frontend.allTabScreenFileNames(allocator, screen_name);
-    defer allocator.free(folder_file_names);
-    // Collect panel names from panel files.
-    var panel_file_names = std.ArrayList([]const u8).init(allocator);
-    defer panel_file_names.deinit();
-    for (folder_file_names) |folder_file_name| {
-        if (frontendPanelNameFromPanelFileName(folder_file_name)) |panel_file_name| {
-            try panel_file_names.append(panel_file_name);
-        }
-    }
-    // Return a slice that the caller owns.
-    const unowned_slice: [][]const u8 = try panel_file_names.toOwnedSlice();
-    return ownedSlice(allocator, unowned_slice);
-}
-
-/// allFrontendBookScreenPanelNames returns the names of each panel-file in a book-screen.
-pub fn allFrontendBookScreenPanelNames(allocator: std.mem.Allocator, screen_name: []const u8) ![][]const u8 {
-    const folder_file_names: [][]const u8 = try frontend.allBookScreenFileNames(allocator, screen_name);
     defer allocator.free(folder_file_names);
     // Collect panel names from panel files.
     var panel_file_names = std.ArrayList([]const u8).init(allocator);
@@ -282,16 +270,6 @@ pub fn allFrontendScreenNames(allocator: std.mem.Allocator) ![][]const u8 {
     }
     try all_folders.appendSlice(tab_folders);
 
-    // Book screens.
-    const book_folders: [][]const u8 = try frontend.allBookFolders(allocator);
-    defer {
-        for (book_folders) |folder| {
-            allocator.free(folder);
-        }
-        allocator.free(book_folders);
-    }
-    try all_folders.appendSlice(book_folders);
-
     // Modal screens.
     const modal_folders: [][]const u8 = try frontend.allModalFolders(allocator);
     defer {
@@ -310,6 +288,12 @@ pub fn allFrontendScreenNames(allocator: std.mem.Allocator) ![][]const u8 {
 /// The caller owns the returned value.
 pub fn allFrontendPanelScreenNames(allocator: std.mem.Allocator) ![][]const u8 {
     return try frontend.allPanelFolders(allocator);
+}
+
+/// allFrontendTabScreenNames returns screen names taken from the screen/tab/ folder.
+/// The caller owns the returned value.
+pub fn allFrontendTabScreenNames(allocator: std.mem.Allocator) ![][]const u8 {
+    return try frontend.allTabFolders(allocator);
 }
 
 // deps/.

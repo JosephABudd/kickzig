@@ -15,13 +15,6 @@ pub fn screenRemoved(allocator: std.mem.Allocator, screen_name: []const u8) ![]c
     return std.fmt.allocPrint(allocator, "The screen «{s}» has been removed.\n", .{screen_name});
 }
 
-pub fn screenAddedBook(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {
-    const folders: *paths.FolderPaths = try paths.folders();
-    const params = [3][]const u8{ folders.root_src_frontend_screen_book.?, screen_name, filenames.screen_screen_file_name };
-    const full_path = try fspath.join(allocator, &params);
-    return try std.fmt.allocPrint(allocator, "Added the front-end «{s}» Book screen at {s}:1:1:\n", .{ screen_name, full_path });
-}
-
 pub fn screenAddedTab(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {
     const folders: *paths.FolderPaths = try paths.folders();
     const params = [3][]const u8{ folders.root_src_frontend_screen_tab.?, screen_name, filenames.screen_screen_file_name };
@@ -34,13 +27,6 @@ pub fn screenAddedPanel(allocator: std.mem.Allocator, screen_name: []const u8) !
     const params = [3][]const u8{ folders.root_src_frontend_screen_panel.?, screen_name, filenames.screen_screen_file_name };
     const full_path = try fspath.join(allocator, &params);
     return try std.fmt.allocPrint(allocator, "Added the front-end «{s}» Panel screen at {s}:1:1:\n", .{ screen_name, full_path });
-}
-
-pub fn screenAddedContent(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {
-    const folders: *paths.FolderPaths = try paths.folders();
-    const params = [3][]const u8{ folders.root_src_frontend_screen_panel.?, screen_name, filenames.screen_screen_file_name };
-    const full_path = try fspath.join(allocator, &params);
-    return try std.fmt.allocPrint(allocator, "Added the front-end «{s}» Content screen at {s}:1:1:\n", .{ screen_name, full_path });
 }
 
 pub fn screenAddedModal(allocator: std.mem.Allocator, screen_name: []const u8) ![]const u8 {

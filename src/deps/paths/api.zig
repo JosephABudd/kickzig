@@ -5,12 +5,14 @@ const frontend = @import("frontend.zig");
 pub const deps = @import("deps.zig");
 const fspath = std.fs.path;
 const folder_name_src: []const u8 = "src";
-pub const folder_name_framers: []const u8 = "framers";
-pub const folder_name_lock: []const u8 = "lock";
 pub const folder_name_counter: []const u8 = "counter";
-pub const modal_folder_name_ok = frontend.folder_name_ok;
-pub const modal_folder_name_yesno = frontend.folder_name_yesno;
-pub const modal_folder_name_eoj = frontend.folder_name_eoj;
+pub const folder_name_framers: []const u8 = "framers";
+pub const folder_name_main_menu: []const u8 = "main_menu";
+pub const modal_folder_name_ok: []const u8 = frontend.folder_name_ok;
+pub const modal_folder_name_yesno: []const u8 = frontend.folder_name_yesno;
+pub const modal_folder_name_eoj: []const u8 = frontend.folder_name_eoj;
+pub const folder_name_helloworld: []const u8 = frontend.folder_name_helloworld;
+pub const folder_name_view: []const u8 = frontend.folder_name_view;
 
 pub var app_name: ?[]const u8 = null;
 pub var root_path: ?[]const u8 = undefined;
@@ -152,7 +154,6 @@ pub const FolderPaths = struct {
     root_src_frontend_screen: ?[]const u8,
     root_src_frontend_screen_panel: ?[]const u8,
     root_src_frontend_screen_tab: ?[]const u8,
-    root_src_frontend_screen_book: ?[]const u8,
     root_src_frontend_screen_modal: ?[]const u8,
     root_src_frontend_screen_modal_ok: ?[]const u8,
     root_src_deps: ?[]const u8,
@@ -162,15 +163,47 @@ pub const FolderPaths = struct {
     root_src_deps_channel_trigger: ?[]const u8,
     root_src_deps_closer: ?[]const u8,
     root_src_deps_counter: ?[]const u8,
+    root_src_deps_main_menu: ?[]const u8,
     root_src_deps_message: ?[]const u8,
     root_src_deps_framers: ?[]const u8,
-    root_src_deps_lock: ?[]const u8,
     root_src_deps_closedownjobs: ?[]const u8,
     root_src_deps_modal_params: ?[]const u8,
     root_src_deps_widget: ?[]const u8,
     root_src_deps_widget_tabbar: ?[]const u8,
     root_src_deps_startup: ?[]const u8,
     root_src_deps_various: ?[]const u8,
+
+    fn init(allocator: std.mem.Allocator) !*FolderPaths {
+        var self: *FolderPaths = try allocator.create(FolderPaths);
+        self.allocator = allocator;
+        self.root = null;
+        self.root_src = null;
+        self.root_src_backend = null;
+        self.root_src_backend_messenger = null;
+        self.root_src_frontend = null;
+        self.root_src_frontend_screen = null;
+        self.root_src_frontend_screen_panel = null;
+        self.root_src_frontend_screen_tab = null;
+        self.root_src_frontend_screen_modal = null;
+        self.root_src_frontend_screen_modal_ok = null;
+        self.root_src_deps = null;
+        self.root_src_deps_channel = null;
+        self.root_src_deps_channel_fronttoback = null;
+        self.root_src_deps_channel_backtofront = null;
+        self.root_src_deps_channel_trigger = null;
+        self.root_src_deps_closer = null;
+        self.root_src_deps_counter = null;
+        self.root_src_deps_main_menu = null;
+        self.root_src_deps_message = null;
+        self.root_src_deps_framers = null;
+        self.root_src_deps_closedownjobs = null;
+        self.root_src_deps_modal_params = null;
+        self.root_src_deps_widget = null;
+        self.root_src_deps_widget_tabbar = null;
+        self.root_src_deps_startup = null;
+        self.root_src_deps_various = null;
+        return self;
+    }
 
     pub fn deinit(self: *FolderPaths) void {
         const allocator: std.mem.Allocator = self.allocator;
@@ -193,9 +226,6 @@ pub const FolderPaths = struct {
             allocator.free(member);
         }
         if (self.root_src_frontend_screen_tab) |member| {
-            allocator.free(member);
-        }
-        if (self.root_src_frontend_screen_book) |member| {
             allocator.free(member);
         }
         if (self.root_src_frontend_screen_modal) |member| {
@@ -228,13 +258,13 @@ pub const FolderPaths = struct {
         if (self.root_src_deps_counter) |member| {
             allocator.free(member);
         }
+        if (self.root_src_deps_main_menu) |member| {
+            allocator.free(member);
+        }
         if (self.root_src_deps_message) |member| {
             allocator.free(member);
         }
         if (self.root_src_deps_framers) |member| {
-            allocator.free(member);
-        }
-        if (self.root_src_deps_lock) |member| {
             allocator.free(member);
         }
         if (self.root_src_deps_closedownjobs) |member| {
@@ -333,12 +363,6 @@ pub const FolderPaths = struct {
             try src_dir.makePath(temp);
         }
         {
-            // frontend/screen/book/
-            temp = try frontend.pathScreenBookFolder(self.allocator);
-            defer self.allocator.free(temp);
-            try src_dir.makePath(temp);
-        }
-        {
             // frontend/screen/modal/
             temp = try frontend.pathScreenModalFolder(self.allocator);
             defer self.allocator.free(temp);
@@ -409,8 +433,8 @@ pub const FolderPaths = struct {
             try src_dir.makePath(temp);
         }
         {
-            // deps/lock/
-            temp = try deps.pathLockFolder(self.allocator);
+            // deps/main_menu/
+            temp = try deps.pathMainMenuFolder(self.allocator);
             defer self.allocator.free(temp);
             try src_dir.makePath(temp);
         }
@@ -491,8 +515,7 @@ fn src_path_exists(root: []const u8) bool {
 /// The caller owns the returned value.
 pub fn folders() !*FolderPaths {
     if (root_path) |root| {
-        var folder_paths: *FolderPaths = try gpa.create(FolderPaths);
-        folder_paths.allocator = gpa;
+        var folder_paths: *FolderPaths = try FolderPaths.init(gpa);
 
         // The root folder path.
         folder_paths.root = try gpa.alloc(u8, root.len);
@@ -542,10 +565,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/frontend/screen/ path.
             temp = try frontend.pathScreenFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_frontend_screen = try fspath.join(gpa, params2);
             errdefer {
@@ -556,10 +579,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/frontend/screen/panel/ path.
             temp = try frontend.pathScreenPanelFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_frontend_screen_panel = try fspath.join(gpa, params2);
             errdefer {
@@ -570,10 +593,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/frontend/screen/tab/ path.
             temp = try frontend.pathScreenTabFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_frontend_screen_tab = try fspath.join(gpa, params2);
             errdefer {
@@ -582,26 +605,12 @@ pub fn folders() !*FolderPaths {
         }
 
         {
-            // /src/frontend/screen/book/ path.
-            temp = try frontend.pathScreenBookFolder(gpa);
-            defer gpa.free(temp);
-            errdefer {
-                folder_paths.deinit();
-            }
-            params2[1] = temp;
-            folder_paths.root_src_frontend_screen_book = try fspath.join(gpa, params2);
-            errdefer {
-                folder_paths.deinit();
-            }
-        }
-
-        {
             // /src/frontend/screen/modal/ path.
             temp = try frontend.pathScreenModalFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_frontend_screen_modal = try fspath.join(gpa, params2);
             errdefer {
@@ -612,10 +621,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/frontend/screen/modal/OK/ path.
             temp = try frontend.pathScreenModalOKFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_frontend_screen_modal_ok = try fspath.join(gpa, params2);
             errdefer {
@@ -632,10 +641,10 @@ pub fn folders() !*FolderPaths {
 
         { // /src/deps/channel/ path.
             temp = try deps.pathChannelFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_channel = try fspath.join(gpa, params2);
             errdefer {
@@ -646,10 +655,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/deps/channel/fronttoback/ path.
             temp = try deps.pathChannelFrontToBackFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_channel_fronttoback = try fspath.join(gpa, params2);
             errdefer {
@@ -659,10 +668,10 @@ pub fn folders() !*FolderPaths {
 
         { // /src/deps/channel/backtofront/ path.
             temp = try deps.pathChannelBackToFrontFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_channel_backtofront = try fspath.join(gpa, params2);
             errdefer {
@@ -674,10 +683,10 @@ pub fn folders() !*FolderPaths {
 
             // /src/deps/channel/trigger/ path.
             temp = try deps.pathChannelTriggerFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_channel_trigger = try fspath.join(gpa, params2);
             errdefer {
@@ -688,10 +697,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/deps/closer/ path.
             temp = try deps.pathCloserFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_closer = try fspath.join(gpa, params2);
             errdefer {
@@ -702,10 +711,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/deps/counter/ path.
             temp = try deps.pathCounterFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_counter = try fspath.join(gpa, params2);
             errdefer {
@@ -716,10 +725,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/deps/closedownjobs/ path.
             temp = try deps.pathCloseDownJobsFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_closedownjobs = try fspath.join(gpa, params2);
             errdefer {
@@ -729,10 +738,10 @@ pub fn folders() !*FolderPaths {
 
         { // /src/deps/framers/ path.
             temp = try deps.pathFramersFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_framers = try fspath.join(gpa, params2);
             errdefer {
@@ -741,14 +750,14 @@ pub fn folders() !*FolderPaths {
         }
 
         {
-            // /src/deps/lock/ path.
-            temp = try deps.pathLockFolder(gpa);
-            defer gpa.free(temp);
+            // /src/deps/main_menu/ path.
+            temp = try deps.pathMainMenuFolder(gpa);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
-            folder_paths.root_src_deps_lock = try fspath.join(gpa, params2);
+            folder_paths.root_src_deps_main_menu = try fspath.join(gpa, params2);
             errdefer {
                 folder_paths.deinit();
             }
@@ -757,10 +766,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/deps/message/ path.
             temp = try deps.pathMessageFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_message = try fspath.join(gpa, params2);
             errdefer {
@@ -771,10 +780,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/deps/modal_params/ path.
             temp = try deps.pathModalParamsFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_modal_params = try fspath.join(gpa, params2);
             errdefer {
@@ -785,10 +794,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/deps/startup/ path.
             temp = try deps.pathStartupFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_startup = try fspath.join(gpa, params2);
             errdefer {
@@ -798,10 +807,10 @@ pub fn folders() !*FolderPaths {
 
         { // /src/deps/widget/ path.
             temp = try deps.pathWidgetFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_widget = try fspath.join(gpa, params2);
             errdefer {
@@ -812,10 +821,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/deps/widget/tabbar/ path.
             temp = try deps.pathWidgetTabbarFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_widget_tabbar = try fspath.join(gpa, params2);
             errdefer {
@@ -826,10 +835,10 @@ pub fn folders() !*FolderPaths {
         {
             // /src/deps/various/ path.
             temp = try deps.pathVariousFolder(gpa);
-            defer gpa.free(temp);
             errdefer {
                 folder_paths.deinit();
             }
+            defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_various = try fspath.join(gpa, params2);
             errdefer {

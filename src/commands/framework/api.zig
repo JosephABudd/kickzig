@@ -9,17 +9,35 @@ const _usage_ = @import("usage");
 pub const command: []const u8 = "framework";
 pub const verb_help: []const u8 = "help";
 pub const verb_restart: []const u8 = "restart";
-
+pub const verb_add_messages: []const u8 = "+message";
+pub const verb_dont_add_messages: []const u8 = "-message";
 pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]u8) !void {
+    // Use of messenger files defaults to true;
+    var use_messenger: bool = true;
+    var restart: bool = false;
+
     var folder_paths: *_paths_.FolderPaths = try _paths_.folders();
     defer folder_paths.deinit();
+
     if (remaining_args.len > 0) {
         if (std.mem.eql(u8, remaining_args[0], verb_help)) {
             // User input is "framework help".
             try help(allocator, cli_name);
             return;
         }
-        if (std.mem.eql(u8, remaining_args[0], verb_restart)) {
+
+        // Reset user_messenger to false if needed;
+        // Reset restart to true if needed.
+        for (remaining_args) |remaining_arg| {
+            if (std.mem.eql(u8, remaining_arg, verb_dont_add_messages)) {
+                use_messenger = false;
+            }
+            if (std.mem.eql(u8, remaining_arg, verb_restart)) {
+                restart = true;
+            }
+        }
+
+        if (restart) {
             // User input is "framework restart".
             // Remove and then create a new root/src/.
             folder_paths.reBuild() catch |restart_err| {
@@ -36,7 +54,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 allocator.free(msg);
             };
             // Create the framework.
-            _source_.recreate(allocator, _paths_.app_name.?) catch |create_err| {
+            _source_.recreate(allocator, _paths_.app_name.?, use_messenger) catch |create_err| {
                 // Have input so make the error message.
                 const user_command: []const u8 = try std.fmt.allocPrint(allocator, "{s} {s}", .{ command, verb_restart });
                 defer allocator.free(user_command);
@@ -63,7 +81,7 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
         try folder_paths.build();
 
         // Create the framework.
-        _source_.create(allocator, _paths_.app_name.?) catch |create_err| {
+        _source_.create(allocator, _paths_.app_name.?, use_messenger) catch |create_err| {
             // Have input so make the error message.
             const msg: []const u8 = _warning_.fatal(allocator, create_err, command) catch {
                 return create_err;

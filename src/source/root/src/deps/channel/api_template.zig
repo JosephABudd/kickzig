@@ -181,7 +181,7 @@ pub const Template = struct {
         ;
 
         const line_trigger_import =
-            \\const TR_{0s} = @import("trigger/{0s}.zig");
+            \\const TR_{0s} = @import("trigger/{0s}.zig").Group;
             \\
         ;
 
@@ -389,7 +389,7 @@ pub const Template = struct {
         ;
 
         const line_trigger_member =
-            \\    {0s}: ?*TR_{0s}.Group = null,
+            \\    {0s}: ?*TR_{0s} = null,
             \\
         ;
 

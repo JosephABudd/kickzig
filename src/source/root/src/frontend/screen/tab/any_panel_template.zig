@@ -5,6 +5,25 @@ pub const Template = struct {
     allocator: std.mem.Allocator,
     screen_name: []const u8,
     tab_name: []const u8,
+    use_messenger: bool,
+
+    pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, tab_name: []const u8, use_messenger: bool) !*Template {
+        var self: *Template = try allocator.create(Template);
+        self.tab_name = try allocator.alloc(u8, tab_name.len);
+        errdefer {
+            allocator.destroy(self);
+        }
+        @memcpy(@constCast(self.tab_name), tab_name);
+        self.screen_name = try allocator.alloc(u8, screen_name.len);
+        errdefer {
+            allocator.free(self.tab_name);
+            allocator.destroy(self);
+        }
+        @memcpy(@constCast(self.screen_name), screen_name);
+        self.allocator = allocator;
+        self.use_messenger = use_messenger;
+        return self;
+    }
 
     pub fn deinit(self: *Template) void {
         self.allocator.free(self.screen_name);
@@ -14,322 +33,190 @@ pub const Template = struct {
 
     // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
+        var lines: std.ArrayList(u8) = std.ArrayList(u8).init(self.allocator);
+        defer lines.deinit();
+        var line: []const u8 = undefined;
 
-        // screen_name
-        var size: usize = std.mem.replacementSize(u8, template, "{{ screen_name }}", self.screen_name);
-        const with_screen_name: []u8 = try self.allocator.alloc(u8, size);
-        defer self.allocator.free(with_screen_name);
-        _ = std.mem.replace(u8, template, "{{ screen_name }}", self.screen_name, with_screen_name);
+        try lines.appendSlice(line_1);
 
-        // panel_name
-        size = std.mem.replacementSize(u8, with_screen_name, "{{ panel_name }}", self.tab_name);
-        const with_panel_name: []u8 = try self.allocator.alloc(u8, size);
-        defer self.allocator.free(with_panel_name);
-        _ = std.mem.replace(u8, with_screen_name, "{{ panel_name }}", self.tab_name, with_panel_name);
+        if (self.use_messenger) {
+            try lines.appendSlice(line_1_messenger);
+        }
 
-        // tab_name
-        size = std.mem.replacementSize(u8, with_panel_name, "{{ tab_name }}", self.tab_name);
-        const with_tab_name: []u8 = try self.allocator.alloc(u8, size);
-        _ = std.mem.replace(u8, with_panel_name, "{{ tab_name }}", self.tab_name, with_tab_name);
-        return with_tab_name;
+        {
+            line = try std.fmt.allocPrint(self.allocator, line_2_f, .{self.tab_name});
+            try lines.appendSlice(line);
+        }
+        if (self.use_messenger) {
+            try lines.appendSlice(line_2_messenger);
+        }
+
+        try lines.appendSlice(line_3);
+
+        if (self.use_messenger) {
+            try lines.appendSlice(line_3_messenger);
+        }
+
+        try lines.appendSlice(line_4);
+
+        return try lines.toOwnedSlice();
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, tab_name: []const u8) !*Template {
-    var self: *Template = try allocator.create(Template);
-    self.tab_name = try allocator.alloc(u8, tab_name.len);
-    errdefer {
-        allocator.destroy(self);
-    }
-    @memcpy(@constCast(self.tab_name), tab_name);
-    self.screen_name = try allocator.alloc(u8, screen_name.len);
-    errdefer {
-        allocator.free(self.tab_name);
-        allocator.destroy(self);
-    }
-    @memcpy(@constCast(self.screen_name), screen_name);
-    self.allocator = allocator;
-    return self;
-}
-const template =
+const line_1: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
-    \\const _lock_ = @import("lock");
-    \\const _messenger_ = @import("messenger.zig");
-    \\const _widget_ = @import("widget");
-    \\const Tab = _widget_.Tab;
-    \\const Tabs = _widget_.Tabs;
-    \\const _various_ = @import("various");
+    \\const Content = @import("various").Content;
+    \\const Container = @import("various").Container;
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
-    \\const OKModalParams = @import("modal_params").OK;
     \\
-    \\// KICKZIG TODO:
-    \\// Remember. Defers happen in reverse order.
-    \\// When updating panel state.
-    \\//     self.lock();
-    \\//     defer self.unlock(); //  2nd defer: Unlocks.
-    \\//     defer self.refresh(); // 1st defer: Refreshes the main view.
-    \\//     // DO THE UPDATES.
+;
+
+const line_1_messenger: []const u8 =
+    \\const Messenger = @import("view/messenger.zig").Messenger;
     \\
-    \\/// {{ tab_name }} panel.
-    \\/// This panel is the content for the {{ tab_name }} tab.
-    \\pub const Panel = struct {
+;
+
+/// {0s} tab_name
+const line_2_f: []const u8 =
+    \\const ScreenOptions = @import("screen.zig").Options;
+    \\const View = @import("view/{0s}.zig").View;
+    \\const ViewOptions = @import("view/{0s}.zig").Options;
+    \\
+    \\/// {0s} panel.
+    \\/// This panel is the content for this screen's {0s} tab.
+    \\/// This screen's {0s} tab is this panel's container.
+    \\pub const Panel = struct {{
     \\    allocator: std.mem.Allocator, // For persistant state data.
-    \\    lock: *_lock_.ThreadLock, // For persistant state data.
-    \\    window: *dvui.Window,
-    \\    main_view: *MainView,
-    \\    tabs: *Tabs,
-    \\    tab: *Tab,
-    \\    messenger: *_messenger_.Messenger,
-    \\    exit: ExitFn,
-    \\    container: ?*_various_.Container,
+    \\    view: *View,
     \\
-    \\    state: *State,
+    \\    pub const Options = ViewOptions;
     \\
-    \\    pub const State = struct {
+    \\    pub fn init(
     \\        allocator: std.mem.Allocator,
+    \\        window: *dvui.Window,
+    \\        main_view: *MainView,
     \\
-    \\        tab_label: ?[]const u8,
-    \\        heading: ?[]const u8,
-    \\        message: ?[]const u8,
+;
+
+const line_2_messenger: []const u8 =
+    \\        messenger: *Messenger,
     \\
-    \\        pub fn init(
-    \\            allocator: std.mem.Allocator,
-    \\            tab_label: []const u8,
-    \\            heading: ?[]const u8,
-    \\            message: ?[]const u8,
-    \\        ) !*State {
-    \\            var self = try allocator.create(State);
-    \\            self.allocator = allocator;
+;
+
+const line_3: []const u8 =
+    \\        exit: ExitFn,
+    \\        screen_options: ScreenOptions,
+    \\    ) !*Panel {
+    \\        var self: *Panel = try allocator.create(Panel);
+    \\        self.allocator = allocator;
+    \\        _ = screen_options;
+    \\        self.view = try View.init(
+    \\            allocator,
+    \\            window,
+    \\            main_view,
     \\
-    \\            self.tab_label = null;
-    \\            self.heading = null;
-    \\            self.message = null;
+;
+
+const line_3_messenger: []const u8 =
+    \\            messenger,
     \\
-    \\            try self.set(tab_label, heading, message);
-    \\            errdefer self.deinit();
-    \\            return self;
-    \\        }
-    \\
-    \\        pub fn initFromState(
-    \\            allocator: std.mem.Allocator,
-    \\            from: *State,
-    \\        ) !*State {
-    \\            var label: []const u8 = undefined;
-    \\            if (from.tab_label) |tab_label| {
-    \\                label = tab_label;
-    \\            } else {
-    \\                label = "{{ tab_name }}";
-    \\            }
-    \\            return State.init(allocator, label, from.heading, from.message);
-    \\        }
-    \\
-    \\        pub fn deinit(self: *State) void {
-    \\            if (self.tab_label) |member| {
-    \\                self.allocator.free(member);
-    \\            }
-    \\            if (self.heading) |member| {
-    \\                self.allocator.free(member);
-    \\            }
-    \\            if (self.message) |member| {
-    \\                self.allocator.free(member);
-    \\            }
-    \\            self.allocator.destroy(self);
-    \\        }
-    \\
-    \\        pub fn setContainer(self: *State, container: ?*_various_.Container) void {
-    \\            self.container = container;
-    \\        }
-    \\
-    \\        pub fn setFromState(
-    \\            self: *State,
-    \\            from: *State,
-    \\        ) !void {
-    \\            return self.set(from.tab_label, from.heading, from.message);
-    \\        }
-    \\
-    \\        pub fn set(
-    \\            self: *State,
-    \\            new_tab_label: ?[]const u8,
-    \\            new_heading: ?[]const u8,
-    \\            new_message: ?[]const u8,
-    \\        ) !void {
-    \\            if (new_tab_label) |tab_label| {
-    \\                if (self.tab_label) |self_tab_label| {
-    \\                    self.allocator.free(self_tab_label);
-    \\                }
-    \\                self.tab_label = try self.allocator.alloc(u8, tab_label.len);
-    \\                errdefer self.tab_label = null;
-    \\                @memcpy(@constCast(self.tab_label.?), tab_label);
-    \\            }
-    \\            if (new_heading) |heading| {
-    \\                if (self.heading) |self_heading| {
-    \\                    self.allocator.free(self_heading);
-    \\                }
-    \\                self.heading = try self.allocator.alloc(u8, heading.len);
-    \\                errdefer self.heading = null;
-    \\                @memcpy(@constCast(self.heading.?), heading);
-    \\            }
-    \\            if (new_message) |message| {
-    \\                if (self.message) |self_message| {
-    \\                    self.allocator.free(self_message);
-    \\                }
-    \\                self.message = try self.allocator.alloc(u8, message.len);
-    \\                errdefer self.message = null;
-    \\                @memcpy(@constCast(self.message.?), message);
-    \\            }
-    \\        }
-    \\    };
-    \\
-    \\    /// labelFn returns the tab label.
-    \\    /// The caller does not own the return value;
-    \\    pub fn labelFn(implementor: *anyopaque) anyerror![]const u8 {
-    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
-    \\        self.lock.lock();
-    \\        defer self.lock.unlock();
-    \\
-    \\        return self.state.tab_label.?;
+;
+
+const line_4: []const u8 =
+    \\            exit,
+    \\            // KICKZIG TODO:
+    \\            // The next value is the ViewOptions which you may want to modify using the param screen_settings.
+    \\            // You may want to use param screen_settings to modify the value of the ViewOptions.
+    \\            .{},
+    \\        );
+    \\        errdefer allocator.destroy(self);
+    \\        return self;
     \\    }
     \\
-    \\    /// setStateFn sets the panel's state.
-    \\    pub fn setStateFn(implementor: *anyopaque, state_ptr: *anyopaque) anyerror!void {
-    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
-    \\        const from_state: *State = @alignCast(@ptrCast(state_ptr));
-    \\        return self.setState(from_state);
-    \\    }
+    \\    // Content interface functions.
     \\
-    \\    /// refresh only if this panel is showing and this screen is showing.
-    \\    pub fn refreshFn(implementor: *anyopaque) void {
-    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
-    \\        self.refresh();
-    \\    }
-    \\
-    \\    pub fn deinitFn(implementor: *anyopaque) void {
-    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
-    \\        return self.deinit();
+    \\    /// Convert this Panel to a Content interface.
+    \\    pub fn asContent(self: *Panel) !*Content {
+    \\        return try Content.init(
+    \\            self.allocator,
+    \\            self,
+    \\            Panel.deinitContentFn,
+    \\            Panel.frameContentFn,
+    \\            Panel.labelContentFn,
+    \\            Panel.willFrameContentFn,
+    \\            Panel.setContainerFn,
+    \\        );
     \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
-    \\        self.lock.deinit();
-    \\        self.state.deinit();
+    \\        // This panel is deinited by the container.
+    \\        // So don't deinit the container.
+    \\        self.view.deinit();
     \\        self.allocator.destroy(self);
     \\    }
     \\
-    \\    /// frame this panel.
-    \\    /// Layout, Draw, Handle user events.
-    \\    /// The arena allocator is for building this frame. Not for state.
-    \\    pub fn frameFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror!void {
+    \\    /// When a container closes it deinits.
+    \\    /// When a container deinits, it deinits it's content.
+    \\    pub fn deinitContentFn(implementor: *anyopaque) void {
     \\        var self: *Panel = @alignCast(@ptrCast(implementor));
-    \\        _ = arena;
-    \\
-    \\        self.lock.lock();
-    \\        defer self.lock.unlock();
-    \\
-    \\        {
-    \\            // Row 1: The screen's name using 1 column.
-    \\            // Use the same background as the scroller.
-    \\            var row: *dvui.BoxWidget = try dvui.box(
-    \\                @src(),
-    \\                .horizontal,
-    \\                .{
-    \\                    .expand = .horizontal,
-    \\                    .background = true,
-    \\                },
-    \\            );
-    \\            defer row.deinit();
-    \\
-    \\            try dvui.labelNoFmt(@src(), "{{ screen_name }} Screen.", .{ .font_style = .title });
-    \\        }
-    \\
-    \\        var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
-    \\        defer scroller.deinit();
-    \\
-    \\        var layout: *dvui.BoxWidget = try dvui.box(@src(), .vertical, .{});
-    \\        defer layout.deinit();
-    \\
-    \\        {
-    \\            // Row 2 example: Information using 1 column.
-    \\            var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
-    \\            defer row.deinit();
-    \\
-    \\            try dvui.label(@src(), "This panel is content for the {{ tab_name }} tab. Shown above is the screen name. Here, below the screen name is a scroll area containing the this panel's name and the rest of the panel's content. All of this is content displayed as an example.", .{}, .{});
-    \\        }
-    \\        {
-    \\            // Row 3 example: This panel's name using 2 columns.
-    \\            var row: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
-    \\            defer row.deinit();
-    \\
-    \\            try dvui.labelNoFmt(@src(), "Panel Name: ", .{ .font_style = .heading });
-    \\            try dvui.labelNoFmt(@src(), "{{ panel_name }}", .{});
-    \\        }
-    \\        // Row 4: A button which closes this tab using 1 column.
-    \\        if (try dvui.button(@src(), "Close.", .{}, .{})) {
-    \\            try self.closeTab();
-    \\        }
-    \\
-    \\        // Row 5 example: A button which opens the OK modal screen using 1 column.
-    \\        if (try dvui.button(@src(), "OK Modal Screen.", .{}, .{})) {
-    \\            const ok_args = try OKModalParams.init(self.allocator, "Using the OK Modal Screen!", "This is the OK modal activated from the {{ panel_name }} panel in the {{ screen_name }} screen.");
-    \\            self.main_view.showOK(ok_args);
-    \\        }
-    \\
+    \\        self.deinit();
     \\    }
     \\
-    \\    pub fn closeTab(self: *Panel) !void {
-    \\        self.tabs.removeTab(self.tab);
+    \\    /// Called by the container when it frames.
+    \\    /// When a container frames, it frames it's content.
+    \\    pub fn frameContentFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror!void {
+    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
+    \\        try self.view.frame(arena);
     \\    }
     \\
-    \\    /// refresh only if this panel is showing and this screen is showing.
-    \\    pub fn refresh(self: *Panel) void {
-    \\        if (self.tabs.isSelected(self.tab)) {
-    \\            self.main_view.refresh{{ screen_name }}();
+    \\    /// Called by the container when it refreshes.
+    \\    /// When a container refreshes, it refreshes it's label.
+    \\    /// The caller owns the returned value.
+    \\    pub fn labelContentFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror![]const u8 {
+    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
+    \\        return self.view.label(arena);
+    \\    }
+    \\
+    \\    /// Called by the container.
+    \\    /// Returns if this content will frame under current state.
+    \\    /// A container will not frame if it's content will not frame.
+    \\    pub fn willFrameContentFn(implementor: *anyopaque) bool {
+    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
+    \\        return self.view.willFrame();
+    \\    }
+    \\
+    \\    /// Called by the container when it inits.
+    \\    /// The container sets this panel as it's content.
+    \\    /// The container sets itself as this panel's container.
+    \\    pub fn setContainerFn(implementor: *anyopaque, container: *Container) !void {
+    \\        var self: *Panel = @alignCast(@ptrCast(implementor));
+    \\        if (self.view.container != null) {
+    \\            return error.ContainerAlreadySet;
     \\        }
+    \\        self.view.container = container;
     \\    }
     \\
-    \\    /// setState sets the panel's state.
-    \\    pub fn setState(self: *Panel, from_state: *State) !void {
-    \\        self.lock.lock();
-    \\        defer self.lock.unlock();
-    \\
-    \\        const changed: bool = std.mem.eql(u8, from_state.tab_label.?, self.state.tab_label.?);
-    \\        try self.state.setFromState(from_state);
-    \\        if (changed) {
-    \\            self.tab.refresh();
-    \\        }
+    \\    /// Called by the messenger.
+    \\    /// Closes the container.
+    \\    pub fn close(self: *Panel) void {
+    \\        self.view.container.close();
     \\    }
+    \\
+    \\    /// Called by the messenger.
+    \\    /// Resets the state using the not null values in values.
+    \\    /// Then it refreshes for the next frame.
+    \\    /// The caller owns settings.
+    \\    pub fn setState(self: *Panel, settings: ViewOptions) !void {
+    \\        return self.view.setState(settings);
+    \\    }
+    \\
+    \\    /// See view/{0s}.zig fn setState.
+    \\    /// The caller owns the return value.
+    \\    pub fn getState(self: *Panel) !*ViewOptions {{
+    \\        return self.view.getState();
+    \\    }}
     \\};
-    \\
-    \\/// The Panel owns param state.
-    \\pub fn init(
-    \\    allocator: std.mem.Allocator,
-    \\    state: *Panel.State,
-    \\    main_view: *MainView,
-    \\    tabs: *Tabs,
-    \\    messenger: *_messenger_.Messenger,
-    \\    exit: ExitFn,
-    \\    window: *dvui.Window,
-    \\) !*Panel {
-    \\    var panel: *Panel = try allocator.create(Panel);
-    \\    panel.lock = try _lock_.init(allocator);
-    \\    errdefer {
-    \\        state.deinit();
-    \\        allocator.destroy(panel);
-    \\    }
-    \\    panel.state = try Panel.State.initFromState(allocator, state);
-    \\    errdefer {
-    \\        panel.lock.deinit();
-    \\        state.deinit();
-    \\        allocator.destroy(panel);
-    \\    }
-    \\    panel.allocator = allocator;
-    \\    panel.main_view = main_view;
-    \\    panel.tabs = tabs;
-    \\    panel.messenger = messenger;
-    \\    panel.exit = exit;
-    \\    panel.window = window;
-    \\
-    \\    return panel;
-    \\}
 ;

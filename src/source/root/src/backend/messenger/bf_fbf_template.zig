@@ -53,6 +53,41 @@ const template =
     \\    triggers: *_channel_.Trigger,
     \\    exit: ExitFn,
     \\
+    \\    pub fn init(startup: _startup_.Backend) !*Messenger {
+    \\        var messenger: *Messenger = try startup.allocator.create(Messenger);
+    \\        messenger.allocator = startup.allocator;
+    \\        messenger.send_channels = startup.send_channels;
+    \\        messenger.receive_channels = startup.receive_channels;
+    \\        messenger.triggers = startup.triggers;
+    \\        messenger.exit = startup.exit;
+    \\    
+    \\        // Subscribe to receive the {{ message_name }} message.
+    \\        var receive_behavior = try startup.receive_channels.{{ message_name }}.initBehavior();
+    \\        errdefer {
+    \\            messenger.deinit();
+    \\        }
+    \\        receive_behavior.implementor = messenger;
+    \\        receive_behavior.receiveFn = &Messenger.receive{{ message_name }}Fn;
+    \\        try startup.receive_channels.{{ message_name }}.subscribe(receive_behavior);
+    \\        errdefer {
+    \\            messenger.deinit();
+    \\        }
+    \\    
+    \\        // Subscribe to trigger-send the {{ message_name }} message.
+    \\        var trigger_behavior = try startup.triggers.{{ message_name }}.?.initBehavior();
+    \\        errdefer {
+    \\            messenger.deinit();
+    \\        }
+    \\        trigger_behavior.implementor = messenger;
+    \\        trigger_behavior.triggerFn = &Messenger.trigger{{ message_name }}Fn;
+    \\        try startup.triggers.{{ message_name }}.?.subscribe(trigger_behavior);
+    \\        errdefer {
+    \\            messenger.deinit();
+    \\        }
+    \\    
+    \\        return messenger;
+    \\    }
+    \\
     \\    pub fn deinit(self: *Messenger) void {
     \\        self.allocator.destroy(self);
     \\    }
@@ -124,40 +159,5 @@ const template =
     \\        return error.KICKZIG_TODO_ADD_FUNCTIONALITY;
     \\    }
     \\};
-    \\
-    \\pub fn init(startup: _startup_.Backend) !*Messenger {
-    \\    var messenger: *Messenger = try startup.allocator.create(Messenger);
-    \\    messenger.allocator = startup.allocator;
-    \\    messenger.send_channels = startup.send_channels;
-    \\    messenger.receive_channels = startup.receive_channels;
-    \\    messenger.triggers = startup.triggers;
-    \\    messenger.exit = startup.exit;
-    \\
-    \\    // Subscribe to receive the {{ message_name }} message.
-    \\    var receive_behavior = try startup.receive_channels.{{ message_name }}.initBehavior();
-    \\    errdefer {
-    \\        messenger.deinit();
-    \\    }
-    \\    receive_behavior.implementor = messenger;
-    \\    receive_behavior.receiveFn = &Messenger.receive{{ message_name }}Fn;
-    \\    try startup.receive_channels.{{ message_name }}.subscribe(receive_behavior);
-    \\    errdefer {
-    \\        messenger.deinit();
-    \\    }
-    \\
-    \\    // Subscribe to trigger-send the {{ message_name }} message.
-    \\    var trigger_behavior = try startup.triggers.{{ message_name }}.?.initBehavior();
-    \\    errdefer {
-    \\        messenger.deinit();
-    \\    }
-    \\    trigger_behavior.implementor = messenger;
-    \\    trigger_behavior.triggerFn = &Messenger.trigger{{ message_name }}Fn;
-    \\    try startup.triggers.{{ message_name }}.?.subscribe(trigger_behavior);
-    \\    errdefer {
-    \\        messenger.deinit();
-    \\    }
-    \\
-    \\    return messenger;
-    \\}
     \\
 ;

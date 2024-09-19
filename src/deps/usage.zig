@@ -49,8 +49,6 @@ const framework_template: []const u8 =
     \\2. ./src/backend/ which contains the back-end code.
     \\3. ./src/frontend/ which contains the front-end code.
     \\4. ./src/deps/ which contains the dependencies.
-    \\5. ./src/vendor/ which contains vendered code.
-    \\6. ./src/vendor/dvui/ which contains dvui.
     \\
     \\
 ;
@@ -74,14 +72,17 @@ const screen_template: []const u8 =
     \\＄ {{cli_name}} screen help
     \\＄ {{cli_name}} screen list
     \\＄ {{cli_name}} screen add-panel «screen-name» «panel-name, ...»
-    \\＄ {{cli_name}} screen add-content «screen-name» «panel-name, ...»
     \\＄ {{cli_name}} screen add-tab «screen-name» «[*]tab-name, ...»
     \\＄ {{cli_name}} screen add-modal «screen-name» «panel-name, ...»
     \\＄ {{cli_name}} screen remove «screen-name»
     \\
-    \\A tab-name not prefixed with '*', will have it's own panel, of the same name, to provide content.
-    \\A tab-name prefixed with '*', will get its content from the screen in the panel/ folder, of the same name.
-    \\That screen in the panel/ folder, must already exist.
+    \\Tab names:
+    \\* A tab-name prefixed with '*':
+    \\  Will get its content from the screen of the same name.
+    \\  That screen must already exist.
+    \\* A tab-name not prefixed with '*':
+    \\  Will get its content from a panel of the same name.
+    \\  That panel will be created in the same screen as the tab.
     \\
     \\After a screen is added:
     \\1. A link to it's screen.zig file is displayed.

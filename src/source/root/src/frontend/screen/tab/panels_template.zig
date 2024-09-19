@@ -35,18 +35,28 @@ pub const Template = struct {
 
     // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
-        var line: []u8 = undefined;
-        var lines = std.ArrayList(u8).init(self.allocator);
+        var lines: std.ArrayList(u8) = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
+        var line: []const u8 = undefined;
         const names: [][]const u8 = self.panel_names[0..self.panel_names_index];
 
-        try lines.appendSlice(line_start);
+        // Types.
         for (names) |name| {
-            line = try fmt.allocPrint(self.allocator, line_tag, .{name});
+            line = try fmt.allocPrint(self.allocator, line_panel_import, .{name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
-        try lines.appendSlice(line_end);
+
+        // Enums.
+        try lines.appendSlice(line_enum_start);
+
+        for (names) |name| {
+            line = try fmt.allocPrint(self.allocator, line_enum_tag, .{name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
+        }
+
+        try lines.appendSlice(line_enum_end);
 
         return try lines.toOwnedSlice();
     }
@@ -67,15 +77,21 @@ pub fn init(allocator: std.mem.Allocator) !*Template {
     return data;
 }
 
-const line_start =
+const line_panel_import: []const u8 =
+    \\pub const {0s} = @import("{0s}.zig").Panel;
+    \\
+;
+
+const line_enum_start: []const u8 =
+    \\
     \\pub const PanelTags = enum {
     \\
 ;
-const line_tag =
+const line_enum_tag: []const u8 =
     \\    {0s},
     \\
 ;
-const line_end =
+const line_enum_end: []const u8 =
     \\    none,
     \\};
     \\
