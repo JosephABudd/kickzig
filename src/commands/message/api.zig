@@ -19,14 +19,11 @@ pub const verb_add_fbf: []const u8 = "add-fbf"; // front initializes & sends req
 pub const verb_add_bf_fbf: []const u8 = "add-bf-fbf"; // front initializes & sends request to back, back sends response to front.
 pub const verb_remove: []const u8 = "remove";
 
-pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]u8, use_messenger: bool) !void {
-    if (!use_messenger) {
-        // Messages are not allowed.
-        try addMessageError();
-        return;
-    }
+pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]u8, in_frame_folder: bool) !void {
     var folder_paths: *_paths_.FolderPaths = try _paths_.folders();
     defer folder_paths.deinit();
+    const use_messenger: bool = folder_paths.isBuiltWithMessages();
+
     switch (remaining_args.len) {
         0 => {
             try syntaxError(allocator, cli_name);
@@ -42,6 +39,14 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 return;
             }
             if (std.mem.eql(u8, remaining_args[0], verb_list)) {
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                } else if (!use_messenger) {
+                    // Messages are not allowed.
+                    try addMessageError();
+                    return;
+                }
                 // User input is "message list".
                 try list(allocator);
                 return;
@@ -53,6 +58,14 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
         },
         2 => {
             if (std.mem.eql(u8, remaining_args[0], verb_add_fbf)) {
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                } else if (!use_messenger) {
+                    // Messages are not allowed.
+                    try addMessageError();
+                    return;
+                }
                 if (!try expectValidMessageName(allocator, remaining_args[1])) {
                     return;
                 }
@@ -76,6 +89,14 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 }
                 return;
             } else if (std.mem.eql(u8, remaining_args[0], verb_add_bf)) {
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                } else if (!use_messenger) {
+                    // Messages are not allowed.
+                    try addMessageError();
+                    return;
+                }
                 if (!try expectValidMessageName(allocator, remaining_args[1])) {
                     return;
                 }
@@ -99,6 +120,14 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 }
                 return;
             } else if (std.mem.eql(u8, remaining_args[0], verb_add_bf_fbf)) {
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                } else if (!use_messenger) {
+                    // Messages are not allowed.
+                    try addMessageError();
+                    return;
+                }
                 if (!try expectValidMessageName(allocator, remaining_args[1])) {
                     return;
                 }
@@ -122,6 +151,14 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 }
                 return;
             } else if (std.mem.eql(u8, remaining_args[0], verb_remove)) {
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                } else if (!use_messenger) {
+                    // Messages are not allowed.
+                    try addMessageError();
+                    return;
+                }
                 if (!try expectValidMessageName(allocator, remaining_args[1])) {
                     return;
                 }
@@ -171,6 +208,13 @@ fn help(allocator: std.mem.Allocator, cli_name: []const u8) !void {
     const message: []u8 = try _usage_.message(allocator, cli_name);
     defer allocator.free(message);
     try _stdout_.print(message);
+}
+
+fn notInFrameFolder() void {
+    // Display message;
+    _stdout_.print(_warning_.not_framework_folder) catch {
+        // Don't return an error;
+    };
 }
 
 fn list(allocator: std.mem.Allocator) !void {

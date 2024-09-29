@@ -128,6 +128,10 @@ pub const content =
     \\        self.allocator.destroy(self);
     \\    }
     \\
+    \\    pub fn container(self: *Container) *anyopaque {
+    \\        return self.implementor;
+    \\    }
+    \\
     \\    pub fn isCloseable(self: *Container) bool {
     \\        return (self.close_fn != null);
     \\    }

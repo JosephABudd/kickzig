@@ -10,7 +10,6 @@ const template: []const u8 =
     \\const std = @import("std");
     \\
     \\const _channel_ = @import("channel");
-    \\const _framers_ = @import("framers");
     \\const _message_ = @import("message");
     \\const _modal_params_ = @import("modal_params");
     \\const _panels_ = @import("../panels.zig");
@@ -18,8 +17,8 @@ const template: []const u8 =
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\const PanelTags = _panels_.PanelTags;
-    \\const ScreenTags = @import("framers").ScreenTags;
     \\const ScreenOptions = @import("../screen.zig").Options;
+    \\const ScreenTags = @import("framers").ScreenTags;
     \\const Tab = @import("widget").Tab;
     \\const Tabs = @import("widget").Tabs;
     \\
@@ -31,6 +30,7 @@ const template: []const u8 =
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
     \\    exit: ExitFn,
+    \\    screen_options: ScreenOptions,
     \\
     \\    pub fn init(
     \\        allocator: std.mem.Allocator,
@@ -40,36 +40,34 @@ const template: []const u8 =
     \\        receive_channels: *_channel_.BackendToFrontend,
     \\        exit: ExitFn,
     \\        screen_options: ScreenOptions,
+    \\
     \\    ) !*Messenger {{
-    \\        var messenger: *Messenger = try allocator.create(Messenger);
-    \\        messenger.allocator = allocator;
-    \\        messenger.tabs = tabs;
-    \\        messenger.main_view = main_view;
-    \\        messenger.send_channels = send_channels;
-    \\        messenger.receive_channels = receive_channels;
-    \\        messenger.exit = exit;
-    \\        // KICKZIG TODO:
-    \\        // If you have added custom fields to Messenger,
-    \\        //  then you may want to set them with screen_options.
-    \\        _ = screen_options;
-    \\    
+    \\        var self: *Messenger = try allocator.create(Messenger);
+    \\        self.allocator = allocator;
+    \\        self.tabs = tabs;
+    \\        self.main_view = main_view;
+    \\        self.send_channels = send_channels;
+    \\        self.receive_channels = receive_channels;
+    \\        self.exit = exit;
+    \\        self.screen_options = screen_options;
+    \\
     \\        // For a messenger to receive a message, the messenger must:
     \\        //
     \\        // 1. Implement the behavior of the message's channel.
     \\        // var fubarBehavior = try receive_channels.Fubar.initBehavior();
     \\        // errdefer {{
-    \\        //     allocator.destroy(messenger);
+    \\        //     allocator.destroy(self);
     \\        // }}
-    \\        // fubarBehavior.implementor = messenger;
+    \\        // fubarBehavior.implementor = self;
     \\        // fubarBehavior.receiveFn = Messenger.receiveFubar;
     \\        //
     \\        // 2. Subscribe to the Fubar channel in order to receive the Fubar messages.
     \\        // try receive_channels.Fubar.subscribe(fubarBehavior);
     \\        // errdefer {{
-    \\        //     allocator.destroy(messenger);
+    \\        //     allocator.destroy(self);
     \\        // }}
     \\    
-    \\        return messenger;
+    \\        return self;
     \\    }}
     \\
     \\    pub fn deinit(self: *Messenger) void {{
@@ -127,10 +125,14 @@ const template: []const u8 =
     \\    //     }}
     \\    //
     \\    //     // Check the tab. It is a *anyopaque in the message.
-    \\    //     // If the tab is no longer open then ignore this message.
+    \\    //     // If the tab is no longer in the tab-bar then ignore this message.
     \\    //     // Also this tab could be from another instance of this screen.
     \\    //     const tab: *Tab = @alignCast(@ptrCast(message.frontend_payload.tab));
-    \\    //     if (!self.tabs.hasTab(tab)) {{
+    \\    //     const tab_exists: bool = self.tabs.hasTab(tab) catch |err| {{
+    \\    //         self.exit(@src(), err, "self.tabs.hasTab(tab)");
+    \\    //         return err;
+    \\    //     }}
+    \\    //     if (!tab_exists) {{
     \\    //         return;
     \\    //     }}
     \\    //

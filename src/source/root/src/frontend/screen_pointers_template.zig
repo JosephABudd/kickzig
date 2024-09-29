@@ -96,10 +96,10 @@ pub const Template = struct {
     pub fn content(self: *Template) ![]const u8 {
         var lines = std.ArrayList(u8).init(self.allocator);
         defer lines.deinit();
+        var line: []u8 = undefined;
 
         // Start. Imports etc.
         try lines.appendSlice(line1);
-        var line: []u8 = undefined;
 
         // tab screens.
         const tab_screen_names: [][]const u8 = self._tab_screen_names[0..self._tab_screen_names_index];
@@ -309,7 +309,9 @@ const line4_deinit_end_init_screens_start: []const u8 =
     \\    }
     \\
     \\    pub fn init_screens(self: *ScreenPointers, startup: _startup_.Frontend) !void {
-    \\        for (_main_menu_.sorted_main_menu_screen_tags) |tag| {
+    \\        const screen_tags: []ScreenTags = try _main_menu_.screenTagsForInitialization(self.allocator);
+    \\        defer self.allocator.free(screen_tags);
+    \\        for (screen_tags) |tag| {
     \\            switch (tag) {
     \\
     \\

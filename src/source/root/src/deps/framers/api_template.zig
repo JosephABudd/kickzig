@@ -180,6 +180,7 @@ const line_import =
     \\const _modal_params_ = @import("modal_params");
     \\const _startup_ = @import("startup");
     \\const sorted_main_menu_screen_tags = @import("main_menu").sorted_main_menu_screen_tags;
+    \\const startup_screen_tag = @import("main_menu").startup_screen_tag;
     \\
     \\const Container = @import("various").Container;
     \\const ExitFn = @import("various").ExitFn;
@@ -302,6 +303,9 @@ const line_refresh_end =
     \\    }
     \\
     \\    fn isMainMenuTag(screen: ScreenTags) bool {
+    \\        if (screen == startup_screen_tag) {
+    \\            return true;
+    \\        }
     \\        for (sorted_main_menu_screen_tags) |tag| {
     \\            if (tag == screen) {
     \\                return true;

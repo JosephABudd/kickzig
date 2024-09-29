@@ -91,6 +91,7 @@ const line_start: []const u8 =
     \\
     \\const _startup_ = @import("startup");
     \\
+    \\
 ;
 const line_import_member: []const u8 =
     \\const {0s}Messenger = @import("{0s}.zig").Messenger;

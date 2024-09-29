@@ -55,6 +55,7 @@ const template =
     \\/// 2. WILL NOT RETURN THE MESSAGE TO THE BACK-END.
     \\const std = @import("std");
     \\const Counter = @import("counter").Counter;
+    \\const ScreenTags = @import("framers").ScreenTags;
     \\
     \\// FrontendPayload is the "{0s}" message from the front-end to the back-end.
     \\/// KICKZIG TODO: Add your own front-end payload fields and methods.
@@ -64,18 +65,23 @@ const template =
     \\    allocator: std.mem.Allocator,
     \\    is_set: bool,
     \\
-    \\    // The member foobar is presented as an example.
-    \\    foobar: ?i64,
+    \\    // screen_tag is the sender's screen tag.
+    \\    // When messengers from multiple screens can send and receive this message,
+    \\    //  you will only want the sender handling things like messages to the user.
+    \\    // For this reason all screen messengers import the const ScreenTags.
+    \\    screen_tag: ?ScreenTags,
     \\
     \\    pub const Settings = struct {{
-    \\        foobar: ?i64 = null,
+    \\        screen_tag: ?ScreenTags = null,
     \\    }};
     \\
     \\    fn init(allocator: std.mem.Allocator) !*FrontendPayload {{
     \\        var self: *FrontendPayload = try allocator.create(FrontendPayload);
     \\        self.allocator = allocator;
     \\        self.is_set = false;
-    \\        self.foobar = null;
+    \\
+    \\        self.screen_tag = null;
+    \\
     \\        return self;
     \\    }}
     \\
@@ -89,8 +95,8 @@ const template =
     \\            return error.{0s}FrontendPayloadAlreadySet;
     \\        }}
     \\        self.is_set = true;
-    \\        if (values.foobar) |foobar| {{
-    \\            self.foobar = foobar;
+    \\        if (values.screen_tag) |value| {{
+    \\            self.screen_tag = value;
     \\        }}
     \\    }}
     \\}};

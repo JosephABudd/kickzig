@@ -45,6 +45,7 @@ pub const Template = struct {
 
         {
             line = try std.fmt.allocPrint(self.allocator, line_2_f, .{self.tab_name});
+            defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
         if (self.use_messenger) {
@@ -82,7 +83,7 @@ const line_1_messenger: []const u8 =
 /// {0s} tab_name
 const line_2_f: []const u8 =
     \\const ScreenOptions = @import("screen.zig").Options;
-    \\const View = @import("view/{0s}.zig").View;
+    \\pub const PanelView = @import("view/{0s}.zig").View;
     \\const ViewOptions = @import("view/{0s}.zig").Options;
     \\
     \\/// {0s} panel.
@@ -90,7 +91,9 @@ const line_2_f: []const u8 =
     \\/// This screen's {0s} tab is this panel's container.
     \\pub const Panel = struct {{
     \\    allocator: std.mem.Allocator, // For persistant state data.
-    \\    view: *View,
+    \\    view: *PanelView,
+    \\
+    \\    pub const View = PanelView;
     \\
     \\    pub const Options = ViewOptions;
     \\
@@ -113,7 +116,7 @@ const line_3: []const u8 =
     \\        var self: *Panel = try allocator.create(Panel);
     \\        self.allocator = allocator;
     \\        _ = screen_options;
-    \\        self.view = try View.init(
+    \\        self.view = try PanelView.init(
     \\            allocator,
     \\            window,
     \\            main_view,

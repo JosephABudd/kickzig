@@ -1,49 +1,59 @@
 # kickzig "zig and dvui my way"
 
-Still, very much a work in progress.
+## Sep 30, 2024: version 0.4.0
 
-## Sep 18, 2024: version 0.3.0
+1. Works with [dvui](https://github.com/david-vanderson/dvui) archive afc277df749f9794d4cce17e257cf1d5b7e9c4f7.
+1. Works with zig 0.13.0.
 
-### As I've been learning zig and dvui, I've been getting a feel for the code patterns that I favor
+### Updates
 
-* I have regulated my code by implementing those patterns.
-* I have simplified the initialization and interaction of screens in the front-end using techniques and patterns I found in dvui.
-* The tab-bar's have been upgraded and bugs fixed.
+* The command `kickzig framework` builds the framework with out messages, message channels and message handlers.
+* The command `kickzig framework add-messages` builds the framework with messages, message channels and message handlers built into the framework.
+* Added more specific error detection and error messages. Help commands will work anywhere. Screen add/remove commands only work in the root folder or one of it's sub folders. Message add/remove commands only work in the root folder or one of it's sub folders. Message commands also only work if the framework was created with messages added.
 
-Works with [dvui](https://github.com/david-vanderson/dvui) and zig v. 0.13.0.
+### Kickzig does everything I want so at this point I continue
 
-## Next Plan
+* looking for any legacy code patterns to replace with the zig code patterns that I now favor.
+* reviewing inline documentation.
+* reviewing messages outout to the user.
+* keep up with changes to dvui and zig.
 
-1. Make the framework buildable with or without messages.
+### The example CRUD application and the kickzig wiki
+
+* The kickzig framework is displayed in the [crud](https://github.com/JosephABudd/crud) which is built using 2 differenct layouts.
+* The [kickzig.wiki](https://github.com/JosephABudd/kickzig/wiki) documents building that same CRUD.
 
 ## Summary
 
 ### kickzig is a CLI. It does 3 things
 
 1. **Generates the source code**, of an application framework, written in zig.
-   * The framework uses the beautiful and well documented [dvui](https://github.com/david-vanderson/dvui) graphics framework at the front-end. That said, kickzig also requires the developer to understand how to use the dvui widgets.
-   * The framework's back-end only contains message handlers.
+   * The framework uses the visually appealing and well documented [dvui](https://github.com/david-vanderson/dvui) graphics framework at the front-end. That said, kickzig also requires the developer to understand how to use the dvui widgets.
+   * The source code can be generated with or without it's own message framework which allows the front-end and back-end to communicate asymetrically through channels.
 1. **Adds and removes screens** in the source code.
    * Screens are the framework's front-end packages. Each type of screen is unique in how it lays out panels.
    * Each panel is unique in how it displays visual output to the user and receive input from the user.
-   * A screen has a messenger that handles communications between the screen's panels and the back-end.
-1. **Adds and removes messages** in the source code.
+   * If messages were added into the framework then a screen has a message handler that handles communications between the screen and the back-end's message handlers.
+1. **Adds and removes messages** in the source code. If the framework was created with messages, then kickzig can be used to add and remove messages in the framework.
       * Messages are how the framework's front-end and back-end communicate.
       * Messages are sent and received through channels.
       * Each message has it's own back-end handler which receives and/or returns the message.
 
-The [wiki](https://github.com/JosephABudd/kickzig/wiki) documents building a CRUD with an previous version of kickzig. It will be updated using the current version of kickzig as time allows. Currently the wiki is not caught up to the current changes to kickzig.
+## Create a framework
 
-## Example: Creating a framework, building and running an application
+kickzig creates a framework that is ready to build and run as soon as you create it. There are 2 options for creating a framework.
 
-The command `kickzig framework` generates the source code for a framework that is ready to run. The framework requires a fetched archive of David Vanderson's DVUI package. (Sounds complicated but its not. See below.)
+1. Build a framework without messages, message channels and message handlers.
+   * The command `kickzig framework` generates the source code for a framework that is ready to build and run.
+1. Build a framework with messages, message channels and message handlers.
+   * The command `kickzig framework add-messages` generates the source code for a framework that is ready to build and run. The framework's front-end screens will have messengers to handle messages and channels for sending and receiving messages. The framework's back-end will have messengers to handle messages and channels for sending and receiving messages.
 
 Nota Bene: Currently, the kickzig generated framework must be built using zig version 0.13.0.
 
 ```shell
 ＄ mkdir myapp
 ＄ cd myapp
-＄ kickzig framework
+＄ kickzig framework add-messages
 ＄ zig fetch https://github.com/david-vanderson/dvui/archive/afc277df749f9794d4cce17e257cf1d5b7e9c4f7.tar.gz --save
 ＄ zig build -freference-trace=255
 ＄ ./zig-out/bin/myapp
@@ -61,15 +71,14 @@ Nota Bene: Currently, the kickzig generated framework must be built using zig ve
 
 ![The app's YesNo modal screen.](images/myapp_yes_no.png)
 
-## kickzig for the front-end
+## Add and remove screens in the front-end
 
-kickzig is mostly a tool for the application's front-end. The framework's front-end is a collection of screens. Each screen is a layout. A layout of panels. The panels communicate with the back-end using the screen's messenger.
-
-Whenever the developer adds any type of screen with kickzig, it functions perfectly.
+The framework's front-end is a collection of screens. A screen is a layout of panels. When a screen is added to the framework it functions perfectly.
 
 ### Panel screens
 
-A Panel screen only lays out and displays one of it's panels at any one time.
+1. A Panel screen always functions when it is added to the framework.
+1. A Panel screen only lays out and displays one of it's panels at any one time.
 
 ### Examples
 

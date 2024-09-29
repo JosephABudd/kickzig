@@ -10,12 +10,14 @@ pub const content: []const u8 =
     \\const Panels = @import("../panels.zig").Panels;
     \\
     \\pub const View = struct {
+    \\    lock: std.Thread.Mutex,
     \\    allocator: std.mem.Allocator,
     \\    window: *dvui.Window,
     \\    main_view: *MainView,
     \\    all_panels: *Panels,
     \\    exit: ExitFn,
     \\    modal_params: ?*ModalParams,
+    \\    border_color: dvui.Options.ColorOrName,
     \\
     \\    /// KICKZIG TODO:
     \\    /// fn frame is the View's true purpose.
@@ -30,8 +32,11 @@ pub const content: []const u8 =
     \\        completed_callbacks: bool,
     \\        progress: f32,
     \\    ) !void {
-    \\        _ = self;
     \\        _ = arena;
+    \\
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
     \\        var scroller = try dvui.scrollArea(@src(), .{}, .{ .expand = .both });
     \\        defer scroller.deinit();
     \\
@@ -92,6 +97,7 @@ pub const content: []const u8 =
     \\        main_view: *MainView,
     \\        all_panels: *Panels,
     \\        exit: ExitFn,
+    \\        theme: *dvui.Theme,
     \\    ) !*View {
     \\        var self: *View = try allocator.create(View);
     \\        errdefer allocator.destroy(self);
@@ -100,6 +106,8 @@ pub const content: []const u8 =
     \\        self.main_view = main_view;
     \\        self.all_panels = all_panels;
     \\        self.exit = exit;
+    \\        self.border_color = theme.style_accent.color_accent.?;
+    \\        self.lock = std.Thread.Mutex{};
     \\        return self;
     \\    }
     \\

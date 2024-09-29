@@ -11,7 +11,7 @@ Panel state:
 2. Simplifies getting and setting by messenger.
 
 A container's label can be constructed based on it's content's state.
-Container.label(arena: std.mem.Allocator) can refelct the container's state.
+Content.label(arena: std.mem.Allocator) can refelct the content's state.
 
 Messages:
 kickzig framework-  // no messages and no backend

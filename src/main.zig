@@ -7,8 +7,6 @@ const _framework_commands_ = @import("commands/framework/api.zig");
 const _screen_commands_ = @import("commands/screen/api.zig");
 const _message_commands_ = @import("commands/message/api.zig");
 
-const use_messenger: bool = true;
-
 pub fn main() !void {
     // Memory allocator.
     var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
@@ -50,26 +48,12 @@ fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, command: []
 
     // screen command.
     if (std.mem.eql(u8, command, _screen_commands_.command)) {
-        if (!in_frame_folder) {
-            // Display message;
-            _stdout_.print(_warning_.not_framework_folder) catch {
-                // Don't return an error;
-            };
-            return;
-        }
-        return _screen_commands_.handleCommand(allocator, cli_name, remaining_args, use_messenger);
+        return _screen_commands_.handleCommand(allocator, cli_name, remaining_args, in_frame_folder);
     }
 
     // message command.
     if (std.mem.eql(u8, command, _message_commands_.command)) {
-        if (!in_frame_folder) {
-            // Display message;
-            _stdout_.print(_warning_.not_framework_folder) catch {
-                // Don't return an error;
-            };
-            return;
-        }
-        return _message_commands_.handleCommand(allocator, cli_name, remaining_args, use_messenger);
+        return _message_commands_.handleCommand(allocator, cli_name, remaining_args, in_frame_folder);
     }
 
     // unknown user input.

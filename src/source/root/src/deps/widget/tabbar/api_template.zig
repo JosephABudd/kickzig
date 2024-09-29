@@ -222,12 +222,12 @@ pub const content =
     \\        return self.selected_tab == tab;
     \\    }
     \\
-    \\    pub fn hasTab(self: *Tabs, tab_ptr: *anyopaque) bool {
+    \\    pub fn hasTab(self: *Tabs, tab_ptr: *anyopaque) !bool {
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
     \\
+    \\        const tabs: []*Tab = try self._slice();
     \\        const has_tab: *Tab = @alignCast(@ptrCast(tab_ptr));
-    \\        const tabs: []*Tab = self._slice();
     \\        for (tabs) |tab| {
     \\            if (tab == has_tab) {
     \\                return true;

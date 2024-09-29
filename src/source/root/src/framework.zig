@@ -13,11 +13,6 @@ pub const frontend = _src_frontend_;
 pub const backend = _src_backend_;
 pub const deps = _src_deps_;
 
-/// recreate rebuilds root/ entirely.
-pub fn recreate(allocator: std.mem.Allocator, app_name: []const u8, use_messenger: bool) !void {
-    try create(allocator, app_name, use_messenger);
-}
-
 pub fn create(allocator: std.mem.Allocator, app_name: []const u8, use_messenger: bool) !void {
     // Open the write folder.
     const folders = try paths.folders();
@@ -29,7 +24,7 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8, use_messenger:
     {
         // main.zig
         // Build the data for the template.
-        var template: *_main_template_.Template = try _main_template_.Template.init(allocator, app_name);
+        var template: *_main_template_.Template = try _main_template_.Template.init(allocator, app_name, use_messenger);
         defer template.deinit();
         const content: []const u8 = try template.content();
         defer allocator.free(content);
@@ -56,7 +51,9 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8, use_messenger:
         try ofile.writeAll(window_icon_png);
     }
 
-    try _src_backend_.create(allocator);
+    if (use_messenger) {
+        try _src_backend_.create(allocator);
+    }
     try _src_frontend_.create(allocator, app_name, use_messenger);
-    try _src_deps_.create(allocator);
+    try _src_deps_.create(allocator, use_messenger);
 }

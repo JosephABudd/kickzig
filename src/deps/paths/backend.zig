@@ -2,7 +2,7 @@ const std = @import("std");
 const fspath = std.fs.path;
 
 pub const folder_name_backend: []const u8 = "backend";
-const folder_name_messenger: []const u8 = "messenger";
+pub const folder_name_messenger: []const u8 = "messenger";
 const folder_name_src: []const u8 = "src";
 
 /// returns the backend/messenger/ path.

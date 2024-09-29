@@ -65,11 +65,7 @@ pub const Template = struct {
             try lines.appendSlice(line_3_messenger);
         }
 
-        {
-            line = try std.fmt.allocPrint(self.allocator, line_4_f, .{self.panel_name});
-            defer self.allocator.free(line);
-            try lines.appendSlice(line);
-        }
+        try lines.appendSlice(line_4);
 
         return try lines.toOwnedSlice();
     }
@@ -94,13 +90,15 @@ const line_1_messenger: []const u8 =
 const line_2_f: []const u8 =
     \\const Panels = @import("panels.zig").Panels;
     \\const ScreenOptions = @import("screen.zig").Options;
-    \\const View = @import("view/{0s}.zig").View;
+    \\const PanelView = @import("view/{0s}.zig").View;
     \\const ViewOptions = @import("view/{0s}.zig").Options;
     \\
     \\/// This panel is never a Content but it's screen is.
     \\pub const Panel = struct {{
     \\    allocator: std.mem.Allocator, // For persistant state data.
-    \\    view: *View,
+    \\    view: ?*PanelView,
+    \\
+    \\    pub const View = PanelView;
     \\
     \\    pub const Options = ViewOptions;
     \\
@@ -122,10 +120,9 @@ const line_3: []const u8 =
     \\        container: ?*Container,
     \\        screen_options: ScreenOptions,
     \\    ) !*Panel {
-    \\        _ = screen_options;
     \\        var self: *Panel = try allocator.create(Panel);
     \\        self.allocator = allocator;
-    \\        self.view = try View.init(
+    \\        self.view = try PanelView.init(
     \\            allocator,
     \\            window,
     \\            main_view,
@@ -139,45 +136,22 @@ const line_3_messenger: []const u8 =
     \\
 ;
 
-/// panel name {0s}
-const line_4_f: []const u8 =
+const line_4: []const u8 =
     \\            exit,
-    \\            // KICKZIG TODO:
-    \\            // The next value is the View.Options which you may want to modify.
-    \\            // You may want to use param screen_options to modify the View.Options.
-    \\            .{{}},
+    \\            screen_options,
     \\        );
-    \\        errdefer allocator.destroy(self);
+    \\        errdefer {
+    \\            self.view = null;
+    \\            self.deinit();
+    \\        }
     \\        return self;
-    \\    }}
+    \\    }
     \\
-    \\    pub fn deinit(self: *Panel) void {{
-    \\        self.view.deinit();
+    \\    pub fn deinit(self: *Panel) void {
+    \\        if (self.view) |member| {
+    \\            member.deinit();
+    \\        }
     \\        self.allocator.destroy(self);
-    \\    }}
-    \\
-    \\    /// frame this panel.
-    \\    /// Layout, Draw, Handle user events.
-    \\    /// The arena allocator is for building this frame. Not for state.
-    \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {{
-    \\        try self.view.frame(arena);
-    \\    }}
-    \\
-    \\    /// Called by the screen.
-    \\    pub fn setContainer(self: *Panel, container: *Container) void {{
-    \\        self.view.container = container;
-    \\    }}
-    \\
-    \\    /// See view/{0s}.zig fn setState.
-    \\    /// The caller owns settings.
-    \\    pub fn setState(self: *Panel, settings: Options) !void {{
-    \\        return self.view.setState(settings);
-    \\    }}
-    \\
-    \\    /// See view/{0s}.zig fn setState.
-    \\    /// The caller owns the return value.
-    \\    pub fn getState(self: *Panel) !*Options {{
-    \\        return self.view.getState();
-    \\    }}
-    \\}};
+    \\    }
+    \\};
 ;

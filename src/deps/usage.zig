@@ -1,4 +1,5 @@
 const std = @import("std");
+const fmt = std.fmt;
 
 pub fn application(allocator: std.mem.Allocator, cli_name: []const u8) ![]const u8 {
     var lines = std.ArrayList(u8).init(allocator);
@@ -23,58 +24,61 @@ pub fn application(allocator: std.mem.Allocator, cli_name: []const u8) ![]const 
     return lines.toOwnedSlice();
 }
 
+/// The caller owns the return value.
 pub fn framework(allocator: std.mem.Allocator, cli_name: []const u8) ![]u8 {
-    // cli_name
-    const size: usize = std.mem.replacementSize(u8, framework_template, "{{cli_name}}", cli_name);
-    const usage_cli_name: []u8 = try allocator.alloc(u8, size);
-    _ = std.mem.replace(u8, framework_template, "{{cli_name}}", cli_name, usage_cli_name);
-    return usage_cli_name;
+    return fmt.allocPrint(allocator, framework_template, .{cli_name});
 }
 
 const framework_template: []const u8 =
     \\
-    \\🗽 GETTING STARTED WITH {{cli_name}}.
+    \\🗽 GETTING STARTED WITH {0s}.
     \\Build and run the application framework.
+    \\In this case the framework is built with messages.
     \\
     \\＄ mkdir myapp
     \\＄ cd myapp
-    \\＄ kickzig framework
+    \\＄ kickzig framework add-messages
     \\＄ zig fetch --save https://github.com/david-vanderson/dvui/archive/27b59c5f25350ad4481110eecd0920b828e61a30.tar.gz
     \\＄ zig build -freference-trace=255
     \\＄ ./zig-out/bin/myapp
     \\
     \\🌐 THE FRAMEWORK:
     \\The framework is contained in these folders.
-    \\1. ./ which contains build.zig, build.zig.zon, standalone-sdl.zig
-    \\2. ./src/backend/ which contains the back-end code.
+    \\1. ./ which contains build.zig, build.zig.zon.
+    \\2. ./src/ which contains main.zig.
     \\3. ./src/frontend/ which contains the front-end code.
     \\4. ./src/deps/ which contains the dependencies.
+    \\5. ./src/backend/messenger/ which contains the optional back-end messenger code.
+    \\
+    \\Framework Options.
+    \\1. Build the framework without messages.
+    \\   This is the default framework setting.
+    \\   ＄ kickzig framework
+    \\2. Build the framework with messages.
+    \\   ＄ kickzig framework add-messages
     \\
     \\
 ;
 
+/// The caller owns the return value.
 pub fn screen(allocator: std.mem.Allocator, cli_name: []const u8) ![]u8 {
-    // cli_name
-    const size: usize = std.mem.replacementSize(u8, screen_template, "{{cli_name}}", cli_name);
-    const usage_cli_name: []u8 = try allocator.alloc(u8, size);
-    _ = std.mem.replace(u8, screen_template, "{{cli_name}}", cli_name, usage_cli_name);
-    return usage_cli_name;
+    return fmt.allocPrint(allocator, screen_template, .{cli_name});
 }
 
 const screen_template: []const u8 =
     \\
-    \\📺 MANAGING SCREENS WITH {{cli_name}}.
+    \\📺 MANAGING SCREENS WITH {0s}.
     \\Screen names must be in TitleCase.
     \\Panel names must be in TitleCase.
     \\Tab names must be in TitleCase.
     \\
     \\＄ cd myapp
-    \\＄ {{cli_name}} screen help
-    \\＄ {{cli_name}} screen list
-    \\＄ {{cli_name}} screen add-panel «screen-name» «panel-name, ...»
-    \\＄ {{cli_name}} screen add-tab «screen-name» «[*]tab-name, ...»
-    \\＄ {{cli_name}} screen add-modal «screen-name» «panel-name, ...»
-    \\＄ {{cli_name}} screen remove «screen-name»
+    \\＄ {0s} screen help
+    \\＄ {0s} screen list
+    \\＄ {0s} screen add-panel «screen-name» «panel-name, ...»
+    \\＄ {0s} screen add-tab «screen-name» «[*]tab-name, ...»
+    \\＄ {0s} screen add-modal «screen-name» «panel-name, ...»
+    \\＄ {0s} screen remove «screen-name»
     \\
     \\Tab names:
     \\* A tab-name prefixed with '*':
@@ -91,26 +95,23 @@ const screen_template: []const u8 =
     \\
 ;
 
+/// The caller owns the return value.
 pub fn message(allocator: std.mem.Allocator, cli_name: []const u8) ![]u8 {
-    // cli_name
-    const size: usize = std.mem.replacementSize(u8, message_template, "{{cli_name}}", cli_name);
-    const usage_cli_name: []u8 = try allocator.alloc(u8, size);
-    _ = std.mem.replace(u8, message_template, "{{cli_name}}", cli_name, usage_cli_name);
-    return usage_cli_name;
+    return fmt.allocPrint(allocator, message_template, .{cli_name});
 }
 
 const message_template: []const u8 =
     \\
-    \\💬 MANAGING MESSAGES WITH {{cli_name}}.
+    \\💬 MANAGING MESSAGES WITH {0s}.
     \\Messages names must be in TitleCase.
     \\
     \\＄ cd myapp
-    \\＄ {{cli_name}} message help
-    \\＄ {{cli_name}} message list
-    \\＄ {{cli_name}} message add-fbf «name-of-message» // front-end to back-end to front-end
-    \\＄ {{cli_name}} message add-bf «name-of-message» // back-end to front-end
-    \\＄ {{cli_name}} message add-bf-fbf «name-of-message» // back-end to front-end & front-end to back-end to front-end
-    \\＄ {{cli_name}} message remove «name-of-message»
+    \\＄ {0s} message help
+    \\＄ {0s} message list
+    \\＄ {0s} message add-fbf «name-of-message» // front-end to back-end to front-end
+    \\＄ {0s} message add-bf «name-of-message» // back-end to front-end
+    \\＄ {0s} message add-bf-fbf «name-of-message» // back-end to front-end & front-end to back-end to front-end
+    \\＄ {0s} message remove «name-of-message»
     \\
     \\After a message is added:
     \\1. A search for KICKZIG TODO will reveal instructions for proper developement and management of the message operation.

@@ -20,6 +20,7 @@ var gpa: std.mem.Allocator = undefined;
 
 /// init stores the root path, and allocator.
 /// whoever calls init must eventually call deinit();
+/// Returns if in the root path.
 pub fn init(allocator: std.mem.Allocator) !bool {
     gpa = allocator;
     return initRootAppName();
@@ -52,6 +53,7 @@ fn setAppName(name: []const u8) !void {
     @memcpy(@constCast(app_name.?), name);
 }
 
+// Returns if in the root folder.
 fn initRootAppName() !bool {
     const cwd: []const u8 = try std.process.getCwdAlloc(gpa);
     defer gpa.free(cwd);
@@ -61,6 +63,7 @@ fn initRootAppName() !bool {
     };
 }
 
+// Returns if in the root folder.
 fn initRootAppNameLinux(cwd: []const u8) !bool {
     var disk_designator: ?[]const u8 = null;
     var path_buffer: []const u8 = undefined;
@@ -84,9 +87,10 @@ fn initRootAppNameLinux(cwd: []const u8) !bool {
         return true;
     }
     // Check the cwd. Does it contain the src folder.
-    return src_path_exists(cwd);
+    return src_path_exists(cwd, false);
 }
 
+// Returns if in the root folder.
 fn initRootAppNameWindows(cwd: []const u8) !bool {
     var disk_designator: ?[]const u8 = try std.fs.path.diskDesignatorWindows(cwd);
     const path_buffer: []const u8 = cwd[disk_designator.len..];
@@ -109,7 +113,7 @@ fn initRootAppNameWindows(cwd: []const u8) !bool {
         return true;
     }
     // Check the cwd. Does it contain the src folder.
-    return src_path_exists(cwd);
+    return src_path_exists(cwd, false);
 }
 
 fn build_app_name_root_path(disk_designator: ?[]const u8, parts: []const []const u8) !bool {
@@ -291,7 +295,7 @@ pub const FolderPaths = struct {
     // unBuild removes the root/src/ folder.
     fn unBuild(self: *FolderPaths) !void {
         if (root_path) |root| {
-            if (!src_path_exists(root)) {
+            if (!src_path_exists(root, false)) {
                 return;
             }
             // Remove root/src/.
@@ -305,37 +309,38 @@ pub const FolderPaths = struct {
     pub fn isBuilt(self: *FolderPaths) bool {
         _ = self;
         if (root_path) |root| {
-            return src_path_exists(root);
+            return src_path_exists(root, false);
         }
         return false;
     }
 
-    // reBuild only rebuilds root/src/.
-    pub fn reBuild(self: *FolderPaths) !void {
-        try self.unBuild();
-        var src_dir: std.fs.Dir = try std.fs.openDirAbsolute(self.root_src.?, .{});
-        defer src_dir.close();
-        try self.buildSrcSubFolders(src_dir);
+    pub fn isBuiltWithMessages(self: *FolderPaths) bool {
+        _ = self;
+        if (root_path) |root| {
+            return src_path_exists(root, true);
+        }
+        return false;
     }
 
     /// build creates the src folder and it's sub folders.
-    pub fn build(self: *FolderPaths) !void {
+    pub fn build(self: *FolderPaths, add_messages: bool) !void {
         var root_dir: std.fs.Dir = try std.fs.openDirAbsolute(self.root.?, .{});
         defer root_dir.close();
         var src_dir: std.fs.Dir = try root_dir.makeOpenPath(folder_name_src, .{});
         defer src_dir.close();
-        try self.buildSrcSubFolders(src_dir);
+        try self.buildSrcSubFolders(src_dir, add_messages);
     }
 
     /// buildSrcSubFolders creates the root/src/ sub folders.
     /// Param src_dir is the root/src/ folder.
-    fn buildSrcSubFolders(self: *FolderPaths, src_dir: std.fs.Dir) !void {
+    fn buildSrcSubFolders(self: *FolderPaths, src_dir: std.fs.Dir, add_messages: bool) !void {
         var temp: []const u8 = undefined;
 
         // root/src/backend/
-        {
+        if (add_messages) {
             // root/src/backend/ folder paths.
             try src_dir.makePath(backend.folder_name_backend);
+            // root/src/backend/messenger/ path.
             temp = try backend.pathMessengerFolder(self.allocator);
             defer self.allocator.free(temp);
             try src_dir.makePath(temp);
@@ -382,31 +387,39 @@ pub const FolderPaths = struct {
         }
 
         // root/src/deps/
-        {
-            // root/src/deps/ folder paths.
-            try src_dir.makePath(deps.folder_name_deps);
-            // deps/channel/
-            temp = try deps.pathChannelFolder(self.allocator);
-            defer self.allocator.free(temp);
-            try src_dir.makePath(temp);
-        }
-        {
-            // deps/channel/trigger/
-            temp = try deps.pathChannelTriggerFolder(self.allocator);
-            defer self.allocator.free(temp);
-            try src_dir.makePath(temp);
-        }
-        {
-            // deps/channel/backtofront/
-            temp = try deps.pathChannelBackToFrontFolder(self.allocator);
-            defer self.allocator.free(temp);
-            try src_dir.makePath(temp);
-        }
-        {
-            // deps/channel/fronttoback/
-            temp = try deps.pathChannelFrontToBackFolder(self.allocator);
-            defer self.allocator.free(temp);
-            try src_dir.makePath(temp);
+        // root/src/deps/ folder paths.
+        try src_dir.makePath(deps.folder_name_deps);
+        if (add_messages) {
+            {
+                // deps/channel/
+                temp = try deps.pathChannelFolder(self.allocator);
+                defer self.allocator.free(temp);
+                try src_dir.makePath(temp);
+            }
+            {
+                // deps/channel/trigger/
+                temp = try deps.pathChannelTriggerFolder(self.allocator);
+                defer self.allocator.free(temp);
+                try src_dir.makePath(temp);
+            }
+            {
+                // deps/channel/backtofront/
+                temp = try deps.pathChannelBackToFrontFolder(self.allocator);
+                defer self.allocator.free(temp);
+                try src_dir.makePath(temp);
+            }
+            {
+                // deps/channel/fronttoback/
+                temp = try deps.pathChannelFrontToBackFolder(self.allocator);
+                defer self.allocator.free(temp);
+                try src_dir.makePath(temp);
+            }
+            {
+                // deps/message/
+                temp = try deps.pathMessageFolder(self.allocator);
+                defer self.allocator.free(temp);
+                try src_dir.makePath(temp);
+            }
         }
         {
             // deps/closer/
@@ -435,12 +448,6 @@ pub const FolderPaths = struct {
         {
             // deps/main_menu/
             temp = try deps.pathMainMenuFolder(self.allocator);
-            defer self.allocator.free(temp);
-            try src_dir.makePath(temp);
-        }
-        {
-            // deps/message/
-            temp = try deps.pathMessageFolder(self.allocator);
             defer self.allocator.free(temp);
             try src_dir.makePath(temp);
         }
@@ -477,7 +484,7 @@ pub const FolderPaths = struct {
     }
 };
 
-fn src_path_exists(root: []const u8) bool {
+fn src_path_exists(root: []const u8, use_messages: bool) bool {
     var root_dir: std.fs.Dir = std.fs.openDirAbsolute(root, .{}) catch {
         return false;
     };
@@ -487,12 +494,6 @@ fn src_path_exists(root: []const u8) bool {
     };
     defer src_dir.close();
 
-    // src/backend/
-    var backend_dir: std.fs.Dir = src_dir.openDir(backend.folder_name_backend, .{}) catch {
-        return false;
-    };
-    backend_dir.close();
-
     // src/frontend/
     var frontend_dir: std.fs.Dir = src_dir.openDir(frontend.folder_name_frontend, .{}) catch {
         return false;
@@ -500,14 +501,53 @@ fn src_path_exists(root: []const u8) bool {
     frontend_dir.close();
 
     // src/deps/
-    var deps_dir: std.fs.Dir = src_dir.openDir(deps.folder_name_deps, .{}) catch {
-        return false;
-    };
-    deps_dir.close();
+    {
+        var deps_dir: std.fs.Dir = src_dir.openDir(deps.folder_name_deps, .{}) catch {
+            return false;
+        };
+        defer deps_dir.close();
 
-    // src/backend/ exists.
-    // src/frontend/ exists.
-    // src/deps/ exists.
+        if (use_messages) {
+            // deps/channel/
+            var channel_dir: std.fs.Dir = deps_dir.openDir(deps.folder_name_channel, .{}) catch {
+                return false;
+            };
+            defer channel_dir.close();
+            // deps/channel/trigger/
+            var channel_trigger_dir: std.fs.Dir = channel_dir.openDir(deps.folder_name_trigger, .{}) catch {
+                return false;
+            };
+            defer channel_trigger_dir.close();
+            // deps/channel/backtofront/
+            var channel_backtofront_dir: std.fs.Dir = channel_dir.openDir(deps.folder_name_backtofront, .{}) catch {
+                return false;
+            };
+            channel_backtofront_dir.close();
+            // deps/channel/fronttoback/
+            var channel_fronttoback_dir: std.fs.Dir = channel_dir.openDir(deps.folder_name_fronttoback, .{}) catch {
+                return false;
+            };
+            channel_fronttoback_dir.close();
+            // deps/message/
+            var deps_message_dir: std.fs.Dir = deps_dir.openDir(deps.folder_name_message, .{}) catch {
+                return false;
+            };
+            deps_message_dir.close();
+        }
+    }
+
+    // src/backend/
+    if (use_messages) {
+        var backend_dir: std.fs.Dir = src_dir.openDir(backend.folder_name_backend, .{}) catch {
+            return false;
+        };
+        defer backend_dir.close();
+        var messenger_dir: std.fs.Dir = backend_dir.openDir(backend.folder_name_messenger, .{}) catch {
+            return false;
+        };
+        messenger_dir.close();
+    }
+
     return true;
 }
 

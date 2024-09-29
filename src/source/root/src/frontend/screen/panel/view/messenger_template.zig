@@ -17,6 +17,7 @@ const template: []const u8 =
     \\//const OKModalParams = @import("modal_params").OK;
     \\const Panels = @import("../panels.zig").Panels;
     \\const ScreenOptions = @import("../screen.zig").Options;
+    \\const ScreenTags = @import("framers").ScreenTags;
     \\
     \\pub const Messenger = struct {{
     \\    allocator: std.mem.Allocator,
@@ -26,6 +27,7 @@ const template: []const u8 =
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
     \\    exit: ExitFn,
+    \\    screen_options: ScreenOptions,
     \\
     \\    pub fn init(
     \\        allocator: std.mem.Allocator,
@@ -35,36 +37,31 @@ const template: []const u8 =
     \\        exit: ExitFn,
     \\        screen_options: ScreenOptions,
     \\    ) !*Messenger {{
-    \\        _ = screen_options;
-    \\        var messenger: *Messenger = try allocator.create(Messenger);
-    \\        messenger.allocator = allocator;
-    \\        messenger.main_view = main_view;
-    \\        messenger.send_channels = send_channels;
-    \\        messenger.receive_channels = receive_channels;
-    \\        messenger.exit = exit;
+    \\        var self: *Messenger = try allocator.create(Messenger);
+    \\        self.allocator = allocator;
+    \\        self.main_view = main_view;
+    \\        self.send_channels = send_channels;
+    \\        self.receive_channels = receive_channels;
+    \\        self.exit = exit;
+    \\        self.screen_options = screen_options;
     \\
-    \\        // KICKZIG TODO:
-    \\        // If you have added custom fields to Messenger,
-    \\        //  then you may want to set them with screen_options.
-    \\        _ = screen_options;
-    \\    
     \\        // For a messenger to receive a message, the messenger must:
     \\        //
     \\        // 1. Implement the behavior of the message's channel.
     \\        // var fooBehavior = try receive_channels.Foo.initBehavior();
     \\        // errdefer {{
-    \\        //     allocator.destroy(messenger);
+    \\        //     allocator.destroy(self);
     \\        // }}
-    \\        // fooBehavior.implementor = messenger;
+    \\        // fooBehavior.implementor = self;
     \\        // fooBehavior.receiveFn = Messenger.receiveFoo;
     \\        //
     \\        // 2. Subscribe to the Foo channel in order to receive the Foo messages.
     \\        // try receive_channels.Foo.subscribe(fooBehavior);
     \\        // errdefer {{
-    \\        //     allocator.destroy(messenger);
+    \\        //     allocator.destroy(self);
     \\        // }}
     \\
-    \\        return messenger;
+    \\        return self;
     \\    }}
     \\
     \\    pub fn deinit(self: *Messenger) void {{

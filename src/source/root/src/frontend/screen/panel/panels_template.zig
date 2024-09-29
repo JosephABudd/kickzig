@@ -240,12 +240,12 @@ const line_deinit_end_framecurrent_start: []const u8 =
 ;
 /// {0s} panel_name
 const line_frame_panel_f: []const u8 =
-    \\            .{0s} => self.{0s}.?.frame(allocator),
+    \\            .{0s} => self.{0s}.?.view.?.frame(allocator),
     \\
 ;
 /// {0s} panel_name
 const line_frame_default_panel_f: []const u8 =
-    \\            .none => self.{0s}.?.frame(allocator),
+    \\            .none => self.{0s}.?.view.?.frame(allocator),
     \\
 ;
 const line_framecurrent_end_refresh_start: []const u8 =
@@ -258,12 +258,12 @@ const line_framecurrent_end_refresh_start: []const u8 =
 ;
 /// {0s} panel_name
 const line_panel_refresh_f: []const u8 =
-    \\            .{0s} => self.{0s}.?.refresh(),
+    \\            .{0s} => self.{0s}.?.view.?.refresh(),
     \\
 ;
 /// {0s} panel_name
 const line_refresh_end_f: []const u8 =
-    \\            .none => self.{0s}.?.refresh(),
+    \\            .none => self.{0s}.?.view.?.refresh(),
     \\        }}
     \\    }}
     \\
@@ -280,12 +280,12 @@ const line_panel_set_current_f: []const u8 =
 
 const line_set_container_start: []const u8 =
     \\
-    \\    pub fn setContainer(self: *Panels, container: *Container) void {
+    \\    pub fn setContainer(self: *Panels, container: *Container) !void {
     \\
 ;
 /// {0s} panel_name
 const line_set_panel_container_f: []const u8 =
-    \\        self.{0s}.?.setContainer(container);
+    \\        try self.{0s}.?.view.?.setContainer(container);
     \\
 ;
 const line_set_container_end: []const u8 =

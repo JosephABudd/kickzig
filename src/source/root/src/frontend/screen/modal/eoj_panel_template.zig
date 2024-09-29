@@ -6,7 +6,6 @@ pub const content: []const u8 =
     \\
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
-    \\const Messenger = @import("view/messenger.zig").Messenger;
     \\const ModalParams = @import("modal_params").EOJ;
     \\const Panels = @import("panels.zig").Panels;
     \\const View = @import("view/EOJ.zig").View;
@@ -16,13 +15,11 @@ pub const content: []const u8 =
     \\    window: *dvui.Window,
     \\    main_view: *MainView,
     \\    all_panels: *Panels,
-    \\    messenger: *Messenger,
     \\    lock: std.Thread.Mutex,
     \\    exit: ExitFn,
-    \\    view: *View,
+    \\    view: ?*View,
     \\
     \\    modal_params: ?*ModalParams,
-    \\    border_color: dvui.Options.ColorOrName,
     \\
     \\    status: [255]u8,
     \\    status_len: usize,
@@ -39,25 +36,47 @@ pub const content: []const u8 =
     \\        self.modal_params = setup_args;
     \\        self.status_len = 0;
     \\        self.progress = 0.0;
+    \\        self.completed_callbacks = setup_args.exit_jobs.jobs_index == 0;
     \\
-    \\        if (setup_args.exit_jobs.jobs_index > 0) {
+    \\        if (self.completed_callbacks) {
+    \\            // No jobs to run.
+    \\            // Show the progress bar progressing.
+    \\            const bg_thread = try std.Thread.spawn(.{}, finish_showing_progress_bar, .{ self, self.progress });
+    \\            bg_thread.detach();
+    \\        } else {
     \\            // There are jobs to run.
-    \\            self.completed_callbacks = false;
-    \\
     \\            // Send the jobs to the back-end to process.
     \\            const close_down_jobs: ?[]const *const _closedownjobs_.Job = try setup_args.exit_jobs.slice();
-    \\            self.messenger.sendCloseDownJobs(close_down_jobs);
-    \\        } else {
-    \\            // No jobs to run.
-    \\            self.completed_callbacks = true;
-    \\            if (self.completed_callbacks) {
-    \\                const bg_thread = try std.Thread.spawn(.{}, background_progress, .{ self, self.progress });
+    \\            if (close_down_jobs) |jobs| {
+    \\                // fn runCloseDownJobs will free jobs.
+    \\                const bg_thread = try std.Thread.spawn(.{}, runCloseDownJobs, .{ self, jobs });
+    \\                bg_thread.detach();
+    \\            } else {
+    \\                // No jobs to run.
+    \\                // Show the progress bar progressing.
+    \\                const bg_thread = try std.Thread.spawn(.{}, finish_showing_progress_bar, .{ self, self.progress });
     \\                bg_thread.detach();
     \\            }
     \\        }
     \\    }
     \\
-    \\    pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *Panels, messenger: *Messenger, exit: ExitFn, window: *dvui.Window, theme: *dvui.Theme) !*Panel {
+    \\    fn runCloseDownJobs(self: *Panel, jobs: []const *const _closedownjobs_.Job) !void {
+    \\        defer self.allocator.free(jobs);
+    \\
+    \\        const last = jobs.len - 1;
+    \\        const last_f32: f32 = @as(f32, @floatFromInt(jobs.len));
+    \\        var current_f32: f32 = 0.0;
+    \\        for (jobs, 0..) |job, i| {
+    \\            current_f32 += 1.0;
+    \\            job.job(job.context);
+    \\            const status_update: []u8 = try std.fmt.allocPrint(self.allocator, "Finishing up. Completed {d} of {d} jobs.", .{ (i + 1), jobs.len });
+    \\            defer self.allocator.free(status_update);
+    \\            // Another job has been run so update the view.
+    \\            self.update(status_update, (i == last), (current_f32 / last_f32));
+    \\        }
+    \\    }
+    \\
+    \\    pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *Panels, exit: ExitFn, window: *dvui.Window, theme: *dvui.Theme) !*Panel {
     \\        var self: *Panel = try allocator.create(Panel);
     \\        self.lock = std.Thread.Mutex{};
     \\        self.view = try View.init(
@@ -66,17 +85,17 @@ pub const content: []const u8 =
     \\            main_view,
     \\            all_panels,
     \\            exit,
+    \\            theme,
     \\        );
     \\        errdefer {
-    \\            allocator.destroy(self);
+    \\            self.view = null;
+    \\            self.deinit();
     \\        }
     \\        self.allocator = allocator;
     \\        self.window = window;
     \\        self.main_view = main_view;
     \\        self.all_panels = all_panels;
-    \\        self.messenger = messenger;
     \\        self.exit = exit;
-    \\        self.border_color = theme.style_accent.color_accent.?;
     \\        self.modal_params = null;
     \\        self.status_len = 0;
     \\        self.completed_callbacks = false;
@@ -85,10 +104,12 @@ pub const content: []const u8 =
     \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
-    \\        if (self.modal_params) |modal_params| {
-    \\            modal_params.deinit();
+    \\        if (self.view) |member| {
+    \\            member.deinit();
     \\        }
-    \\        self.view.deinit();
+    \\        if (self.modal_params) |member| {
+    \\            member.deinit();
+    \\        }
     \\        self.allocator.destroy(self);
     \\    }
     \\
@@ -100,11 +121,11 @@ pub const content: []const u8 =
     \\    pub fn update(self: *Panel, status: ?[]const u8, completed_callbacks: bool, progress: f32) void {
     \\        // Block fn frame.
     \\        self.lock.lock();
-    \\        defer self.lock.unlock();
-    \\
-    \\        if (self.completed_callbacks) {
-    \\            std.log.debug("EOJPanel.update: called after completed.", .{});
-    \\            return;
+    \\        var locked: bool = true;
+    \\        defer {
+    \\            if (locked) {
+    \\                self.lock.unlock();
+    \\            }
     \\        }
     \\
     \\        if (status) |text| {
@@ -121,12 +142,9 @@ pub const content: []const u8 =
     \\        }
     \\        self.completed_callbacks = completed_callbacks;
     \\        if (self.completed_callbacks) {
-    \\            // There will be no more updates from the back end.
-    \\            // Let the back ground thread update progress and call refresh().
-    \\            const bg_thread = std.Thread.spawn(.{}, background_progress, .{ self, self.progress }) catch {
-    \\                return;
-    \\            };
-    \\            bg_thread.detach();
+    \\            locked = false;
+    \\            self.lock.unlock();
+    \\            try self.finish_showing_progress_bar(self.progress);
     \\        } else {
     \\            // Update progress and call refresh();
     \\            self.progress = progress;
@@ -135,12 +153,12 @@ pub const content: []const u8 =
     \\    }
     \\
     \\    /// frame this panel.
-    \\    /// Layout, Draw, Handle user events.
-    \\    /// Displays a progress bar.
-    \\    /// Continues the progress bar after callbacks are finished running.
-    \\    /// Allows the window to close after the progress bar finishes.
+    \\    /// See fn view.frame.
     \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {
-    \\        return self.view.frame(
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        return self.view.?.frame(
     \\            arena,
     \\            self.modal_params,
     \\            self.status,
@@ -151,7 +169,7 @@ pub const content: []const u8 =
     \\    }
     \\
     \\    /// Called when there are no more jobs to run.
-    \\    fn background_progress(self: *Panel, self_progress: f32) !void {
+    \\    fn finish_showing_progress_bar(self: *Panel, self_progress: f32) !void {
     \\        const interval: u64 = 10_000_000;
     \\        var current_progress: f32 = self_progress;
     \\        var progress: f32 = current_progress;
@@ -166,6 +184,7 @@ pub const content: []const u8 =
     \\                    self.progress = current_progress;
     \\                    self.lock.unlock();
     \\                    dvui.refresh(self.window, @src(), null);
+    \\                    // Lock released for fn frame(...);
     \\                }
     \\            }
     \\        }

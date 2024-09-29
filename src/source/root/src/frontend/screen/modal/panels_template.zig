@@ -8,6 +8,28 @@ pub const Template = struct {
     panel_names_index: usize,
     using_messenger: bool,
 
+    pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, using_messenger: bool) !*Template {
+        var data: *Template = try allocator.create(Template);
+        data.panel_names = try allocator.alloc([]const u8, 5);
+        errdefer {
+            allocator.destroy(data);
+        }
+        errdefer {
+            allocator.free(data.panel_names);
+            allocator.destroy(data);
+        }
+        data.screen_name = try allocator.alloc(u8, screen_name.len);
+        @memcpy(@constCast(data.screen_name), screen_name);
+        errdefer {
+            allocator.free(data.panel_names);
+            allocator.destroy(data);
+        }
+        data.panel_names_index = 0;
+        data.allocator = allocator;
+        data.using_messenger = using_messenger;
+        return data;
+    }
+
     pub fn deinit(self: *Template) void {
         self.allocator.free(self.screen_name);
         for (self.panel_names, 0..) |name, i| {
@@ -145,28 +167,6 @@ pub const Template = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, using_messenger: bool) !*Template {
-    var data: *Template = try allocator.create(Template);
-    data.panel_names = try allocator.alloc([]const u8, 5);
-    errdefer {
-        allocator.destroy(data);
-    }
-    errdefer {
-        allocator.free(data.panel_names);
-        allocator.destroy(data);
-    }
-    data.screen_name = try allocator.alloc(u8, screen_name.len);
-    @memcpy(@constCast(data.screen_name), screen_name);
-    errdefer {
-        allocator.free(data.panel_names);
-        allocator.destroy(data);
-    }
-    data.panel_names_index = 0;
-    data.allocator = allocator;
-    data.using_messenger = using_messenger;
-    return data;
-}
-
 const line_start: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
@@ -259,13 +259,13 @@ const line_frame_end_borderColorCurrent_start_f: []const u8 =
 
 // panel name {0s}
 const line_border_color_panel_f: []const u8 =
-    \\            .{0s} => self.{0s}.?.border_color,
+    \\            .{0s} => self.{0s}.?.view.?.border_color,
     \\
 ;
 
 // default panel name {0s}
 const line_border_color_end_f: []const u8 =
-    \\            .none => self.{0s}.?.border_color,
+    \\            .none => self.{0s}.?.view.?.border_color,
     \\        }};
     \\    }}
     \\

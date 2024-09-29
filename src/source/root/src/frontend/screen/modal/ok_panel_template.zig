@@ -14,7 +14,7 @@ pub const content: []const u8 =
     \\    main_view: *MainView,
     \\    all_panels: *Panels,
     \\    exit: ExitFn,
-    \\    view: *View,
+    \\    view: ?*View,
     \\
     \\    modal_params: ?*ModalParams,
     \\    border_color: dvui.Options.ColorOrName,
@@ -34,7 +34,6 @@ pub const content: []const u8 =
     \\        self.main_view = main_view;
     \\        self.all_panels = all_panels;
     \\        self.exit = exit;
-    \\        self.border_color = theme.style_accent.color_accent.?;
     \\        self.modal_params = null;
     \\        self.view = try View.init(
     \\            allocator,
@@ -42,14 +41,21 @@ pub const content: []const u8 =
     \\            main_view,
     \\            all_panels,
     \\            exit,
+    \\            theme,
     \\        );
-    \\        errdefer allocator.destroy(self);
+    \\        errdefer {
+    \\            self.view = null;
+    \\            self.deinit();
+    \\        }
     \\        return self;
     \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
-    \\        if (self.modal_params) |modal_params| {
-    \\            modal_params.deinit();
+    \\        if (self.view) |member| {
+    \\            member.deinit();
+    \\        }
+    \\        if (self.modal_params) |member| {
+    \\            member.deinit();
     \\        }
     \\        self.allocator.destroy(self);
     \\    }
@@ -57,7 +63,7 @@ pub const content: []const u8 =
     \\    /// frame this panel.
     \\    /// Layout, Draw, Handle user events.
     \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {
-    \\        return self.view.frame(arena, self.modal_params.?);
+    \\        return self.view.?.frame(arena, self.modal_params.?);
     \\    }
     \\};
 ;

@@ -1,6 +1,6 @@
 .{
-    .name = "do",
-    .version = "0.3.0",
+    .name = "kickzig",
+    .version = "0.4.0",
     .dependencies = .{},
     // Specifies the set of files and directories that are included in this package.
     // Only files and directories listed here are included in the `hash` that

@@ -19,14 +19,16 @@ const _various_ = @import("various/framework.zig");
 
 pub const modal_params = _modal_params_;
 
-pub fn create(allocator: std.mem.Allocator) !void {
-    try _channel_.create(allocator);
+pub fn create(allocator: std.mem.Allocator, use_messenger: bool) !void {
+    if (use_messenger) {
+        try _channel_.create(allocator);
+        try _message_.create(allocator);
+    }
     try _counter_.create();
     try _framers_.create(allocator);
     try _main_menu_.create();
-    try _message_.create(allocator);
     try _modal_params_.create(allocator);
-    try _startup_.create();
+    try _startup_.create(allocator, use_messenger);
     try _widget_.create();
     try _closer_.create();
     try _closedownjobs_.create();

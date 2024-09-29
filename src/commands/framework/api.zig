@@ -8,89 +8,52 @@ const _usage_ = @import("usage");
 
 pub const command: []const u8 = "framework";
 pub const verb_help: []const u8 = "help";
-pub const verb_restart: []const u8 = "restart";
-pub const verb_add_messages: []const u8 = "+message";
-pub const verb_dont_add_messages: []const u8 = "-message";
+pub const verb_add_messages: []const u8 = "add-messages";
 pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]u8) !void {
     // Use of messenger files defaults to true;
-    var use_messenger: bool = true;
-    var restart: bool = false;
+    var add_messages: bool = false;
 
     var folder_paths: *_paths_.FolderPaths = try _paths_.folders();
     defer folder_paths.deinit();
 
     if (remaining_args.len > 0) {
-        if (std.mem.eql(u8, remaining_args[0], verb_help)) {
-            // User input is "framework help".
-            try help(allocator, cli_name);
-            return;
-        }
-
-        // Reset user_messenger to false if needed;
-        // Reset restart to true if needed.
+        // Read the remaining args.
         for (remaining_args) |remaining_arg| {
-            if (std.mem.eql(u8, remaining_arg, verb_dont_add_messages)) {
-                use_messenger = false;
+            if (std.mem.eql(u8, remaining_arg, verb_add_messages)) {
+                add_messages = true;
+            } else if (std.mem.eql(u8, remaining_args[0], verb_help)) {
+                try help(allocator, cli_name);
+                return;
             }
-            if (std.mem.eql(u8, remaining_arg, verb_restart)) {
-                restart = true;
-            }
         }
+    }
 
-        if (restart) {
-            // User input is "framework restart".
-            // Remove and then create a new root/src/.
-            folder_paths.reBuild() catch |restart_err| {
-                var user_input: []const u8 = undefined;
-                user_input = std.fmt.allocPrint(allocator, "{s} {s}", .{ command, verb_restart }) catch {
-                    return restart_err;
-                };
-                defer allocator.free(user_input);
-                // Have input so make the error message.
-                const msg: []const u8 = _warning_.fatal(allocator, restart_err, user_input) catch {
-                    return restart_err;
-                };
-                try _stdout_.print(msg);
-                allocator.free(msg);
-            };
-            // Create the framework.
-            _source_.recreate(allocator, _paths_.app_name.?, use_messenger) catch |create_err| {
-                // Have input so make the error message.
-                const user_command: []const u8 = try std.fmt.allocPrint(allocator, "{s} {s}", .{ command, verb_restart });
-                defer allocator.free(user_command);
-                const msg: []const u8 = _warning_.fatal(allocator, create_err, user_command) catch {
-                    return create_err;
-                };
-                try _stdout_.print(msg);
-                allocator.free(msg);
-                return create_err;
-            };
-        } else {
-            // User input is "framework ????".
-            try syntaxError(allocator, cli_name);
-        }
-    } else {
-        // User input is "framework".
-        // Create the framework if possible.
-        if (folder_paths.isBuilt()) {
-            // The framework was already built.
-            try _stdout_.print(_warning_.already_built);
-            return;
-        }
-        // Create the framework folders.
-        try folder_paths.build();
+    // User input is "framework".
+    // Create the framework if possible.
+    if (folder_paths.isBuiltWithMessages()) {
+        // The framework was already built with messages added.
+        try _stdout_.print(_warning_.already_built_with_messages);
+        return;
+    }
+    if (folder_paths.isBuilt()) {
+        // The framework was already built.
+        try _stdout_.print(_warning_.already_built_without_messages);
+        return;
+    }
 
-        // Create the framework.
-        _source_.create(allocator, _paths_.app_name.?, use_messenger) catch |create_err| {
-            // Have input so make the error message.
-            const msg: []const u8 = _warning_.fatal(allocator, create_err, command) catch {
-                return create_err;
-            };
-            try _stdout_.print(msg);
-            allocator.free(msg);
+    // Create the framework folders.
+    try folder_paths.build(add_messages);
+
+    // Create the framework.
+    _source_.create(allocator, _paths_.app_name.?, add_messages) catch |create_err| {
+        // Have input so make the error message.
+        const msg: []const u8 = _warning_.fatal(allocator, create_err, command) catch {
             return create_err;
         };
-    }
+        try _stdout_.print(msg);
+        allocator.free(msg);
+        return create_err;
+    };
 }
 
 fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8) !void {
@@ -100,7 +63,7 @@ fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8) !void {
 }
 
 fn help(allocator: std.mem.Allocator, cli_name: []const u8) !void {
-    const framework_usage: []u8 = try _usage_.screen(allocator, cli_name);
+    const framework_usage: []u8 = try _usage_.framework(allocator, cli_name);
     defer allocator.free(framework_usage);
     try _stdout_.print(framework_usage);
 }

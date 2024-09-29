@@ -10,12 +10,10 @@ const _api_template_ = @import("api_template.zig");
 const _bf_template_ = @import("bf_template.zig");
 const _fbf_template_ = @import("fbf_template.zig");
 const _bf_fbf_template_ = @import("bf_fbf_template.zig");
-const _closedownjobs_template_ = @import("closedownjobs_template.zig");
 const _stdout_ = @import("stdout");
 
 pub fn create(allocator: std.mem.Allocator) !void {
-    try addCloseDownJobsMessenger();
-    // Build api.zig.
+    // Build api.zig with no message handlers.
     try buildApiZig(allocator);
 }
 
@@ -75,19 +73,6 @@ fn buildApiZig(allocator: std.mem.Allocator) !void {
     var ofile = try messenger_dir.createFile(_filenames_.api_file_name, .{});
     defer ofile.close();
     try ofile.writeAll(content);
-}
-
-fn addCloseDownJobsMessenger() !void {
-    // Open the folder.
-    var folders = try _paths_.folders();
-    defer folders.deinit();
-    var messenger_dir: std.fs.Dir = try std.fs.openDirAbsolute(folders.root_src_backend_messenger.?, .{});
-    defer messenger_dir.close();
-
-    // Open, write and close the file.
-    var ofile = try messenger_dir.createFile(_filenames_.deps.closedownjobs_file_name, .{});
-    defer ofile.close();
-    try ofile.writeAll(_closedownjobs_template_.content);
 }
 
 fn addBFMessenger(allocator: std.mem.Allocator, message_name: []const u8) !void {

@@ -40,10 +40,16 @@ pub const Template = struct {
         defer lines.deinit();
         var line: []const u8 = undefined;
 
-        try lines.appendSlice(line_1);
+        try lines.appendSlice(line_1_a);
 
         if (self.use_messenger) {
-            try lines.appendSlice(line_1_messenger);
+            try lines.appendSlice(line_1_a_use_messenger);
+        }
+
+        try lines.appendSlice(line_1_b);
+
+        if (self.use_messenger) {
+            try lines.appendSlice(line_1_b_use_messenger);
         }
 
         {
@@ -53,7 +59,7 @@ pub const Template = struct {
         }
 
         if (self.use_messenger) {
-            try lines.appendSlice(line_2_messenger);
+            try lines.appendSlice(line_2_use_messenger);
         }
 
         {
@@ -71,13 +77,19 @@ pub const Template = struct {
         try lines.appendSlice(line_3_b);
 
         if (self.use_messenger) {
-            try lines.appendSlice(line_3_messenger);
+            try lines.appendSlice(line_3_b_use_messenger);
         }
 
-        try lines.appendSlice(line_4);
+        try lines.appendSlice(line_3_c);
 
         if (self.use_messenger) {
-            try lines.appendSlice(line_4_messenger);
+            try lines.appendSlice(line_3_c_use_messenger);
+        }
+
+        if (self.use_messenger) {
+            try lines.appendSlice(line_4_use_messenger);
+        } else {
+            try lines.appendSlice(line_4_dont_use_messenger);
         }
 
         {
@@ -87,7 +99,7 @@ pub const Template = struct {
         }
 
         if (self.use_messenger) {
-            try lines.appendSlice(line_5_messenger);
+            try lines.appendSlice(line_5_use_messenger);
         }
 
         try lines.appendSlice(line_6);
@@ -104,11 +116,18 @@ pub const Template = struct {
     }
 };
 
-const line_1: []const u8 =
+const line_1_a: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
+    \\
+;
+
+const line_1_a_use_messenger: []const u8 =
     \\const _channel_ = @import("channel");
+;
+
+const line_1_b: []const u8 =
     \\const _startup_ = @import("startup");
     \\
     \\const Container = @import("various").Container;
@@ -117,7 +136,7 @@ const line_1: []const u8 =
     \\
 ;
 
-const line_1_messenger: []const u8 =
+const line_1_b_use_messenger: []const u8 =
     \\const Messenger = @import("view/messenger.zig").Messenger;
     \\
 ;
@@ -196,15 +215,15 @@ const line_2_f: []const u8 =
     \\
 ;
 
-const line_2_messenger: []const u8 =
+const line_2_use_messenger: []const u8 =
     \\    messenger: ?*Messenger,
+    \\    send_channels: *_channel_.FrontendToBackend,
+    \\    receive_channels: *_channel_.BackendToFrontend,
     \\
 ;
 
 /// screen name {0s}
 const line_3_a_a_f: []const u8 =
-    \\    send_channels: *_channel_.FrontendToBackend,
-    \\    receive_channels: *_channel_.BackendToFrontend,
     \\    container: ?*Container,
     \\    state: ?*Options,
     \\
@@ -236,8 +255,16 @@ const line_3_example: []const u8 =
 const line_3_b: []const u8 =
     \\        self.allocator = startup.allocator;
     \\        self.main_view = startup.main_view;
+    \\
+;
+
+const line_3_b_use_messenger: []const u8 =
     \\        self.receive_channels = startup.receive_channels;
     \\        self.send_channels = startup.send_channels;
+    \\
+;
+
+const line_3_c: []const u8 =
     \\
     \\        self.state = Options.copyOf(default_settings, startup.allocator) catch |err| {
     \\            self.state = null;
@@ -249,7 +276,7 @@ const line_3_b: []const u8 =
     \\
 ;
 
-const line_3_messenger: []const u8 =
+const line_3_c_use_messenger: []const u8 =
     \\        // The messenger.
     \\        self.messenger = try Messenger.init(startup.allocator, startup.main_view, startup.send_channels, startup.receive_channels, startup.exit, screen_options);
     \\        errdefer {
@@ -259,16 +286,18 @@ const line_3_messenger: []const u8 =
     \\
 ;
 
-const line_4: []const u8 =
+const line_4_dont_use_messenger: []const u8 =
     \\        // All of the panels.
-    \\        self.all_panels = try Panels.init(startup.allocator, startup.main_view, self.messenger.?, startup.exit, startup.window, container, screen_options);
-    \\        errdefer {{
-    \\            self.deinit();
-    \\        }}
+    \\        self.all_panels = try Panels.init(startup.allocator, startup.main_view, startup.exit, startup.window, container, screen_options);
+    \\        errdefer self.deinit();
     \\
 ;
 
-const line_4_messenger: []const u8 =
+const line_4_use_messenger: []const u8 =
+    \\        // All of the panels.
+    \\        self.all_panels = try Panels.init(startup.allocator, startup.main_view, self.messenger.?, startup.exit, startup.window, container, screen_options);
+    \\        errdefer self.deinit();
+    \\
     \\        self.messenger.?.all_panels = self.all_panels.?;
     \\
 ;
@@ -290,7 +319,7 @@ const line_5_f: []const u8 =
     \\
 ;
 
-const line_5_messenger: []const u8 =
+const line_5_use_messenger: []const u8 =
     \\        if (self.messenger) |member| {
     \\            member.deinit();
     \\        }
@@ -313,9 +342,9 @@ const line_6: []const u8 =
     \\        try self.all_panels.?.frameCurrent(arena);
     \\    }
     \\
-    \\    fn setContainer(self: *Screen, container: *Container) void {
+    \\    fn setContainer(self: *Screen, container: *Container) !void {
     \\        self.container = container;
-    \\        self.all_panels.?.setContainer(container);
+    \\        return self.all_panels.?.setContainer(container);
     \\    }
     \\
     \\    /// KICKZIG TODO: You may find a reason to modify willFrame.
@@ -373,7 +402,7 @@ const line_6: []const u8 =
     \\    /// The Container calls this to set itself as this Content's Container.
     \\    pub fn setContainerContentFn(implementor: *anyopaque, container: *Container) !void {
     \\        var self: *Screen = @alignCast(@ptrCast(implementor));
-    \\        self.setContainer(container);
+    \\        return self.setContainer(container);
     \\    }
     \\
 ;

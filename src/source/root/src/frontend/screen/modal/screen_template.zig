@@ -7,6 +7,37 @@ pub const Template = struct {
     panel_names: [][]const u8,
     use_messenger: bool,
 
+    pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, panel_names: [][]const u8, use_messenger: bool) !*Template {
+        var self: *Template = try allocator.create(Template);
+        self.screen_name = try allocator.alloc(u8, screen_name.len);
+        errdefer {
+            allocator.destroy(self);
+        }
+        @memcpy(@constCast(self.screen_name), screen_name);
+        self.panel_names = try allocator.alloc([]const u8, panel_names.len);
+        errdefer {
+            allocator.free(self.screen_name);
+            allocator.destroy(self);
+        }
+        for (panel_names, 0..) |panel_name, i| {
+            self.panel_names[i] = try allocator.alloc(u8, panel_name.len);
+            errdefer {
+                for (self.panel_names, 0..) |deinit_panel_name, j| {
+                    if (i == j) {
+                        break;
+                    }
+                    allocator.free(deinit_panel_name);
+                }
+                allocator.free(self.screen_name);
+                allocator.destroy(self);
+            }
+            @memcpy(@constCast(self.panel_names[i]), panel_name);
+        }
+        self.allocator = allocator;
+        self.use_messenger = use_messenger;
+        return self;
+    }
+
     pub fn deinit(self: *Template) void {
         self.allocator.free(self.screen_name);
         self.allocator.destroy(self);
@@ -20,24 +51,42 @@ pub const Template = struct {
         var line: []const u8 = undefined;
         const default_panel_name: []const u8 = self.panel_names[0];
 
-        try lines.appendSlice(line_import_start);
+        try lines.appendSlice(line_1);
 
         if (self.use_messenger) {
-            try lines.appendSlice(line_import_messenger);
+            try lines.appendSlice(line_1_use_messenger);
+        }
+
+        try lines.appendSlice(line_2);
+
+        if (self.use_messenger) {
+            try lines.appendSlice(line_2_use_messenger);
         }
 
         {
-            line = try std.fmt.allocPrint(self.allocator, line_import_continue_screen_struct_start_f, .{self.screen_name});
+            line = try std.fmt.allocPrint(self.allocator, line_3_f, .{self.screen_name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
 
         if (self.use_messenger) {
-            try lines.appendSlice(line_screen_struct_messenger);
+            try lines.appendSlice(line_3_use_messenger);
+        }
+
+        try lines.appendSlice(line_4);
+
+        if (self.use_messenger) {
+            line = try std.fmt.allocPrint(self.allocator, line_4_use_messenger_f, .{default_panel_name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
+        } else {
+            line = try std.fmt.allocPrint(self.allocator, line_4_dont_use_messenger_f, .{default_panel_name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
         }
 
         {
-            line = try std.fmt.allocPrint(self.allocator, line_screen_struct_end_f, .{ self.screen_name, default_panel_name });
+            line = try std.fmt.allocPrint(self.allocator, line_5_f, .{self.screen_name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
@@ -46,108 +95,114 @@ pub const Template = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, screen_name: []const u8, panel_names: [][]const u8, use_messenger: bool) !*Template {
-    var self: *Template = try allocator.create(Template);
-    self.screen_name = try allocator.alloc(u8, screen_name.len);
-    errdefer {
-        allocator.destroy(self);
-    }
-    @memcpy(@constCast(self.screen_name), screen_name);
-    self.panel_names = try allocator.alloc([]const u8, panel_names.len);
-    errdefer {
-        allocator.free(self.screen_name);
-        allocator.destroy(self);
-    }
-    for (panel_names, 0..) |panel_name, i| {
-        self.panel_names[i] = try allocator.alloc(u8, panel_name.len);
-        errdefer {
-            for (self.panel_names, 0..) |deinit_panel_name, j| {
-                if (i == j) {
-                    break;
-                }
-                allocator.free(deinit_panel_name);
-            }
-            allocator.free(self.screen_name);
-            allocator.destroy(self);
-        }
-        @memcpy(@constCast(self.panel_names[i]), panel_name);
-    }
-    self.allocator = allocator;
-    self.use_messenger = use_messenger;
-    return self;
-}
-
-const line_import_start: []const u8 =
+const line_1: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
+;
+
+const line_1_use_messenger: []const u8 =
+    \\
     \\const _channel_ = @import("channel");
     \\const _startup_ = @import("startup");
+    \\
+;
+
+const line_2: []const u8 =
     \\
     \\const MainView = @import("framers").MainView;
     \\
 ;
 
-const line_import_messenger: []const u8 =
-    \\const Messenger = @import("messenger.zig").Messenger;
+const line_2_use_messenger: []const u8 =
+    \\const Messenger = @import("view/messenger.zig").Messenger;
     \\
 ;
 
 // screen name {0s}
-const line_import_continue_screen_struct_start_f: []const u8 =
+const line_3_f: []const u8 =
     \\const ModalParams = @import("modal_params").{0s};
     \\const Panels = @import("panels.zig").Panels;
     \\
     \\pub const Screen = struct {{
     \\    allocator: std.mem.Allocator,
     \\    main_view: *MainView,
-    \\    all_panels: *Panels,
+    \\    all_panels: ?*Panels,
     \\    receive_channels: *_channel_.BackendToFrontend,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\
 ;
 
-const line_screen_struct_messenger: []const u8 =
-    \\    messenger: *Messenger,
+const line_3_use_messenger: []const u8 =
+    \\    messenger: ?*Messenger,
     \\
 ;
 
-/// screen name {0s}
-/// panel name {1s}
-const line_screen_struct_end_f: []const u8 =
+const line_4: []const u8 =
     \\    modal_params: ?*ModalParams,
     \\
     \\    /// init constructs this screen, subscribes it to main_view and returns the error.
-    \\    pub fn init(startup: _startup_.Frontend) !*Screen {{
+    \\    pub fn init(startup: _startup_.Frontend) !*Screen {
     \\        var self: *Screen = try startup.allocator.create(Screen);
     \\        self.allocator = startup.allocator;
     \\        self.main_view = startup.main_view;
-    \\        self.receive_channels = startup.receive_channels;
-    \\        self.send_channels = startup.send_channels;
     \\        self.modal_params = null;
     \\
+;
+
+/// default panel name {0s}
+const line_4_use_messenger_f: []const u8 =
+    \\        self.receive_channels = startup.receive_channels;
+    \\        self.send_channels = startup.send_channels;
+    \\
     \\        // The messenger.
-    \\        var messenger: *Messenger = try Messenger.init(startup.allocator, startup.main_view, startup.send_channels, startup.receive_channels, startup.exit);
+    \\        self.messenger = try Messenger.init(startup.allocator, startup.main_view, startup.send_channels, startup.receive_channels, startup.exit);
     \\        errdefer {{
+    \\            self.messenger = null;
     \\            self.deinit();
     \\        }}
     \\
     \\        // All of the panels.
-    \\        self.all_panels = try Panels.init(startup.allocator, startup.main_view, messenger, startup.exit, startup.window);
+    \\        self.all_panels = try Panels.init(startup.allocator, startup.main_view, self.messenger.?, startup.exit, startup.window, startup.theme);
     \\        errdefer {{
-    \\            messenger.deinit();
+    \\            self.all_panels = null;
     \\            self.deinit();
     \\        }}
-    \\        messenger.all_panels = self.all_panels;
-    \\        // The {1s} panel is the default.
-    \\        self.all_panels.setCurrentTo{1s}();
+    \\        self.messenger.?.all_panels = self.all_panels.?;
+    \\        // The {0s} panel is the default.
+    \\        self.all_panels.?.setCurrentTo{0s}();
     \\        return self;
     \\    }}
     \\
+;
+
+/// default panel name {0s}
+const line_4_dont_use_messenger_f: []const u8 =
+    \\
+    \\        // All of the panels.
+    \\        self.all_panels = try Panels.init(startup.allocator, startup.main_view, startup.exit, startup.window);
+    \\        errdefer {{
+    \\            self.deinit();
+    \\        }}
+    \\        // The {0s} panel is the default.
+    \\        self.all_panels.?.setCurrentTo{0s}();
+    \\        return self;
+    \\    }}
+    \\
+;
+
+/// screen name {0s}
+const line_5_f: []const u8 =
+    \\
     \\    pub fn deinit(self: *Screen) void {{
-    \\        self.all_panels.deinit();
-    \\        if (self.modal_params) |modal_params| {{
-    \\            modal_params.deinit();
+    \\        if (self.all_panels) |member| {{
+    \\            member.deinit();
+    \\        }}
+    \\        if (self.messenger) |member| {{
+    \\            member.deinit();
+    \\        }}
+    \\        if (self.modal_params) |member| {{
+    \\            member.deinit();
     \\        }}
     \\        self.allocator.destroy(self);
     \\    }}

@@ -17,7 +17,6 @@ const _yesno_view_template_ = @import("view/yesno_view_template.zig");
 const _eoj_screen_template_ = @import("eoj_screen_template.zig");
 const _eoj_panel_template_ = @import("eoj_panel_template.zig");
 const _eoj_view_template_ = @import("view/eoj_view_template.zig");
-const _eoj_messenger_template_ = @import("view/eoj_messenger_template.zig");
 
 /// createAnyPackage creates the panel screen folder.
 /// The folder only contains:
@@ -35,15 +34,17 @@ pub fn createAnyPackage(allocator: std.mem.Allocator, screen_name: []const u8, p
 
     // Add the screen.zig file.
     try addScreenFile(allocator, package_dir, screen_name, panel_names, use_messenger);
-    // Add the messenger file.
-    try addMessengerFile(package_dir);
     // Add each panel file.
     for (panel_names) |panel_name| {
         try addAnyPanel(allocator, package_dir, screen_name, panel_name, panel_names, use_messenger);
-        try addAnyView(allocator, package_dir, screen_name, panel_name, panel_names, use_messenger);
+        try addAnyView(allocator, package_view_dir, screen_name, panel_name, panel_names, use_messenger);
     }
     // rebuildPanelsZig builds panels.zig with the names of each panel.
-    try rebuildPanelsZig(allocator, package_dir, screen_name, true);
+    try rebuildPanelsZig(allocator, package_dir, screen_name, use_messenger);
+    if (use_messenger) {
+        // Add the messenger file.
+        try addMessengerFile(package_view_dir);
+    }
 }
 
 // create adds the initial modal screens.
@@ -170,14 +171,6 @@ pub fn addEOJView(allocator: std.mem.Allocator, package_view_dir: std.fs.Dir) !v
     try ofile.writeAll(_eoj_view_template_.content);
 }
 
-/// addEOJMessengerFile the EOJ messenger file to the EOJ screen.
-pub fn addEOJMessengerFile(package_view_dir: std.fs.Dir) !void {
-    // Open, write and close the file.
-    var ofile = try package_view_dir.createFile(_filenames_.screen_messenger_file_name, .{});
-    defer ofile.close();
-    try ofile.writeAll(_eoj_messenger_template_.content);
-}
-
 /// addAnyPanel adds a single panel file to a screen with a messenger.
 /// It does not rewrite the package's panels.zig file.
 /// Caller must call rebuildPanelsZig after all panels are added.
@@ -210,24 +203,12 @@ pub fn addAnyView(allocator: std.mem.Allocator, package_view_dir: std.fs.Dir, sc
     try ofile.writeAll(content);
 }
 
-/// removePanel removes a single panel file from a screen.
-/// It does not rewrite the package's panels.zig file.
-/// Caller must call rebuildPanelsZig after all panels are removed.
-pub fn removePanel(allocator: std.mem.Allocator, screen_name: []const u8, panel_name: []const u8) !void {
-    // Open the folder.
-    var screen_dir: std.fs.Dir = try directory(screen_name);
-    defer screen_dir.close();
-    const fname: []const u8 = try _filenames_.frontendScreenPanelFileName(allocator, panel_name);
-    defer allocator.free(fname);
-    try screen_dir.deleteFile(fname);
-}
-
 // rebuildPanelsZig rebuilds the panels.zig file.
 // It rebuilds using the names of each panel file in the screen package.
 // Call this after panels are added or removed.
 pub fn rebuildPanelsZig(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8, using_messenger: bool) !void {
     // Build the template and the content.
-    const template: *_panels_template_.Template = try _panels_template_.init(allocator, screen_name, using_messenger);
+    const template: *_panels_template_.Template = try _panels_template_.Template.init(allocator, screen_name, using_messenger);
     defer template.deinit();
     // Get the names of each panel and use them in the template.
     const current_panel_names: [][]const u8 = try _filenames_.allFrontendModalScreenPanelNames(allocator, screen_name);
@@ -259,7 +240,7 @@ fn addMessengerFile(package_dir: std.fs.Dir) !void {
 
 // addScreenFile adds the screen.zig file to any screen with a messenger.
 fn addScreenFile(allocator: std.mem.Allocator, package_dir: std.fs.Dir, screen_name: []const u8, panel_names: [][]const u8, use_messenger: bool) !void {
-    var template: *_screen_template_.Template = try _screen_template_.init(allocator, screen_name, panel_names, use_messenger);
+    var template: *_screen_template_.Template = try _screen_template_.Template.init(allocator, screen_name, panel_names, use_messenger);
     defer template.deinit();
     const content: []const u8 = try template.content();
     defer allocator.free(content);
@@ -308,10 +289,8 @@ fn createEOJPackage(allocator: std.mem.Allocator) !void {
     try addEOJView(allocator, package_view_dir);
     // Add the screen.zig file.
     try addEOJScreenFile(package_dir);
-    // Add the example messenger file.
-    try addEOJMessengerFile(package_view_dir);
     // rebuildPanelsZig builds panels.zig with the names of each panel.
-    try rebuildPanelsZig(allocator, package_dir, "EOJ", true);
+    try rebuildPanelsZig(allocator, package_dir, "EOJ", false);
 }
 
 // directory returns the screen's file system directory.

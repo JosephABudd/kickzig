@@ -66,24 +66,29 @@ pub const Template = struct {
         defer lines.deinit();
         var line: []const u8 = undefined;
 
-        // Imports.
-        try lines.appendSlice(line_import_start);
+        try lines.appendSlice(line_1);
 
         if (self.use_messenger) {
-            try lines.appendSlice(line_import_messenger);
+            try lines.appendSlice(line_1_use_messenger);
+        }
+
+        try lines.appendSlice(line_2);
+
+        if (self.use_messenger) {
+            try lines.appendSlice(line_2_use_messenger);
         }
 
         if (self.use_panels) {
-            try lines.appendSlice(line_import_panels);
+            try lines.appendSlice(line_2_use_panels);
         }
 
-        try lines.appendSlice(line_import_continued);
+        try lines.appendSlice(line_3);
 
         for (self.tab_names) |name| {
             if (name[0] == 'p' or name[0] == 't') {
-                line = try fmt.allocPrint(self.allocator, line_import_screen_f, .{name[1..]});
+                line = try fmt.allocPrint(self.allocator, line_3_import_screen_f, .{name[1..]});
             } else {
-                line = try fmt.allocPrint(self.allocator, line_import_panel_f, .{name});
+                line = try fmt.allocPrint(self.allocator, line_3_import_panel_f, .{name});
             }
             defer self.allocator.free(line);
             try lines.appendSlice(line);
@@ -91,38 +96,54 @@ pub const Template = struct {
 
         // Screen struct.
         {
-            line = try fmt.allocPrint(self.allocator, line_screen_struct_start_f, .{self.screen_name});
+            line = try fmt.allocPrint(self.allocator, line_4_f, .{self.screen_name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
+        }
+
+        if (self.use_messenger) {
+            try lines.appendSlice(line_4_use_messenger);
+        }
+
+        {
+            line = try fmt.allocPrint(self.allocator, line_5_f, .{self.screen_name});
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
 
         for (self.tab_names) |name| {
             if (name[0] == 'p') {
-                line = try fmt.allocPrint(self.allocator, line_add_panel_screen_tab_f, .{name[1..]});
+                line = try fmt.allocPrint(self.allocator, line_8_f, .{name[1..]});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             } else if (name[0] == 't') {
-                line = try fmt.allocPrint(self.allocator, line_add_tab_screen_tab_f, .{name[1..]});
+                line = try fmt.allocPrint(self.allocator, line_9_f, .{name[1..]});
                 defer self.allocator.free(line);
                 try lines.appendSlice(line);
             } else {
                 {
-                    line = try fmt.allocPrint(self.allocator, line_add_panel_tab_a_f, .{name});
+                    line = try fmt.allocPrint(self.allocator, line_7_a_f, .{name});
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }
                 if (self.use_messenger) {
-                    try lines.appendSlice(line_add_panel_tab_messenger);
+                    try lines.appendSlice(line_7_use_messenger);
                 }
                 {
-                    line = try fmt.allocPrint(self.allocator, line_add_panel_tab_b_f, .{name});
+                    line = try fmt.allocPrint(self.allocator, line_7_b, .{name});
                     defer self.allocator.free(line);
                     try lines.appendSlice(line);
                 }
             }
         }
 
-        try lines.appendSlice(line_struct_init);
+        try lines.appendSlice(line_10);
+
+        if (self.use_messenger) {
+            try lines.appendSlice(line_10_use_messenger);
+        }
+
+        try lines.appendSlice(line_11);
 
         // Init the example tabs.
         for (self.tab_names, 0..) |tab_name, i| {
@@ -132,52 +153,52 @@ pub const Template = struct {
             } else {
                 name = tab_name;
             }
-            line = try fmt.allocPrint(self.allocator, line_struct_init_screen_tab_f, .{ name, (i == 0) });
+            line = try fmt.allocPrint(self.allocator, line_12_f, .{ name, (i == 0) });
             defer self.allocator.free(line);
             try lines.appendSlice(line);
         }
 
-        // Init the messenger.
-        if (self.use_messenger) {
-            try lines.appendSlice(line_struct_messenger);
-        }
-
-        // end of init.
-        try lines.appendSlice(line_init_end);
-
-        // Deinit.
-        try lines.appendSlice(line_struct_deinit_start);
+        // end of init, deinit
+        try lines.appendSlice(line_13);
 
         if (self.use_messenger) {
-            try lines.appendSlice(line_struct_deinit_messenger);
+            try lines.appendSlice(line_13_use_messenger);
         }
 
-        try lines.appendSlice(line_struct_deinit_end);
+        try lines.appendSlice(line_14);
 
         return try lines.toOwnedSlice();
     }
 };
 
 // Imports.
-const line_import_start: []const u8 =
+const line_1: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
+    \\
+;
+
+const line_1_use_messenger: []const u8 =
     \\const _channel_ = @import("channel");
+    \\
+;
+
+const line_2: []const u8 =
     \\const _screen_pointers_ = @import("../../../screen_pointers.zig");
     \\const _startup_ = @import("startup");
     \\
     \\
 ;
-const line_import_messenger: []const u8 =
+const line_2_use_messenger: []const u8 =
     \\const Messenger = @import("view/messenger.zig").Messenger;
     \\
 ;
-const line_import_panels: []const u8 =
+const line_2_use_panels: []const u8 =
     \\const PanelTags = @import("panels.zig").PanelTags;
     \\
 ;
-const line_import_continued: []const u8 =
+const line_3: []const u8 =
     \\const Container = @import("various").Container;
     \\const Content = @import("various").Content;
     \\const ExitFn = @import("various").ExitFn;
@@ -188,19 +209,19 @@ const line_import_continued: []const u8 =
     \\
     \\
 ;
-const line_import_panel_f: []const u8 =
+const line_3_import_panel_f: []const u8 =
     \\const {0s}Panel = @import("{0s}.zig").Panel;
     \\
 ;
 
-const line_import_screen_f: []const u8 =
+const line_3_import_screen_f: []const u8 =
     \\const {0s}Screen = _screen_pointers_.{0s};
     \\
 ;
 
 // Screen struct.
 // screen name {0s}
-const line_screen_struct_start_f: []const u8 =
+const line_4_f: []const u8 =
     \\
     \\/// KICKZIG TODO:
     \\/// Options will need to be customized.
@@ -210,7 +231,8 @@ const line_screen_struct_start_f: []const u8 =
     \\    screen_name: ?[]const u8 = null, // Example field.
     \\
     \\    fn label(self: *Options, allocator: std.mem.Allocator) ![]const u8 {{
-    \\        return try std.fmt.allocPrint(allocator, "{{s}}", .{{self.screen_name.?}});
+    \\        _ = self;
+    \\        return try std.fmt.allocPrint(allocator, "{{s}}", .{{"{0s}"}});
     \\    }}
     \\
     \\    fn copyOf(values: Options, allocator: std.mem.Allocator) !*Options {{
@@ -269,10 +291,19 @@ const line_screen_struct_start_f: []const u8 =
     \\    main_view: *MainView,
     \\    container: ?*Container,
     \\    tabs: ?*Tabs,
+    \\
+;
+
+const line_4_use_messenger: []const u8 =
     \\    messenger: ?*Messenger,
-    \\    exit: ExitFn,
     \\    send_channels: *_channel_.FrontendToBackend,
     \\    receive_channels: *_channel_.BackendToFrontend,
+    \\
+;
+
+// screen name {0s}
+const line_5_f: []const u8 =
+    \\    exit: ExitFn,
     \\    screen_pointers: *ScreenPointers,
     \\    startup: _startup_.Frontend,
     \\    state: ?*Options,
@@ -284,7 +315,7 @@ const line_screen_struct_start_f: []const u8 =
 ;
 
 // tab name {0s}
-const line_add_panel_tab_a_f: []const u8 =
+const line_7_a_f: []const u8 =
     \\
     \\    pub fn AddNew{0s}Tab(
     \\        self: *Screen,
@@ -298,12 +329,12 @@ const line_add_panel_tab_a_f: []const u8 =
     \\
 ;
 
-const line_add_panel_tab_messenger: []const u8 =
+const line_7_use_messenger: []const u8 =
     \\            self.messenger.?,
     \\
 ;
 
-const line_add_panel_tab_b_f: []const u8 =
+const line_7_b: []const u8 =
     \\            self.exit,
     \\            self.state.?.*,
     \\        );
@@ -335,7 +366,7 @@ const line_add_panel_tab_b_f: []const u8 =
 
 /// tab_name {0s}
 /// A tab which uses a panel screen for content.
-const line_add_panel_screen_tab_f: []const u8 =
+const line_8_f: []const u8 =
     \\    pub fn AddNew{0s}Tab(
     \\        self: *Screen,
     \\        selected: bool,
@@ -380,7 +411,7 @@ const line_add_panel_screen_tab_f: []const u8 =
 
 /// tab_name {0s}
 /// A tab which uses a tab screen for content.
-const line_add_tab_screen_tab_f: []const u8 =
+const line_9_f: []const u8 =
     \\    pub fn AddNew{0s}Tab(
     \\        self: *Screen,
     \\        selected: bool,
@@ -427,7 +458,7 @@ const line_add_tab_screen_tab_f: []const u8 =
     \\
     \\
 ;
-const line_struct_init: []const u8 =
+const line_10: []const u8 =
     \\
     \\    /// init constructs this screen, subscribes it to all_screens and returns the error.
     \\    /// Param tabs_options is a Tabs.Options.
@@ -440,8 +471,16 @@ const line_struct_init: []const u8 =
     \\        var self: *Screen = try startup.allocator.create(Screen);
     \\        self.allocator = startup.allocator;
     \\        self.main_view = startup.main_view;
+    \\
+;
+
+const line_10_use_messenger: []const u8 =
     \\        self.receive_channels = startup.receive_channels;
     \\        self.send_channels = startup.send_channels;
+    \\
+;
+
+const line_11: []const u8 =
     \\        self.screen_pointers = startup.screen_pointers;
     \\        self.window = startup.window;
     \\        self.startup = startup;
@@ -460,37 +499,6 @@ const line_struct_init: []const u8 =
     \\        self.tabs = try Tabs.init(startup, self_as_container, tabs_options);
     \\        errdefer self.deinit();
     \\
-    \\        // Create 1 of each type of tab.
-    \\
-;
-
-// tab_name {0s}
-// selected {1}
-const line_struct_init_panel_tab_f: []const u8 =
-    \\
-    \\        {{
-    \\            // KICKZIG TODO:
-    \\            // Correct this to correspond to your definition of {0s}Panel.Options.
-    \\            // {0s}Panel.Options is actually Options in view/{0s}.zig.
-    \\            //const settings: {0s}Panel.Options = {0s}Panel.Options{{
-    \\            //    .tab_label = "{0s}",
-    \\            //    .screen_name = screen_name,
-    \\            //    .panel_name = "{0s}",
-    \\            //}};
-    \\            try self.AddNew{0s}Tab({1});
-    \\            errdefer self.deinit();
-    \\        }}
-    \\
-;
-// tab_name {0s}
-// selected {1}
-const line_struct_init_screen_tab_f: []const u8 =
-    \\
-    \\        try self.AddNew{0s}Tab({1});
-    \\
-;
-
-const line_struct_messenger: []const u8 =
     \\
     \\        // Create the messenger.
     \\        self.messenger = try Messenger.init(
@@ -502,20 +510,25 @@ const line_struct_messenger: []const u8 =
     \\            startup.exit,
     \\            self.state.?.*,
     \\        );
+    \\        errdefer self.deinit();
     \\
-    \\        errdefer {
-    \\            self.deinit();
-    \\        }
-    \\
+    \\        // Create 1 of each type of tab.
     \\
 ;
-const line_init_end: []const u8 =
+
+// tab_name {0s}
+// selected {1}
+const line_12_f: []const u8 =
+    \\
+    \\        try self.AddNew{0s}Tab({1});
+    \\        errdefer self.deinit();
+    \\
+;
+
+const line_13: []const u8 =
     \\        self.container = container;
     \\        return self;
     \\    }
-    \\
-;
-const line_struct_deinit_start: []const u8 =
     \\
     \\    pub fn willFrame(self: *Screen) bool {
     \\        return self.tabs.?.willFrame();
@@ -530,14 +543,14 @@ const line_struct_deinit_start: []const u8 =
     \\        // So don't deinit the container.
     \\
 ;
-const line_struct_deinit_messenger: []const u8 =
+const line_13_use_messenger: []const u8 =
     \\        if (self.messenger) |member| {
     \\            member.deinit();
     \\        }
     \\
 ;
 
-const line_struct_deinit_end: []const u8 =
+const line_14: []const u8 =
     \\        self.allocator.destroy(self);
     \\    }
     \\

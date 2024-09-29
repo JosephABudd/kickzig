@@ -19,7 +19,6 @@ const _fb_any_send_channel_template_ = @import("fb_any_send_channel_template.zig
 /// Then it rebuilds the api and both dispatchers.
 pub fn create(allocator: std.mem.Allocator) !void {
     // The CloseDownJobs channels.
-    try addFBF(allocator, "CloseDownJobs");
     try rebuildAPIDispatchers(allocator);
 }
 
@@ -67,7 +66,7 @@ pub fn addBFFBF(allocator: std.mem.Allocator, message_name: []const u8) !void {
 fn addFrontToBackChannel(allocator: std.mem.Allocator, message_name: []const u8) !void {
     var folders = try _paths_.folders();
     defer folders.deinit();
-    var template: *_fb_any_send_channel_template_.Template = try _fb_any_send_channel_template_.init(allocator, message_name);
+    var template: *_fb_any_send_channel_template_.Template = try _fb_any_send_channel_template_.Template.init(allocator, message_name);
     defer template.deinit();
     const content: []const u8 = try template.content();
     defer allocator.free(content);
@@ -77,7 +76,7 @@ fn addFrontToBackChannel(allocator: std.mem.Allocator, message_name: []const u8)
 fn addBackToFrontChannel(allocator: std.mem.Allocator, message_name: []const u8) !void {
     var folders = try _paths_.folders();
     defer folders.deinit();
-    var template: *_bf_any_send_channel_template_.Template = try _bf_any_send_channel_template_.init(allocator, message_name);
+    var template: *_bf_any_send_channel_template_.Template = try _bf_any_send_channel_template_.Template.init(allocator, message_name);
     defer template.deinit();
     const content: []const u8 = try template.content();
     defer allocator.free(content);

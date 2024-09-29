@@ -14,10 +14,9 @@ pub const content: []const u8 =
     \\    main_view: *MainView,
     \\    all_panels: *Panels,
     \\    exit: ExitFn,
-    \\    view: *View,
+    \\    view: ?*View,
     \\
     \\    modal_params: ?*ModalParams,
-    \\    border_color: dvui.Options.ColorOrName,
     \\
     \\    // This panels owns the modal params.
     \\    pub fn presetModal(self: *Panel, setup_args: *ModalParams) !void {
@@ -29,21 +28,26 @@ pub const content: []const u8 =
     \\
     \\    pub fn init(allocator: std.mem.Allocator, main_view: *MainView, all_panels: *Panels, exit: ExitFn, window: *dvui.Window, theme: *dvui.Theme) !*Panel {
     \\        var self: *Panel = try allocator.create(Panel);
-    \\        self.view = try View.init(allocator, window, main_view, all_panels, exit);
-    \\        errdefer allocator.destroy(self);
+    \\        self.view = try View.init(allocator, window, main_view, all_panels, exit, theme);
+    \\        errdefer {
+    \\            self.view = null;
+    \\            self.deinit();
+    \\        }
     \\        self.allocator = allocator;
     \\        self.window = window;
     \\        self.main_view = main_view;
     \\        self.all_panels = all_panels;
     \\        self.exit = exit;
-    \\        self.border_color = theme.style_accent.color_accent.?;
     \\        self.modal_params = null;
     \\        return self;
     \\    }
     \\
     \\    pub fn deinit(self: *Panel) void {
-    \\        if (self.modal_params) |modal_params| {
-    \\            modal_params.deinit();
+    \\        if (self.view) |member| {
+    \\            member.deinit();
+    \\        }
+    \\        if (self.modal_params) |member| {
+    \\            member.deinit();
     \\        }
     \\        self.allocator.destroy(self);
     \\    }
@@ -56,7 +60,7 @@ pub const content: []const u8 =
     \\    /// frame this panel.
     \\    /// Layout, Draw, Handle user events.
     \\    pub fn frame(self: *Panel, arena: std.mem.Allocator) !void {
-    \\        return self.view.frame(arena, self.modal_params.?);
+    \\        return self.view.?.frame(arena, self.modal_params.?);
     \\    }
     \\};
     \\

@@ -4,9 +4,11 @@ pub const content: []const u8 =
     \\const _channel_ = @import("channel");
     \\const _message_ = @import("message");
     \\const _modal_params_ = @import("modal_params");
-    \\const Panels = @import("panels.zig").Panels;
+    \\
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
+    \\const Panels = @import("../panels.zig").Panels;
+    \\const ScreenTags = @import("framers").ScreenTags;
     \\
     \\pub const Messenger = struct {
     \\    allocator: std.mem.Allocator,

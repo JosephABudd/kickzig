@@ -21,9 +21,11 @@ pub const verb_add_tab: []const u8 = "add-tab";
 
 pub const verb_add_modal: []const u8 = "add-modal";
 
-pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]const u8, use_messenger: bool) !void {
+pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaining_args: [][]const u8, in_frame_folder: bool) !void {
     var folder_paths: *_paths_.FolderPaths = try _paths_.folders();
     defer folder_paths.deinit();
+    const use_messenger: bool = folder_paths.isBuiltWithMessages();
+
     return switch (remaining_args.len) {
         0 => blk: {
             // User input is "screen".
@@ -37,6 +39,10 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 break :blk try help(allocator, cli_name);
             }
             if (std.mem.eql(u8, verb, verb_list)) {
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                }
                 // The user input is "screen list".
                 break :blk try _src_frontend_.listScreens(allocator);
             }
@@ -50,6 +56,10 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
             const verb: []const u8 = remaining_args[0];
             const screen_name: []const u8 = remaining_args[1];
             if (std.mem.eql(u8, verb, verb_remove)) {
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                }
                 // Is the screen name valid for remove?
                 // User input is "screen remove Edit".
                 // break :blk {
@@ -105,6 +115,10 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
             const screen_name: []const u8 = remaining_args[1];
             if (std.mem.eql(u8, verb, verb_add_panel)) {
                 // User input is "screen add-panel Edit Select Edit".
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                }
                 // The screen name must be valid.
                 is_valid = expectValidScreenName(allocator, screen_name) catch |err| {
                     break :blk err;
@@ -148,8 +162,11 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
                 break :blk;
             }
             if (std.mem.eql(u8, verb, verb_add_tab)) {
-                // User input is "screen add-mainmenu-tab Contacts +Add Edit Remove".
                 // User input is "screen add-tab Contacts +Add Edit Remove".
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                }
                 // The screen name must be valid.
                 is_valid = expectValidScreenName(allocator, screen_name) catch |err| {
                     break :blk err;
@@ -229,6 +246,10 @@ pub fn handleCommand(allocator: std.mem.Allocator, cli_name: []const u8, remaini
             }
             if (std.mem.eql(u8, verb, verb_add_modal)) {
                 // User input is "screen add-modal YesNo YesNo".
+                if (!in_frame_folder) {
+                    notInFrameFolder();
+                    return;
+                }
                 // The screen name must be valid.
                 is_valid = expectValidScreenName(allocator, screen_name) catch |err| {
                     break :blk err;
@@ -287,6 +308,13 @@ fn help(allocator: std.mem.Allocator, cli_name: []const u8) !void {
     const usage: []u8 = try _usage_.screen(allocator, cli_name);
     defer allocator.free(usage);
     try _stdout_.print(usage);
+}
+
+fn notInFrameFolder() void {
+    // Display message;
+    _stdout_.print(_warning_.not_framework_folder) catch {
+        // Don't return an error;
+    };
 }
 
 // Expects

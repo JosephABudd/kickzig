@@ -19,6 +19,8 @@ pub fn syntaxError(allocator: std.mem.Allocator, cli_name: []const u8, cmd: []co
 // Framework build.
 
 pub const already_built: []const u8 = "The framework is already built.\n";
+pub const already_built_with_messages: []const u8 = "The framework is already built with messages.\n";
+pub const already_built_without_messages: []const u8 = "The framework is already built without messages.\n";
 pub const not_framework_folder: []const u8 = "A framework root folder was not found in your path.\n";
 // Channel name.
 

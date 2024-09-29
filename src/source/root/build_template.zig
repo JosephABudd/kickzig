@@ -4,9 +4,10 @@ const fmt = std.fmt;
 pub const Template = struct {
     allocator: std.mem.Allocator,
     app_name: []const u8,
+    use_messenger: bool,
 
     // The caller owns the returned value.
-    pub fn init(allocator: std.mem.Allocator, app_name: []const u8) !*Template {
+    pub fn init(allocator: std.mem.Allocator, app_name: []const u8, use_messenger: bool) !*Template {
         var data: *Template = try allocator.create(Template);
         data.app_name = try allocator.alloc(u8, app_name.len);
         errdefer {
@@ -14,6 +15,7 @@ pub const Template = struct {
         }
         @memcpy(@constCast(data.app_name), app_name);
         data.allocator = allocator;
+        data.use_messenger = use_messenger;
         return data;
     }
 
@@ -24,15 +26,69 @@ pub const Template = struct {
 
     // The caller owns the returned value.
     pub fn content(self: *Template) ![]const u8 {
-        // Replace {{ app_name }} with the app name.
-        const replacement_size: usize = std.mem.replacementSize(u8, template, "{{ app_name }}", self.app_name);
-        const with_app_name: []u8 = try self.allocator.alloc(u8, replacement_size);
-        _ = std.mem.replace(u8, template, "{{ app_name }}", self.app_name, with_app_name);
-        return with_app_name;
+        var lines = std.ArrayList(u8).init(self.allocator);
+        defer lines.deinit();
+        var line: []u8 = undefined;
+
+        try lines.appendSlice(line_1);
+        if (self.use_messenger) {
+            try lines.appendSlice(line_1_use_messenger);
+        }
+
+        try lines.appendSlice(line_2);
+        if (self.use_messenger) {
+            try lines.appendSlice(line_2_use_messenger);
+        }
+
+        try lines.appendSlice(line_3);
+        if (self.use_messenger) {
+            try lines.appendSlice(line_3_use_messenger);
+        }
+
+        try lines.appendSlice(line_4);
+        if (self.use_messenger) {
+            try lines.appendSlice(line_4_use_messenger);
+        }
+
+        try lines.appendSlice(line_5);
+        if (self.use_messenger) {
+            try lines.appendSlice(line_5_use_messenger);
+        }
+
+        try lines.appendSlice(line_6);
+        if (self.use_messenger) {
+            try lines.appendSlice(line_6_use_messenger);
+        }
+
+        try lines.appendSlice(line_7);
+        if (self.use_messenger) {
+            try lines.appendSlice(line_7_use_messenger);
+        }
+
+        {
+            line = try fmt.allocPrint(self.allocator, line_8_f, .{self.app_name});
+            defer self.allocator.free(line);
+            try lines.appendSlice(line);
+        }
+        if (self.use_messenger) {
+            try lines.appendSlice(line_8_use_messenger);
+        }
+
+        try lines.appendSlice(line_9);
+        if (self.use_messenger) {
+            try lines.appendSlice(line_9_use_messenger);
+        }
+
+        try lines.appendSlice(line_10);
+
+        const temp: []const u8 = try lines.toOwnedSlice();
+        line = try self.allocator.alloc(u8, temp.len);
+        @memcpy(line, temp);
+        return line;
     }
 };
 
-const template =
+const line_1: []const u8 =
     \\const std = @import("std");
     \\
     \\pub fn build(b: *std.Build) void {
@@ -42,6 +98,10 @@ const template =
     \\    const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize });
     \\
     \\    // Framework modules.
+    \\
+;
+
+const line_1_use_messenger: []const u8 =
     \\
     \\    // channel_mod. A framework deps/ module.
     \\    const channel_mod = b.addModule(
@@ -55,6 +115,10 @@ const template =
     \\            },
     \\        },
     \\    );
+    \\
+;
+
+const line_2: []const u8 =
     \\
     \\    // closedownjobs_mod. A framework deps/ module.
     \\    const closedownjobs_mod = b.addModule(
@@ -121,6 +185,10 @@ const template =
     \\        },
     \\    );
     \\
+;
+
+const line_2_use_messenger: []const u8 =
+    \\
     \\    // message_mod. A framework deps/ module.
     \\    const message_mod = b.addModule(
     \\        "message",
@@ -133,6 +201,10 @@ const template =
     \\            },
     \\        },
     \\    );
+    \\
+;
+
+const line_3: []const u8 =
     \\
     \\    // modal_params_mod. A framework deps/ module.
     \\    const modal_params_mod = b.addModule(
@@ -202,8 +274,16 @@ const template =
     \\    // Framework module dependencies.
     \\
     \\    // Dependencies for channel_mod. A framework deps/ module.
+    \\
+;
+
+const line_3_use_messenger: []const u8 =
     \\    channel_mod.addImport("message", message_mod);
     \\    channel_mod.addImport("various", various_mod);
+    \\
+;
+
+const line_4: []const u8 =
     \\
     \\    // Dependencies for closedownjobs_mod. A framework deps/ module.
     \\    closedownjobs_mod.addImport("counter", counter_mod);
@@ -219,15 +299,22 @@ const template =
     \\    framers_mod.addImport("dvui", dvui_dep.module("dvui"));
     \\    framers_mod.addImport("main_menu", main_menu_mod);
     \\    framers_mod.addImport("modal_params", modal_params_mod);
-    \\    framers_mod.addImport("various", various_mod);
     \\    framers_mod.addImport("startup", startup_mod);
     \\    framers_mod.addImport("various", various_mod);
+    \\
+;
+
+const line_4_use_messenger: []const u8 =
     \\
     \\    // Dependencies for message_mod. A framework deps/ module.
     \\    message_mod.addImport("counter", counter_mod);
     \\    message_mod.addImport("closedownjobs", closedownjobs_mod);
     \\    message_mod.addImport("framers", framers_mod);
     \\    message_mod.addImport("various", various_mod);
+    \\
+;
+
+const line_5: []const u8 =
     \\
     \\    // Dependencies for message_mod. A framework deps/ module.
     \\    main_menu_mod.addImport("framers", framers_mod);
@@ -236,12 +323,28 @@ const template =
     \\    modal_params_mod.addImport("closedownjobs", closedownjobs_mod);
     \\
     \\    // Dependencies for screen_pointers_mod. A framework frontend/ module.
+    \\
+;
+
+const line_5_use_messenger: []const u8 =
     \\    screen_pointers_mod.addImport("channel", channel_mod);
+    \\
+;
+
+const line_6: []const u8 =
     \\    screen_pointers_mod.addImport("closedownjobs", closedownjobs_mod);
     \\    screen_pointers_mod.addImport("closer", closer_mod);
     \\    screen_pointers_mod.addImport("dvui", dvui_dep.module("dvui"));
     \\    screen_pointers_mod.addImport("framers", framers_mod);
+    \\
+;
+
+const line_6_use_messenger: []const u8 =
     \\    screen_pointers_mod.addImport("message", message_mod);
+    \\
+;
+
+const line_7: []const u8 =
     \\    screen_pointers_mod.addImport("main_menu", main_menu_mod);
     \\    screen_pointers_mod.addImport("modal_params", modal_params_mod);
     \\    screen_pointers_mod.addImport("startup", startup_mod);
@@ -249,7 +352,15 @@ const template =
     \\    screen_pointers_mod.addImport("widget", widget_mod);
     \\
     \\    // Dependencies for startup_mod. A framework deps/ module.
+    \\
+;
+
+const line_7_use_messenger: []const u8 =
     \\    startup_mod.addImport("channel", channel_mod);
+    \\
+;
+
+const line_8_f: []const u8 =
     \\    startup_mod.addImport("closedownjobs", closedownjobs_mod);
     \\    startup_mod.addImport("dvui", dvui_dep.module("dvui"));
     \\    startup_mod.addImport("framers", framers_mod);
@@ -267,29 +378,45 @@ const template =
     \\    widget_mod.addImport("startup", startup_mod);
     \\    widget_mod.addImport("various", various_mod);
     \\
-    \\    const exe = b.addExecutable(.{
-    \\        .name = "{{ app_name }}",
-    \\        .root_source_file = .{
-    \\            .src_path = .{
+    \\    const exe = b.addExecutable(.{{
+    \\        .name = "{0s}",
+    \\        .root_source_file = .{{
+    \\            .src_path = .{{
     \\                .owner = b,
     \\                .sub_path = "src/main.zig",
-    \\            },
-    \\        },
+    \\            }},
+    \\        }},
     \\        .target = target,
     \\        .optimize = optimize,
-    \\    });
+    \\    }});
     \\
     \\    exe.root_module.addImport("dvui", dvui_dep.module("dvui"));
     \\    exe.root_module.addImport("SDLBackend", dvui_dep.module("SDLBackend"));
     \\
     \\    // Framework modules.
+    \\
+;
+
+const line_8_use_messenger: []const u8 =
     \\    exe.root_module.addImport("channel", channel_mod);
+    \\
+;
+
+const line_9: []const u8 =
     \\    exe.root_module.addImport("closedownjobs", closedownjobs_mod);
     \\    exe.root_module.addImport("closer", closer_mod);
     \\    exe.root_module.addImport("counter", counter_mod);
     \\    exe.root_module.addImport("framers", framers_mod);
     \\    exe.root_module.addImport("main_menu", main_menu_mod);
+    \\
+;
+
+const line_9_use_messenger: []const u8 =
     \\    exe.root_module.addImport("message", message_mod);
+    \\
+;
+
+const line_10: []const u8 =
     \\    exe.root_module.addImport("modal_params", modal_params_mod);
     \\    exe.root_module.addImport("screen_pointers", screen_pointers_mod);
     \\    exe.root_module.addImport("startup", startup_mod);

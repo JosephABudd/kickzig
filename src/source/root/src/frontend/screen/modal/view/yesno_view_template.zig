@@ -14,6 +14,7 @@ pub const content: []const u8 =
     \\    all_panels: *Panels,
     \\    exit: ExitFn,
     \\    modal_params: ?*ModalParams,
+    \\    border_color: dvui.Options.ColorOrName,
     \\
     \\    /// KICKZIG TODO:
     \\    /// fn frame is the View's true purpose.
@@ -72,6 +73,7 @@ pub const content: []const u8 =
     \\        main_view: *MainView,
     \\        all_panels: *Panels,
     \\        exit: ExitFn,
+    \\        theme: *dvui.Theme,
     \\    ) !*View {
     \\        var self: *View = try allocator.create(View);
     \\        self.allocator = allocator;
@@ -79,6 +81,7 @@ pub const content: []const u8 =
     \\        self.main_view = main_view;
     \\        self.all_panels = all_panels;
     \\        self.exit = exit;
+    \\        self.border_color = theme.style_accent.color_accent.?;
     \\        return self;
     \\    }
     \\

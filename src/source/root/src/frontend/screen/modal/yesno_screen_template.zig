@@ -1,26 +1,23 @@
 pub const content: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
-    \\const _channel_ = @import("channel");
-    \\const Panels = @import("panels.zig").Panels;
+    \\
     \\const _startup_ = @import("startup");
+    \\
     \\const MainView = @import("framers").MainView;
     \\const ModalParams = @import("modal_params").YesNo;
+    \\const Panels = @import("panels.zig").Panels;
     \\
     \\pub const Screen = struct {
     \\    allocator: std.mem.Allocator,
     \\    main_view: *MainView,
     \\    all_panels: ?*Panels,
-    \\    send_channels: *_channel_.FrontendToBackend,
-    \\    receive_channels: *_channel_.BackendToFrontend,
     \\
     \\    /// init constructs this screen, subscribes it to main_view and returns the error.
     \\    pub fn init(startup: _startup_.Frontend) !*Screen {
     \\        var self: *Screen = try startup.allocator.create(Screen);
     \\        self.allocator = startup.allocator;
     \\        self.main_view = startup.main_view;
-    \\        self.receive_channels = startup.receive_channels;
-    \\        self.send_channels = startup.send_channels;
     \\
     \\        // All of the panels.
     \\        self.all_panels = try Panels.init(startup.allocator, startup.main_view, startup.exit, startup.window, startup.theme);

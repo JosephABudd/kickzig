@@ -157,7 +157,7 @@ pub const Template = struct {
 
         {
             // The end 3.
-            line = try std.fmt.allocPrint(self.allocator, line_init_end_deinit_start, .{ self.screen_name, self.panel_name });
+            line = try std.fmt.allocPrint(self.allocator, line_init_end_deinit_start_f, .{ self.screen_name, self.panel_name });
             try lines.appendSlice(line);
         }
 
@@ -199,33 +199,25 @@ const line_2_extra_examples: []const u8 =
 ;
 
 const line_2_b: []const u8 =
+    \\
     \\//KICKZIG TODO: Customize Options to your requirements.
+    \\//All members should be optional.
     \\pub const Options = struct {
-    \\    screen_name: ?[]const u8 = null, // Required field.
-    \\    panel_name: ?[]const u8 = null, // Example field.
+    \\    foo: ?[]const u8 = null,
+    \\    bar: ?bool = null,
     \\
-    \\    /// The caller owns the returned value.
-    \\    fn label(self: *Options, allocator: std.mem.Allocator) ![]const u8 {
-    \\        return try std.fmt.allocPrint(allocator, "{s}", .{self.screen_name.?});
-    \\    }
-    \\
-    \\    fn copyOf(values: Options, allocator: std.mem.Allocator) !*Options {
-    \\        var copy_of: *Options = try allocator.create(Options);
-    \\        // Null optional members for fn reset.
-    \\        copy_of.screen_name = null;
-    \\        copy_of.panel_name = null;
-    \\        try copy_of.reset(allocator, values);
-    \\        errdefer copy_of.deinit();
-    \\        return copy_of;
+    \\    fn init(allocator: std.mem.Allocator, defaults: Options) !*Options {
+    \\        var self: *Options = try allocator.create(Options);
+    \\        self.foo = null;
+    \\        self.bar = null;
+    \\        try self.reset(allocator, defaults);
+    \\        errdefer self.deinit();
+    \\        return self;
     \\    }
     \\
     \\    pub fn deinit(self: *Options, allocator: std.mem.Allocator) void {
     \\        // Screen name.
-    \\        if (self.screen_name) |member| {
-    \\            allocator.free(member);
-    \\        }
-    \\        // Panel name.
-    \\        if (self.panel_name) |member| {
+    \\        if (self.foo) |member| {
     \\            allocator.free(member);
     \\        }
     \\        allocator.destroy(self);
@@ -238,52 +230,32 @@ const line_2_b: []const u8 =
     \\    ) !void {
     \\        return self._reset(
     \\            allocator,
-    \\            settings.screen_name,
-    \\            settings.panel_name,
-    \\        );
-    \\    }
-    \\
-    \\    fn resetWithScreenOptions(
-    \\        self: *Options,
-    \\        allocator: std.mem.Allocator,
-    \\        screen_options: ScreenOptions,
-    \\    ) !void {
-    \\        return self._reset(
-    \\            allocator,
-    \\            screen_options.screen_name,
-    \\            null,
+    \\            settings.foo,
+    \\            settings.bar,
     \\        );
     \\    }
     \\
     \\    fn _reset(
     \\        self: *Options,
     \\        allocator: std.mem.Allocator,
-    \\        screen_name: ?[]const u8,
-    \\        panel_name: ?[]const u8,
+    \\        foo: ?[]const u8,
+    \\        bar: ?bool,
     \\    ) !void {
-    \\        // Screen name.
-    \\        if (screen_name) |reset_value| {
-    \\            if (self.screen_name) |value| {
-    \\                allocator.free(value);
+    \\        // foo.
+    \\        if (foo) |reset_value| {
+    \\            if (self.foo) |self_value| {
+    \\                allocator.free(self_value);
     \\            }
-    \\            self.screen_name = try allocator.alloc(u8, reset_value.len);
+    \\            self.foo = try allocator.alloc(u8, reset_value.len);
     \\            errdefer {
-    \\                self.screen_name = null;
+    \\                self.foo = null;
     \\                self.deinit();
     \\            }
-    \\            @memcpy(@constCast(self.screen_name.?), reset_value);
+    \\            @memcpy(@constCast(self.foo.?), reset_value);
     \\        }
-    \\        // Panel name.
-    \\        if (panel_name) |reset_value| {
-    \\            if (self.panel_name) |value| {
-    \\                allocator.free(value);
-    \\            }
-    \\            self.panel_name = try allocator.alloc(u8, reset_value.len);
-    \\            errdefer {
-    \\                self.panel_name = null;
-    \\                self.deinit();
-    \\            }
-    \\            @memcpy(@constCast(self.panel_name.?), reset_value);
+    \\        // bar.
+    \\        if (bar) |reset_value| {
+    \\            self.bar = reset_value;
     \\        }
     \\    }
     \\};
@@ -313,10 +285,11 @@ const line_3_f: []const u8 =
     \\    exit: ExitFn,
     \\    lock: std.Thread.Mutex,
     \\    state: ?*Options,
+    \\    screen_options: ScreenOptions,
     \\
     \\    const default_settings = Options{{
-    \\        .screen_name = "{0s}",
-    \\        .panel_name = "{1s}",
+    \\        .foo = "{0s}.{1s}",
+    \\        .bar = false,
     \\    }};
     \\
     \\    /// KICKZIG TODO:
@@ -327,31 +300,29 @@ const line_3_f: []const u8 =
     \\        self: *View,
     \\        arena: std.mem.Allocator,
     \\    ) !void {{
+    \\        _ = arena;
+    \\
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
     \\
-    \\        // Get a copy of State.
-    \\        const settings: *Options = try Options.copyOf(self.state.?.*, arena);
-    \\        defer settings.deinit(arena);
-    \\        const screen_name: []const u8 = try settings.label(arena);
-    \\        defer arena.free(screen_name);
-    \\
-    \\        // Content is layed out in a vertical stack.
-    \\        // The vertical stack will have 2 rows.
-    \\        // Row 1 is the screen name.
+    \\        // Begin with the view's master layout.
+    \\        // A vertical stack.
+    \\        // So that the scroll area is always under the heading.
+    \\        // Row 1 is the heading.
     \\        // Row 2 is the scroller with it's own vertically stacked content.
-    \\        var vertical_stack_layout: *dvui.BoxWidget = dvui.box(
+    \\        var master_layout: *dvui.BoxWidget = dvui.box(
     \\            @src(),
     \\            .vertical,
     \\            .{{
     \\                .expand = .both,
     \\                .background = true,
+    \\                .name = "master_layout",
     \\            }},
     \\        ) catch |err| {{
-    \\            self.exit(@src(), err, "vertical_stack_layout");
+    \\            self.exit(@src(), err, "dvui.box");
     \\            return err;
     \\        }};
-    \\        defer vertical_stack_layout.deinit();
+    \\        defer master_layout.deinit();
     \\
     \\        {{
     \\            // Vertical Stack Row 1: The screen's name.
@@ -369,126 +340,128 @@ const line_3_f: []const u8 =
     \\            }};
     \\            defer row1.deinit();
     \\
-    \\            dvui.labelNoFmt(@src(), screen_name, .{{ .font_style = .title }}) catch |err| {{
+    \\            dvui.labelNoFmt(@src(), "{0s}", .{{ .font_style = .title }}) catch |err| {{
     \\                self.exit(@src(), err, "row1 label");
     \\                return err;
     \\            }};
     \\        }}
     \\
-    \\        // Vertical Stack Row 2: The vertical scroller.
-    \\        // The vertical scroller has it's contents vertically stacked.
-    \\        var scroller = dvui.scrollArea(@src(), .{{}}, .{{ .expand = .both }}) catch |err| {{
-    \\            self.exit(@src(), err, "scroller");
-    \\            return err;
-    \\        }};
-    \\        defer scroller.deinit();
-    \\
-    \\        // Vertically stack the scroller's contents.
-    \\        var scroller_layout: *dvui.BoxWidget = dvui.box(@src(), .vertical, .{{ .expand = .horizontal }}) catch |err| {{
-    \\            self.exit(@src(), err, "scroller_layout");
-    \\            return err;
-    \\        }};
-    \\        defer scroller_layout.deinit();
-    \\
     \\        {{
-    \\            // Scroller's Content Row 1. The panel's name.
-    \\            // Row 1 has 2 columns.
-    \\            var scroller_row1: *dvui.BoxWidget = dvui.box(@src(), .horizontal, .{{}}) catch |err| {{
-    \\                self.exit(@src(), err, "scroller_row1");
+    \\            // Vertical Stack Row 2: The vertical scroller.
+    \\            // The vertical scroller has it's contents vertically stacked.
+    \\            var scroller = dvui.scrollArea(@src(), .{{}}, .{{ .expand = .both }}) catch |err| {{
+    \\                self.exit(@src(), err, "scroller");
     \\                return err;
     \\            }};
-    \\            defer scroller_row1.deinit();
-    \\            // Row 1 Column 1: The label.
-    \\            dvui.labelNoFmt(@src(), "Panel Name: ", .{{ .font_style = .heading }}) catch |err| {{
-    \\                self.exit(@src(), err, "scroller_row1 heading");
+    \\            defer scroller.deinit();
+    \\    
+    \\            // Vertically stack the scroller's contents.
+    \\            var scroller_layout: *dvui.BoxWidget = dvui.box(@src(), .vertical, .{{ .expand = .horizontal }}) catch |err| {{
+    \\                self.exit(@src(), err, "scroller_layout");
     \\                return err;
     \\            }};
-    \\            // Row 1 Column 2: The panel's name.
-    \\            dvui.labelNoFmt(@src(), settings.panel_name.?, .{{}}) catch |err| {{
-    \\                self.exit(@src(), err, "scroller_row1 text");
-    \\                return err;
-    \\            }};
-    \\        }}
-    \\        {{
-    \\            // Scroller's Content Row 2.
-    \\            // Instructions using a text layout widget.
-    \\            var scroller_row2 = dvui.TextLayoutWidget.init(
-    \\                @src(),
-    \\                .{{}},
-    \\                .{{
-    \\                    .expand = .horizontal,
-    \\                }},
-    \\            );
-    \\            defer scroller_row2.deinit();
-    \\            scroller_row2.install(.{{}}) catch |err| {{
-    \\                self.exit(@src(), err, "scroller_row2 instructions");
-    \\                return err;
-    \\            }};
-    \\
-    \\            const intructions: []const u8 =
-    \\                \\The {0s} screen is a panel screen.
-    \\                \\Panel screens function by showing only one panel at a time.
-    \\                \\
-    \\                \\Using this screen:
-    \\                \\ 1. In the main menu:
-    \\                \\    * Add .{0s} to pub const sorted_main_menu_screen_tags in src/deps/main_menu/api.zig.
-    \\                \\ 2. As content for a tab.
-    \\                \\    * kickzig add-tab «new-screen-name» *{0s} «[*]other-tab-names ...»
+    \\            defer scroller_layout.deinit();
+    \\    
+    \\            {{
+    \\                // Scroller's Content Row 1. The panel's name.
+    \\                // Row 1 has 2 columns.
+    \\                var scroller_row1: *dvui.BoxWidget = dvui.box(@src(), .horizontal, .{{}}) catch |err| {{
+    \\                    self.exit(@src(), err, "scroller_row1");
+    \\                    return err;
+    \\                }};
+    \\                defer scroller_row1.deinit();
+    \\                // Row 1 Column 1: The label.
+    \\                dvui.labelNoFmt(@src(), "Panel Name: ", .{{ .font_style = .heading }}) catch |err| {{
+    \\                    self.exit(@src(), err, "scroller_row1 heading");
+    \\                    return err;
+    \\                }};
+    \\                // Row 1 Column 2: The panel's name.
+    \\                dvui.labelNoFmt(@src(), "{1s}", .{{}}) catch |err| {{
+    \\                    self.exit(@src(), err, "scroller_row1 text");
+    \\                    return err;
+    \\                }};
+    \\            }}
+    \\            {{
+    \\                // Scroller's Content Row 2.
+    \\                // Instructions using a text layout widget.
+    \\                var scroller_row2 = dvui.TextLayoutWidget.init(
+    \\                    @src(),
+    \\                    .{{}},
+    \\                    .{{
+    \\                        .expand = .horizontal,
+    \\                    }},
+    \\                );
+    \\                defer scroller_row2.deinit();
+    \\                scroller_row2.install(.{{}}) catch |err| {{
+    \\                    self.exit(@src(), err, "scroller_row2 instructions");
+    \\                    return err;
+    \\                }};
+    \\    
+    \\                const intructions: []const u8 =
+    \\                    \\The {0s} screen is a panel screen.
+    \\                    \\Panel screens function by showing only one panel at a time.
+    \\                    \\
+    \\                    \\Using this screen:
+    \\                    \\ 1. In the main menu:
+    \\                    \\    * Add .{0s} to pub const sorted_main_menu_screen_tags in src/deps/main_menu/api.zig.
+    \\                    \\ 2. As content for a tab.
+    \\                    \\    * kickzig add-tab «new-screen-name» *{0s} «[*]other-tab-names ...»
     \\
 ;
 
 const line_3_instructions_no_other_panels: []const u8 =
-    \\                \\
-    \\            ;
+    \\                    \\
+    \\                ;
     \\
 ;
 
 const line_3_instructions_other_panels: []const u8 =
-    \\                \\The other panels in this screen can be viewed using the buttons below.
-    \\                \\
-    \\            ;
+    \\                    \\The other panels in this screen can be viewed using the buttons below.
+    \\                    \\
+    \\                ;
     \\
 ;
 
 const line_3_end: []const u8 =
-    \\            try scroller_row2.addText(intructions, .{});
-    \\        }
+    \\                try scroller_row2.addText(intructions, .{});
+    \\            }
     \\
 ;
 
 // {0s} is panel name.
 // {1d} is row number.
 const line_row_switch_panel_button_f: []const u8 =
-    \\        {{
-    \\            // Scroller's Content Row {1d}.
-    \\            // A button which switches panels.
-    \\            const pressed: bool = dvui.button(@src(), "Switch to the {0s} panel.", .{{}}, .{{}}) catch |err| {{
-    \\                self.exit(@src(), err, "row{1d} switch panel button");
-    \\                return err;
-    \\            }};
-    \\            if (pressed) {{
-    \\                self.all_panels.setCurrentTo{0s}();
+    \\            {{
+    \\                // Scroller's Content Row {1d}.
+    \\                // A button which switches panels.
+    \\                const pressed: bool = dvui.button(@src(), "Switch to the {0s} panel.", .{{}}, .{{}}) catch |err| {{
+    \\                    self.exit(@src(), err, "row{1d} switch panel button");
+    \\                    return err;
+    \\                }};
+    \\                if (pressed) {{
+    \\                    self.all_panels.setCurrentTo{0s}();
+    \\                }}
     \\            }}
-    \\        }}
     \\
 ;
 
 // {0d} is row number.
 const line_close_container_f: []const u8 =
-    \\
-    \\        // Scroller's Content Row {0d}.
-    \\        // A button which closes the container.
-    \\        if (self.container.?.isCloseable()) {{
-    \\            // This screens container can be closed.
-    \\            // Allow the user to close the container.
-    \\            const pressed: bool = dvui.button(@src(), "Close Container.", .{{}}, .{{}}) catch |err| {{
-    \\                self.exit(@src(), err, "row{0d} close container button");
-    \\                return err;
-    \\            }};
-    \\            if (pressed) {{
-    \\                self.container.?.close();
+    \\            {{
+    \\                // Scroller's Content Row {0d}.
+    \\                // A button which closes the container.
+    \\                if (self.container.?.isCloseable()) {{
+    \\                    // This screens container can be closed.
+    \\                    // Allow the user to close the container.
+    \\                    const pressed: bool = dvui.button(@src(), "Close Container.", .{{}}, .{{}}) catch |err| {{
+    \\                        self.exit(@src(), err, "row{0d} close container button");
+    \\                        return err;
+    \\                    }};
+    \\                    if (pressed) {{
+    \\                        self.container.?.close();
+    \\                    }}
+    \\                }}
     \\            }}
-    \\        }}
     \\
 ;
 
@@ -496,59 +469,63 @@ const line_close_container_f: []const u8 =
 // {1s} is panel name.
 // {2d} is row number.
 const line_end_1_OK_f: []const u8 =
-    \\
-    \\        // Scroller's Content Row {2d}.
-    \\        // A button which opens the OK modal screen using 1 column.
-    \\        const pressed: bool = dvui.button(@src(), "OK Modal Screen.", .{{}}, .{{}}) catch |err| {{
-    \\            self.exit(@src(), err, "row{2d} OK Modal button");
-    \\            return err;
-    \\        }};
-    \\        if (pressed) {{
-    \\            // Modal params a part of the modal state.
-    \\            // There fore using the gpa not the arena.
-    \\            const ok_args = OKModalParams.init(self.allocator, "Using the OK Modal Screen!", "This is the OK modal activated from the {1s} panel in the {0s} screen.") catch |err| {{
-    \\                self.exit(@src(), err, "row{2d} ok_args");
-    \\                return err;
-    \\            }};
-    \\            self.main_view.showOK(ok_args);
-    \\        }}
+    \\            {{
+    \\                // Scroller's Content Row {2d}.
+    \\                // A button which opens the OK modal screen using 1 column.
+    \\                const pressed: bool = dvui.button(@src(), "OK Modal Screen.", .{{}}, .{{}}) catch |err| {{
+    \\                    self.exit(@src(), err, "row{2d} OK Modal button");
+    \\                    return err;
+    \\                }};
+    \\                if (pressed) {{
+    \\                    // Modal params a part of the modal state.
+    \\                    // There fore using the gpa not the arena.
+    \\                    const ok_args = OKModalParams.init(self.allocator, "Using the OK Modal Screen!", "This is the OK modal activated from the {1s} panel in the {0s} screen.") catch |err| {{
+    \\                        self.exit(@src(), err, "row{2d} ok_args");
+    \\                        return err;
+    \\                    }};
+    \\                    self.main_view.showOK(ok_args);
+    \\                }}
+    \\            }}
     \\
 ;
 
 // {0d} is row number.
 const line_end_1_YESNO_f: []const u8 =
     \\
-    \\        // Row {0d}: A button which opens the YesNo modal screen.
-    \\        if (try dvui.button(@src(), "YesNo Modal Screen.", .{{}}, .{{}})) {{
-    \\            var heading: []const u8 = undefined;
-    \\            const yes_label: []const u8 = "Yes.";
-    \\            const no_label: []const u8 = "No.";
-    \\            if (self.yes_no) |yes_no| {{
-    \\                if (yes_no) {{
-    \\                    heading = "You clicked Yes last time.";
-    \\                }} else {{
-    \\                    heading = "You cliced No last time.";
+    \\            {{
+    \\                // Row {0d}: A button which opens the YesNo modal screen.
+    \\                if (try dvui.button(@src(), "YesNo Modal Screen.", .{{}}, .{{}})) {{
+    \\                    var heading: []const u8 = undefined;
+    \\                    const yes_label: []const u8 = "Yes.";
+    \\                    const no_label: []const u8 = "No.";
+    \\                    if (self.yes_no) |yes_no| {{
+    \\                        if (yes_no) {{
+    \\                            heading = "You clicked Yes last time.";
+    \\                        }} else {{
+    \\                            heading = "You cliced No last time.";
+    \\                        }}
+    \\                    }} else {{
+    \\                        heading = "You haven't clicked any buttons yet so click one!";
+    \\                    }}
+    \\                    // Modal params a part of the modal state.
+    \\                    // There fore using the gpa not the arena.
+    \\                    const yesno_args = try YesNoModalParams.init(
+    \\                        self.allocator,
+    \\                        heading,
+    \\                        "Click any button.",
+    \\                        yes_label,
+    \\                        no_label,
+    \\                        self,
+    \\                        View.modalYesCB,
+    \\                        View.modalNoCB,
+    \\                    );
+    \\                    self.main_view.showYesNo(yesno_args);
     \\                }}
-    \\            }} else {{
-    \\                heading = "You haven't clicked any buttons yet so click one!";
     \\            }}
-    \\            // Modal params a part of the modal state.
-    \\            // There fore using the gpa not the arena.
-    \\            const yesno_args = try YesNoModalParams.init(
-    \\                self.allocator,
-    \\                heading,
-    \\                "Click any button.",
-    \\                yes_label,
-    \\                no_label,
-    \\                self,
-    \\                View.modalYesCB,
-    \\                View.modalNoCB,
-    \\            );
-    \\            self.main_view.showYesNo(yesno_args);
-    \\        }}
 ;
 
 const line_end_1_end_frame_start_init: []const u8 =
+    \\        }
     \\    }
     \\
     \\    pub fn init(
@@ -572,15 +549,14 @@ const line_init_start_2: []const u8 =
     \\    ) !*View {
     \\        var self: *View = try allocator.create(View);
     \\        self.allocator = allocator;
-    \\        self.state = Options.copyOf(default_settings, allocator) catch |err| {
+    \\
+    \\        // Initialize state.
+    \\        self.state = try Options.init(allocator, default_settings);
+    \\        errdefer {
     \\            self.state = null;
     \\            self.deinit();
-    \\            return err;
-    \\        };
-    \\        try self.state.?.resetWithScreenOptions(allocator, screen_options);
-    \\        errdefer self.deinit();
+    \\        }
     \\
-    \\        self.lock = std.Thread.Mutex{};
     \\        self.window = window;
     \\        self.main_view = main_view;
     \\        self.container = container;
@@ -600,8 +576,10 @@ const line_init_start_2_set_yesno: []const u8 =
 
 // screem_name {0s}
 // tab_name {1s}
-const line_init_end_deinit_start: []const u8 =
+const line_init_end_deinit_start_f: []const u8 =
     \\        self.exit = exit;
+    \\        self.lock = std.Thread.Mutex{{}};
+    \\        self.screen_options = screen_options;
     \\        return self;
     \\    }}
     \\
@@ -625,19 +603,8 @@ const line_init_end_deinit_start: []const u8 =
     \\        self.container.?.refresh();
     \\    }}
     \\
-    \\    /// The caller owns the returned value.
-    \\    pub fn getState(self: *View) !*Options {{
-    \\        self.lock.lock();
-    \\        defer self.lock.unlock();
-    \\
-    \\        return Options.copyOf(self.state.?.*, self.allocator) catch |err| {{
-    \\            self.exit(@src(), err, "{0s}.{1s} unable to set state");
-    \\            return err;
-    \\        }};
-    \\    }}
-    \\
     \\    /// refresh only if this view's panel is showing.
-    \\    fn refresh(self: *View) void {{
+    \\    pub fn refresh(self: *View) void {{
     \\        if (self.all_panels.current_panel_tag == .{0s}) {{
     \\            // This is the current panel.
     \\            self.container.?.refresh();
