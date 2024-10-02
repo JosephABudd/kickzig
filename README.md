@@ -1,6 +1,8 @@
 # kickzig "zig and dvui my way"
 
-## Sep 30, 2024: version 0.4.0
+## Oct 2, 2024: version 0.4.1
+
+Fixed: Tab screen no longer uses message in a framework built without messages.
 
 1. Works with [dvui](https://github.com/david-vanderson/dvui) archive afc277df749f9794d4cce17e257cf1d5b7e9c4f7.
 1. Works with zig 0.13.0.

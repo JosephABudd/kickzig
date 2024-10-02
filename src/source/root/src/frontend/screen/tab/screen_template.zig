@@ -143,7 +143,13 @@ pub const Template = struct {
             try lines.appendSlice(line_10_use_messenger);
         }
 
-        try lines.appendSlice(line_11);
+        try lines.appendSlice(line_11_a);
+
+        if (self.use_messenger) {
+            try lines.appendSlice(line_11_messenger);
+        }
+
+        try lines.appendSlice(line_11_b);
 
         // Init the example tabs.
         for (self.tab_names, 0..) |tab_name, i| {
@@ -480,7 +486,7 @@ const line_10_use_messenger: []const u8 =
     \\
 ;
 
-const line_11: []const u8 =
+const line_11_a: []const u8 =
     \\        self.screen_pointers = startup.screen_pointers;
     \\        self.window = startup.window;
     \\        self.startup = startup;
@@ -499,6 +505,9 @@ const line_11: []const u8 =
     \\        self.tabs = try Tabs.init(startup, self_as_container, tabs_options);
     \\        errdefer self.deinit();
     \\
+;
+
+const line_11_messenger: []const u8 =
     \\
     \\        // Create the messenger.
     \\        self.messenger = try Messenger.init(
@@ -511,6 +520,10 @@ const line_11: []const u8 =
     \\            self.state.?.*,
     \\        );
     \\        errdefer self.deinit();
+    \\
+;
+
+const line_11_b: []const u8 =
     \\
     \\        // Create 1 of each type of tab.
     \\
