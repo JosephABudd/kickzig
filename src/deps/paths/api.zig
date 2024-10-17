@@ -166,7 +166,9 @@ pub const FolderPaths = struct {
     root_src_deps_channel_backtofront: ?[]const u8,
     root_src_deps_channel_trigger: ?[]const u8,
     root_src_deps_closer: ?[]const u8,
+    root_src_deps_cont: ?[]const u8,
     root_src_deps_counter: ?[]const u8,
+    root_src_deps_embed: ?[]const u8,
     root_src_deps_main_menu: ?[]const u8,
     root_src_deps_message: ?[]const u8,
     root_src_deps_framers: ?[]const u8,
@@ -196,7 +198,9 @@ pub const FolderPaths = struct {
         self.root_src_deps_channel_backtofront = null;
         self.root_src_deps_channel_trigger = null;
         self.root_src_deps_closer = null;
+        self.root_src_deps_cont = null;
         self.root_src_deps_counter = null;
+        self.root_src_deps_embed = null;
         self.root_src_deps_main_menu = null;
         self.root_src_deps_message = null;
         self.root_src_deps_framers = null;
@@ -259,7 +263,13 @@ pub const FolderPaths = struct {
         if (self.root_src_deps_closer) |member| {
             allocator.free(member);
         }
+        if (self.root_src_deps_cont) |member| {
+            allocator.free(member);
+        }
         if (self.root_src_deps_counter) |member| {
+            allocator.free(member);
+        }
+        if (self.root_src_deps_embed) |member| {
             allocator.free(member);
         }
         if (self.root_src_deps_main_menu) |member| {
@@ -428,6 +438,12 @@ pub const FolderPaths = struct {
             try src_dir.makePath(temp);
         }
         {
+            // deps/cont/
+            temp = try deps.pathContFolder(self.allocator);
+            defer self.allocator.free(temp);
+            try src_dir.makePath(temp);
+        }
+        {
             // deps/counter/
             temp = try deps.pathCounterFolder(self.allocator);
             defer self.allocator.free(temp);
@@ -436,6 +452,12 @@ pub const FolderPaths = struct {
         {
             // deps/closedownjobs/
             temp = try deps.pathCloseDownJobsFolder(self.allocator);
+            defer self.allocator.free(temp);
+            try src_dir.makePath(temp);
+        }
+        {
+            // deps/embed/
+            temp = try deps.pathEmbedFolder(self.allocator);
             defer self.allocator.free(temp);
             try src_dir.makePath(temp);
         }
@@ -679,7 +701,8 @@ pub fn folders() !*FolderPaths {
             folder_paths.deinit();
         }
 
-        { // /src/deps/channel/ path.
+        {
+            // /src/deps/channel/ path.
             temp = try deps.pathChannelFolder(gpa);
             errdefer {
                 folder_paths.deinit();
@@ -706,7 +729,8 @@ pub fn folders() !*FolderPaths {
             }
         }
 
-        { // /src/deps/channel/backtofront/ path.
+        {
+            // /src/deps/channel/backtofront/ path.
             temp = try deps.pathChannelBackToFrontFolder(gpa);
             errdefer {
                 folder_paths.deinit();
@@ -720,7 +744,6 @@ pub fn folders() !*FolderPaths {
         }
 
         {
-
             // /src/deps/channel/trigger/ path.
             temp = try deps.pathChannelTriggerFolder(gpa);
             errdefer {
@@ -743,6 +766,20 @@ pub fn folders() !*FolderPaths {
             defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_closer = try fspath.join(gpa, params2);
+            errdefer {
+                folder_paths.deinit();
+            }
+        }
+
+        {
+            // /src/deps/cont/ path.
+            temp = try deps.pathContFolder(gpa);
+            errdefer {
+                folder_paths.deinit();
+            }
+            defer gpa.free(temp);
+            params2[1] = temp;
+            folder_paths.root_src_deps_cont = try fspath.join(gpa, params2);
             errdefer {
                 folder_paths.deinit();
             }
@@ -776,7 +813,8 @@ pub fn folders() !*FolderPaths {
             }
         }
 
-        { // /src/deps/framers/ path.
+        {
+            // /src/deps/framers/ path.
             temp = try deps.pathFramersFolder(gpa);
             errdefer {
                 folder_paths.deinit();
@@ -784,6 +822,20 @@ pub fn folders() !*FolderPaths {
             defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_framers = try fspath.join(gpa, params2);
+            errdefer {
+                folder_paths.deinit();
+            }
+        }
+
+        {
+            // /src/deps/embed/ path.
+            temp = try deps.pathEmbedFolder(gpa);
+            errdefer {
+                folder_paths.deinit();
+            }
+            defer gpa.free(temp);
+            params2[1] = temp;
+            folder_paths.root_src_deps_embed = try fspath.join(gpa, params2);
             errdefer {
                 folder_paths.deinit();
             }

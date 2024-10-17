@@ -1,28 +1,64 @@
 # kickzig "zig and dvui my way"
 
-## Oct 2, 2024: version 0.4.1
+## Oct 17, 2024: version 0.5.0
 
-Fixed: Tab screen no longer uses message in a framework built without messages.
-
-1. Works with [dvui](https://github.com/david-vanderson/dvui) archive afc277df749f9794d4cce17e257cf1d5b7e9c4f7.
+1. Works with [dvui first release](https://github.com/david-vanderson/dvui/releases/tag/v0.1.0).
 1. Works with zig 0.13.0.
 
-### Updates
+### The example CRUD application and the kickzig wiki
 
-* The command `kickzig framework` builds the framework with out messages, message channels and message handlers.
-* The command `kickzig framework add-messages` builds the framework with messages, message channels and message handlers built into the framework.
-* Added more specific error detection and error messages. Help commands will work anywhere. Screen add/remove commands only work in the root folder or one of it's sub folders. Message add/remove commands only work in the root folder or one of it's sub folders. Message commands also only work if the framework was created with messages added.
+* I am in the process of rebuilding the crud with this new version. When I am finished I will update the kickzig wiki. Building the crud is how I test each version of kickzig.
+* Currently, the kickzig previous version's framework (0.4.0) is displayed in the [crud](https://github.com/JosephABudd/crud) which is built using 2 differenct layouts.
+* The [kickzig.wiki](https://github.com/JosephABudd/kickzig/wiki) documents building that same CRUD.
+
+### This new version
+
+1. Reorganized some packages in the deps folder
+1. A more versital tab-bar layout
+
+This page displays a few screen shots of tab-bars.
+
+#### A single tab's layout and options
+
+Each tab in a tab-bar now has the following attributes which are laid-out from left to right in the tab's rendering. Each optional attribute can be added, removed, and changed at any time. The required text for the label can be changed at any time.
+
+1. Optional developer defined badge (16px X 16px ping file.)
+1. Required developer defined text for the label.
+1. Optional builtin move icon-buttons. (left,right or up,down)
+1. Optional multiple developer defined:
+   * Icon with no call-back. (example: to indicate that the form has been edited but not saved.)
+   * Icon with call-back. (example: to save the form which has been edited.)
+1. Optional builtin close icon-button.
+
+#### A tab's context menu and options
+
+Another attribute of a Tab is it's context menu. The context menu can be available or unavailable. The developer can also provide a tab with customized context menu items each with it's own call-back. (example: to save the form which has been edited.)
+
+#### The tab-bar's general settings v.s. each tab's own settings
+
+While the tab-bar has it's general settings that it applies to each tab, the developer can override those settings for individual tabs.
+
+### Examples of the new tabs with badges and the builtin move and close icons being displayed
+
+![The app's enhanced horizontal tabs example.](images/icon_tabs_horizontal.png)
+
+![The app's enhanced vertical tabs example.](images/icon_tabs_vertical.png)
+
+### An embed files package in deps
+
+The **embeds** package is where ebedded files can be imported. I needed it for my tab badges.
 
 ### Kickzig does everything I want so at this point I continue
 
 * looking for any legacy code patterns to replace with the zig code patterns that I now favor.
 * reviewing inline documentation.
-* reviewing messages outout to the user.
+* reviewing messages displayed to the user.
 * keep up with changes to dvui and zig.
 
 ### The example CRUD application and the kickzig wiki
 
-* The kickzig framework is displayed in the [crud](https://github.com/JosephABudd/crud) which is built using 2 differenct layouts.
+* I am in the process of rebuilding the crud with this new version. When I am finished I will update the kickzig wiki.
+* The kickzig v:0.4.0 framework is displayed in the [crud](https://github.com/JosephABudd/crud) which is built using 2 differenct layouts.
 * The [kickzig.wiki](https://github.com/JosephABudd/kickzig/wiki) documents building that same CRUD.
 
 ## Summary
@@ -34,7 +70,7 @@ Fixed: Tab screen no longer uses message in a framework built without messages.
    * The source code can be generated with or without it's own message framework which allows the front-end and back-end to communicate asymetrically through channels.
 1. **Adds and removes screens** in the source code.
    * Screens are the framework's front-end packages. Each type of screen is unique in how it lays out panels.
-   * Each panel is unique in how it displays visual output to the user and receive input from the user.
+   * Each panel is unique in how it displays visual output to the user and receives input from the user.
    * If messages were added into the framework then a screen has a message handler that handles communications between the screen and the back-end's message handlers.
 1. **Adds and removes messages** in the source code. If the framework was created with messages, then kickzig can be used to add and remove messages in the framework.
       * Messages are how the framework's front-end and back-end communicate.
@@ -50,13 +86,13 @@ kickzig creates a framework that is ready to build and run as soon as you create
 1. Build a framework with messages, message channels and message handlers.
    * The command `kickzig framework add-messages` generates the source code for a framework that is ready to build and run. The framework's front-end screens will have messengers to handle messages and channels for sending and receiving messages. The framework's back-end will have messengers to handle messages and channels for sending and receiving messages.
 
-Nota Bene: Currently, the kickzig generated framework must be built using zig version 0.13.0.
+Nota Bene: Currently, the kickzig generated framework must be built using zig version 0.1.0.
 
 ```shell
 ＄ mkdir myapp
 ＄ cd myapp
 ＄ kickzig framework add-messages
-＄ zig fetch https://github.com/david-vanderson/dvui/archive/afc277df749f9794d4cce17e257cf1d5b7e9c4f7.tar.gz --save
+＄ zig fetch https://github.com/david-vanderson/dvui/archive/refs/tags/v0.1.0.tar.gz --save
 ＄ zig build -freference-trace=255
 ＄ ./zig-out/bin/myapp
 ```
@@ -112,11 +148,11 @@ A tab's content can be any other screen of a panel in the same screen package.
 * I prefixed the **Edit** tab name with **\*** so that it will use the **Edit** screen in the panel/ folder, for content.
 * I prefixed the **Remove** tab name with **\*** so that it will use the **Remove** screen in the panel/ folder, for content.
 
-Below is the Contacts screen with the horizontal layout. Notice that the **Remove** tab is selected and is displaying the **Remove** content-screen.
+Below is the Contacts screen with the horizontal layout. I turned off the tab movement and closing buttons. Notice that the **Remove** tab is selected and is displaying the **Remove** content-screen.
 
 ![The app's horizontal tab bar screen.](images/myapp_horizontal_tab.png)
 
-Below is the Contacts screen with the vertical layout. Notice that the **Edit** tab is selected and is displaying the **Edit** panel-screen.
+Below is the Contacts screen with the vertical layout. Again, I turned off the tab movement and closing buttons. Notice that the **Edit** tab is selected and is displaying the **Edit** panel-screen.
 
 ![The app's vertical tab bar screen.](images/myapp_vertical_tab.png)
 
@@ -126,7 +162,7 @@ Below is the Contacts screen with the vertical layout. Notice that the tab-bar i
 
 ### Modal screens
 
-Modal screens are the framework's dialogs. They are the same as panel screens where one panel is displayed at a time.
+Modal screens are the framework's dialogs. Like panel screens, modal screens display only one panel at a time.
 
 When a modal screen is to be displayed, the framwork caches the current screen before displaying the modal screen. When a modal screen is finally closed, the framework gets that cached previous screen and displays it.
 

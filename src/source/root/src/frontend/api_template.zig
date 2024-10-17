@@ -213,8 +213,6 @@ const line1: []const u8 =
     \\var main_view: *MainView = undefined; // standalone-sdl will deinit.
     \\var screen_pointers: *ScreenPointers = undefined;
     \\
-    \\pub var main_menu_key_pressed: bool = false;
-    \\
     \\pub fn init(startup: *_startup_.Frontend) !void {
     \\    // Set up each all screens.
     \\    allocator = startup.allocator;
@@ -314,7 +312,7 @@ const line2b: []const u8 =
     \\
 ;
 const line2_label: []const u8 =
-    \\                .{0s} => try screen_pointers.{0s}.?.label(arena),
+    \\                .{0s} => try screen_pointers.{0s}.?.mainMenuLabel(arena),
     \\
 ;
 
@@ -322,7 +320,7 @@ const line3: []const u8 =
     \\            };
     \\            defer arena.free(label);
     \\
-    \\            if (try dvui.menuItemLabel(@src(), label, .{}, .{ .id_extra = id_extra }) != null) {
+    \\            if (try dvui.menuItemLabel(@src(), label, .{}, .{ .expand = .horizontal, .id_extra = id_extra }) != null) {
     \\                m.close();
     \\
     \\                return switch (screen_tag) {
@@ -352,21 +350,21 @@ const line4: []const u8 =
     \\        //  set _main_menu_.show_developer_menu_items to false.
     \\        // Developer menu items.
     \\        if (_main_menu_.show_developer_menu_items) {
-    \\            if (try dvui.menuItemLabel(@src(), "DVUI Debug", .{}, .{}) != null) {
+    \\            if (try dvui.menuItemLabel(@src(), "DVUI Debug", .{}, .{ .expand = .horizontal }) != null) {
     \\                dvui.toggleDebugWindow();
     \\            }
     \\            if (dvui.Examples.show_demo_window) {
-    \\                if (try dvui.menuItemLabel(@src(), "Hide the DVUI Demo", .{}, .{}) != null) {
+    \\                if (try dvui.menuItemLabel(@src(), "Hide the DVUI Demo", .{}, .{ .expand = .horizontal }) != null) {
     \\                    dvui.Examples.show_demo_window = false;
     \\                }
     \\            } else {
-    \\                if (try dvui.menuItemLabel(@src(), "Show the DVUI Demo", .{}, .{}) != null) {
+    \\                if (try dvui.menuItemLabel(@src(), "Show the DVUI Demo", .{}, .{ .expand = .horizontal }) != null) {
     \\                    dvui.Examples.show_demo_window = true;
     \\                }
     \\            }
     \\        }
     \\
-    \\        if (try dvui.menuItemIcon(@src(), "close", dvui.entypo.align_top, .{ .submenu = false }, .{ .expand = .none }) != null) {
+    \\        if (try dvui.menuItemIcon(@src(), "close", dvui.entypo.align_top, .{ .submenu = false }, .{ .gravity_x = 0.5, .expand = .horizontal }) != null) {
     \\            m.close();
     \\            return;
     \\        }

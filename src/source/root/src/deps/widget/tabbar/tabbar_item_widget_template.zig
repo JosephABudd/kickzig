@@ -2,6 +2,9 @@ pub const content =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
+    \\const ContainerLabel = @import("cont").ContainerLabel;
+    \\
+    \\const Direction = dvui.enums.Direction;
     \\const Event = dvui.Event;
     \\const Options = dvui.Options;
     \\const Rect = dvui.Rect;
@@ -9,6 +12,23 @@ pub const content =
     \\const Size = dvui.Size;
     \\const Widget = dvui.Widget;
     \\const WidgetData = dvui.WidgetData;
+    \\
+    \\pub const UserSelection = enum {
+    \\    none,
+    \\    close_tab,
+    \\    move_tab_right_down,
+    \\    move_tab_left_up,
+    \\    select_tab,
+    \\    context,
+    \\};
+    \\
+    \\pub const UserAction = struct {
+    \\    user_selection: UserSelection = .none,
+    \\    point_of_context: dvui.Point = undefined,
+    \\    context_widget: *dvui.ContextWidget = undefined,
+    \\    move_from_index: usize = 0,
+    \\    move_to_index: usize = 0,
+    \\};
     \\
     \\pub const TabBarItemWidget = @This();
     \\
@@ -21,17 +41,33 @@ pub const content =
     \\    selected: ?bool = null,
     \\    flow: ?Flow = null,
     \\    id_extra: ?usize = null,
+    \\    show_close_icon: ?bool = null,
+    \\    show_move_icons: ?bool = null,
+    \\    show_context_menu: ?bool = null,
+    \\    index: ?usize = null,
+    \\    count_tabs: ?usize = null,
     \\};
     \\
-    \\var horizontal_init_options: InitOptions = .{
+    \\const horizontal_init_options: InitOptions = .{
+    \\    .id_extra = 0,
     \\    .selected = false,
     \\    .flow = .horizontal,
     \\};
     \\
-    \\var vertical_init_options: InitOptions = .{
+    \\const vertical_init_options: InitOptions = .{
+    \\    .id_extra = 0,
     \\    .selected = false,
     \\    .flow = .vertical,
     \\};
+    \\
+    \\wd: WidgetData = undefined,
+    \\focused_last_frame: bool = undefined,
+    \\highlight: bool = false,
+    \\defaults: dvui.Options = undefined,
+    \\init_options: InitOptions = undefined,
+    \\activated: bool = false,
+    \\show_active: bool = false,
+    \\mouse_over: bool = false,
     \\
     \\// Defaults.
     \\// Defaults for tabs in a horizontal tabbar.
@@ -112,72 +148,258 @@ pub const content =
     \\    return verticalContextOptions();
     \\}
     \\
-    \\pub fn verticalTabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, init_opts: InitOptions) !?dvui.Rect {
-    \\    var vertical_init_opts: TabBarItemWidget.InitOptions = TabBarItemWidget.vertical_init_options;
+    \\/// Param label is not owned by this fn.
+    \\pub fn verticalTabBarItemLabel(
+    \\    label: *ContainerLabel,
+    \\    init_opts: InitOptions,
+    \\    call_back: *const fn (implementor: *anyopaque, state: *anyopaque, point_of_context: dvui.Point) anyerror!void,
+    \\    call_back_implementor: *anyopaque,
+    \\    call_back_state: *anyopaque,
+    \\) !UserAction {
+    \\    var tab_init_opts: TabBarItemWidget.InitOptions = TabBarItemWidget.vertical_init_options;
     \\    if (init_opts.id_extra) |id_extra| {
-    \\        vertical_init_opts.id_extra = id_extra;
+    \\        tab_init_opts.id_extra = id_extra;
     \\    }
-    \\    if (init_opts.selected) |selected| {
-    \\        vertical_init_opts.selected = selected;
+    \\    if (init_opts.selected) |value| {
+    \\        tab_init_opts.selected = value;
     \\    }
-    \\    return tabBarItemLabel(src, label_str, vertical_init_opts);
+    \\    tab_init_opts.index = init_opts.index;
+    \\    tab_init_opts.id_extra = init_opts.index;
+    \\    tab_init_opts.count_tabs = init_opts.count_tabs;
+    \\    tab_init_opts.show_close_icon = init_opts.show_close_icon orelse true;
+    \\    tab_init_opts.show_move_icons = init_opts.show_move_icons orelse true;
+    \\    tab_init_opts.show_context_menu = init_opts.show_context_menu orelse true;
+    \\
+    \\    return tabBarItemLabel(label, tab_init_opts, .vertical, call_back, call_back_implementor, call_back_state);
     \\}
     \\
-    \\pub fn horizontalTabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, init_opts: InitOptions) !?dvui.Rect {
-    \\    var horizontal_init_opts: TabBarItemWidget.InitOptions = TabBarItemWidget.horizontal_init_options;
+    \\/// Param label is not owned by this fn.
+    \\pub fn horizontalTabBarItemLabel(
+    \\    label: *ContainerLabel,
+    \\    init_opts: InitOptions,
+    \\    call_back: *const fn (implementor: *anyopaque, state: *anyopaque, point_of_context: dvui.Point) anyerror!void,
+    \\    call_back_implementor: *anyopaque,
+    \\    call_back_state: *anyopaque,
+    \\) !UserAction {
+    \\    var tab_init_opts: TabBarItemWidget.InitOptions = TabBarItemWidget.horizontal_init_options;
     \\    if (init_opts.id_extra) |id_extra| {
-    \\        horizontal_init_opts.id_extra = id_extra;
+    \\        tab_init_opts.id_extra = id_extra;
     \\    }
-    \\    if (init_opts.selected) |selected| {
-    \\        horizontal_init_opts.selected = selected;
+    \\    if (init_opts.selected) |value| {
+    \\        tab_init_opts.selected = value;
     \\    }
-    \\    return tabBarItemLabel(src, label_str, horizontal_init_opts);
+    \\    tab_init_opts.index = init_opts.index;
+    \\    tab_init_opts.id_extra = init_opts.index;
+    \\    tab_init_opts.count_tabs = init_opts.count_tabs;
+    \\    tab_init_opts.show_close_icon = init_opts.show_close_icon orelse true;
+    \\    tab_init_opts.show_move_icons = init_opts.show_move_icons orelse true;
+    \\    tab_init_opts.show_context_menu = init_opts.show_context_menu orelse true;
+    \\
+    \\    return tabBarItemLabel(label, tab_init_opts, .horizontal, call_back, call_back_implementor, call_back_state);
     \\}
     \\
-    \\fn tabBarItemLabel(src: std.builtin.SourceLocation, label_str: []const u8, init_opts: TabBarItemWidget.InitOptions) !?dvui.Rect {
-    \\    var tbi = try tabBarItem(src, init_opts);
-    \\    var ret: ?dvui.Rect = null;
-    \\    if (tbi.activeRect()) |r| {
-    \\        ret = r;
+    \\// Param label is not owned by tabBarItemLabel.
+    \\// Display the button-label and return it's rect if clicked else null.
+    \\// Display each icon:
+    \\// * If icon is clicked and no cb then return button-label rect.
+    \\// * If icon is clicked and cp then run callback and return null.
+    \\// * CB icons only is init_opts.selected == true.
+    \\fn tabBarItemLabel(label: *ContainerLabel, init_opts: TabBarItemWidget.InitOptions, direction: Direction, call_back: *const fn (implementor: *anyopaque, state: *anyopaque, point_of_context: dvui.Point) anyerror!void, call_back_implementor: *anyopaque, call_back_state: *anyopaque) !UserAction {
+    \\    var user_action: UserAction = UserAction{};
+    \\    const tbi = try tabBarItem(init_opts);
+    \\
+    \\    const tab: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, tbi.defaults);
+    \\    defer tab.deinit();
+    \\
+    \\    const context_widget = try dvui.context(@src(), .{ .expand = .horizontal, .id_extra = @as(u16, @truncate(init_opts.id_extra.?)) });
+    \\    defer context_widget.deinit();
+    \\
+    \\    if (init_opts.show_context_menu.?) {
+    \\        if (context_widget.activePoint()) |active_point| {
+    \\            // The user right mouse clicked.
+    \\            // Save this state and keep rendering this item.
+    \\            // Return the right mouse click after all is rendered.
+    \\            user_action.user_selection = .context;
+    \\            try call_back(call_back_implementor, call_back_state, active_point);
+    \\        }
     \\    }
     \\
-    \\    var labelopts: dvui.Options = .{};
-    \\    if (tbi.show_active) {
-    \\        if (tbi.init_options.selected.?) {
-    \\            switch (tbi.init_options.flow.?) {
-    \\                .horizontal => {},
+    \\    var layout: *dvui.BoxWidget = try dvui.box(@src(), .horizontal, .{});
+    \\    defer layout.deinit();
+    \\
+    \\    // If there is a badge then display it.
+    \\    if (label.badge) |badge| {
+    \\        const imgsize = try dvui.imageSize("tab badge", badge);
+    \\        try dvui.image(
+    \\            @src(),
+    \\            "tab badge",
+    \\            badge,
+    \\            .{
+    \\                .padding = dvui.Rect{
+    \\                    .x = 5, // left
+    \\                    .y = 0, // top
+    \\                    .w = 0, // right
+    \\                    .h = 0, // bottom
+    \\                },
+    \\                .tab_index = 0,
+    \\                .gravity_y = 0.5,
+    \\                .gravity_x = 0.5,
+    \\                .min_size_content = .{ .w = imgsize.w, .h = imgsize.h },
+    \\            },
+    \\        );
+    \\    }
+    \\
+    \\    if (try dvui.button(@src(), label.text.?, .{}, .{ .id_extra = init_opts.id_extra, .background = false })) {
+    \\        if (user_action.user_selection == .none) {
+    \\            user_action.user_selection = .select_tab;
+    \\        }
+    \\        return user_action;
+    \\    }
+    \\
+    \\    if (init_opts.show_move_icons) |show_move_icons| {
+    \\        if (show_move_icons and init_opts.index.? > 0) {
+    \\            // Move left/up icon.
+    \\            // This icon is a button.
+    \\            switch (direction) {
+    \\                .horizontal => {
+    \\                    if (try dvui.buttonIcon(
+    \\                        @src(),
+    \\                        "entypo.chevron_small_left",
+    \\                        dvui.entypo.chevron_small_left,
+    \\                        .{},
+    \\                        .{ .id_extra = init_opts.id_extra.? },
+    \\                    )) {
+    \\                        // clicked
+    \\                        if (user_action.user_selection == .none) {
+    \\                            user_action.user_selection = .move_tab_left_up;
+    \\                            user_action.move_from_index = init_opts.id_extra.?;
+    \\                            user_action.move_to_index = init_opts.id_extra.? - 1;
+    \\                        }
+    \\                        return user_action;
+    \\                    }
+    \\                },
     \\                .vertical => {
-    \\                    labelopts.gravity_x = 1;
+    \\                    if (try dvui.buttonIcon(
+    \\                        @src(),
+    \\                        "entypo.chevron_small_up",
+    \\                        dvui.entypo.chevron_small_up,
+    \\                        .{},
+    \\                        .{ .id_extra = init_opts.id_extra.? },
+    \\                    )) {
+    \\                        // clicked
+    \\                        if (user_action.user_selection == .none) {
+    \\                            user_action.user_selection = .move_tab_left_up;
+    \\                            user_action.move_from_index = init_opts.id_extra.?;
+    \\                            user_action.move_to_index = init_opts.id_extra.? - 1;
+    \\                        }
+    \\                        return user_action;
+    \\                    }
+    \\                },
+    \\            }
+    \\        }
+    \\
+    \\        if (show_move_icons and init_opts.index.? < init_opts.count_tabs.? - 1) {
+    \\            // Move right/down icon.
+    \\            // This icon is a button.
+    \\            switch (direction) {
+    \\                .horizontal => {
+    \\                    if (try dvui.buttonIcon(
+    \\                        @src(),
+    \\                        "entypo.chevron_small_right",
+    \\                        dvui.entypo.chevron_small_right,
+    \\                        .{},
+    \\                        .{ .id_extra = init_opts.id_extra.? },
+    \\                    )) {
+    \\                        // clicked
+    \\                        if (user_action.user_selection == .none) {
+    \\                            user_action.user_selection = .move_tab_right_down;
+    \\                            user_action.move_from_index = init_opts.id_extra.?;
+    \\                            user_action.move_to_index = init_opts.id_extra.? + 1;
+    \\                        }
+    \\                        return user_action;
+    \\                    }
+    \\                },
+    \\                .vertical => {
+    \\                    if (try dvui.buttonIcon(
+    \\                        @src(),
+    \\                        "entypo.chevron_small_down",
+    \\                        dvui.entypo.chevron_small_down,
+    \\                        .{},
+    \\                        .{ .id_extra = init_opts.id_extra.? },
+    \\                    )) {
+    \\                        // clicked
+    \\                        if (user_action.user_selection == .none) {
+    \\                            user_action.user_selection = .move_tab_right_down;
+    \\                            user_action.move_from_index = init_opts.id_extra.?;
+    \\                            user_action.move_to_index = init_opts.id_extra.? + 1;
+    \\                        }
+    \\                        return user_action;
+    \\                    }
     \\                },
     \\            }
     \\        }
     \\    }
     \\
-    \\    try dvui.labelNoFmt(@src(), label_str, labelopts);
+    \\    // The custom icons.
+    \\    if (label.icons) |icons| {
+    \\        const icon_id_extra_base = init_opts.id_extra.? * icons.len;
+    \\        var icon_id: usize = 0;
+    \\        for (icons, 0..) |icon, i| {
+    \\            // display this icon as a button even if no callback.
+    \\            icon_id = icon_id_extra_base + i;
+    \\            const clicked: bool = try dvui.buttonIcon(
+    \\                @src(),
+    \\                icon.label.?,
+    \\                icon.tvg_bytes,
+    \\                .{},
+    \\                .{ .id_extra = icon_id },
+    \\            );
+    \\            if (clicked) {
+    \\                if (icon.call_back) |icon_call_back| {
+    \\                    // This icon has a call back so call it.
+    \\                    try icon_call_back(icon.implementor, icon.state);
+    \\                    return user_action;
+    \\                } else {
+    \\                    // This icon has no call back so select this tab.
+    \\                    if (user_action.user_selection == .none) {
+    \\                        user_action.user_selection = .select_tab;
+    \\                    }
+    \\                    return user_action;
+    \\                }
+    \\            }
+    \\        }
+    \\    }
     \\
-    \\    tbi.deinit();
+    \\    if (init_opts.show_close_icon) |show_close_icon| {
+    \\        if (show_close_icon) {
+    \\            if (try dvui.buttonIcon(
+    \\                @src(),
+    \\                "entypo.cross",
+    \\                dvui.entypo.cross,
+    \\                .{},
+    \\                .{},
+    \\            )) {
+    \\                // clicked
+    \\                if (user_action.user_selection == .none) {
+    \\                    user_action.user_selection = .close_tab;
+    \\                }
+    \\                return user_action;
+    \\            }
+    \\        }
+    \\    }
     \\
-    \\    return ret;
+    \\    // No user action.
+    \\    return user_action;
     \\}
     \\
-    \\pub fn tabBarItem(src: std.builtin.SourceLocation, init_opts: TabBarItemWidget.InitOptions) !*TabBarItemWidget {
-    \\    var ret = try dvui.currentWindow().arena.create(TabBarItemWidget);
-    \\    ret.* = TabBarItemWidget.init(src, init_opts);
-    \\    try ret.install(.{});
-    \\    return ret;
+    \\pub fn tabBarItem(init_opts: TabBarItemWidget.InitOptions) !TabBarItemWidget {
+    \\    return TabBarItemWidget.init(init_opts);
     \\}
     \\
-    \\wd: WidgetData = undefined,
-    \\focused_last_frame: bool = undefined,
-    \\highlight: bool = false,
-    \\init_options: InitOptions = undefined,
-    \\activated: bool = false,
-    \\show_active: bool = false,
-    \\mouse_over: bool = false,
-    \\
-    \\pub fn init(src: std.builtin.SourceLocation, init_opts: InitOptions) TabBarItemWidget {
+    \\pub fn init(init_opts: InitOptions) TabBarItemWidget {
     \\    var self = TabBarItemWidget{};
-    \\    var defaults: dvui.Options = switch (init_opts.flow.?) {
+    \\    self.init_options = init_opts;
+    \\    self.defaults = switch (init_opts.flow.?) {
     \\        .horizontal => blk: {
     \\            switch (init_opts.selected.?) {
     \\                true => break :blk horizontalDefaultSelectedOptions(),
@@ -192,12 +414,8 @@ pub const content =
     \\        },
     \\    };
     \\    if (init_opts.id_extra) |id_extra| {
-    \\        defaults.id_extra = id_extra;
+    \\        self.defaults.id_extra = id_extra;
     \\    }
-    \\    self.wd = dvui.WidgetData.init(src, .{}, defaults);
-    \\    self.init_options = init_opts;
-    \\    // self.show_active = init_opts.selected.?;
-    \\    self.focused_last_frame = dvui.dataGet(null, self.wd.id, "_focus_last", bool) orelse false;
     \\    return self;
     \\}
     \\

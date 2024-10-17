@@ -111,7 +111,7 @@ const line_start_1: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
-    \\const Container = @import("various").Container;
+    \\const Container = @import("cont").Container;
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\
@@ -131,36 +131,36 @@ const line_start_1_last: []const u8 =
 
 const line_start_options: []const u8 =
     \\
-    \\//KICKZIG TODO: Customize Options to your requirements.
-    \\//All members should be optional.
+    \\///KICKZIG TODO: Customize Options to your requirements.
+    \\///All members should be optional.
     \\pub const Options = struct {
+    \\    allocator: std.mem.Allocator = undefined,
     \\    foo: ?[]const u8 = null,
     \\    bar: ?bool = null,
     \\
     \\    fn init(allocator: std.mem.Allocator, defaults: Options) !*Options {
     \\        var self: *Options = try allocator.create(Options);
+    \\        self.allocator = allocator;
     \\        self.foo = null;
     \\        self.bar = null;
-    \\        try self.reset(allocator, defaults);
+    \\        try self.reset(defaults);
     \\        errdefer self.deinit();
     \\        return self;
     \\    }
     \\
-    \\    pub fn deinit(self: *Options, allocator: std.mem.Allocator) void {
+    \\    pub fn deinit(self: *Options) void {
     \\        // Screen name.
     \\        if (self.foo) |member| {
-    \\            allocator.free(member);
+    \\            self.allocator.free(member);
     \\        }
-    \\        allocator.destroy(self);
+    \\        self.allocator.destroy(self);
     \\    }
     \\
     \\    fn reset(
     \\        self: *Options,
-    \\        allocator: std.mem.Allocator,
     \\        settings: Options,
     \\    ) !void {
     \\        return self._reset(
-    \\            allocator,
     \\            settings.foo,
     \\            settings.bar,
     \\        );
@@ -168,16 +168,15 @@ const line_start_options: []const u8 =
     \\
     \\    fn _reset(
     \\        self: *Options,
-    \\        allocator: std.mem.Allocator,
     \\        foo: ?[]const u8,
     \\        bar: ?bool,
     \\    ) !void {
     \\        // foo.
     \\        if (foo) |reset_value| {
     \\            if (self.foo) |self_value| {
-    \\                allocator.free(self_value);
+    \\                self.allocator.free(self_value);
     \\            }
-    \\            self.foo = try allocator.alloc(u8, reset_value.len);
+    \\            self.foo = try self.allocator.alloc(u8, reset_value.len);
     \\            errdefer {
     \\                self.foo = null;
     \\                self.deinit();
@@ -455,26 +454,41 @@ const line_end_3_f: []const u8 =
     \\        self.allocator.destroy(self);
     \\    }}
     \\
+    \\    /// The caller owns the returned value.
+    \\    pub fn getState(self: *View) !*Options {{
+    \\        self.lock.lock();
+    \\        defer self.lock.unlock();
+    \\
+    \\        return Options.init(self.allocator, self.state.?.*);
+    \\    }}
+    \\
+    \\    /// The caller owns the returned value.
+    \\    /// Use _getState during framing or whenever View is locked.
+    \\    /// self.lock must be locked.
+    \\    fn _getState(self: *View) !*Options {{
+    \\        return self.state.?.init(self.allocator, self.state.?.*);
+    \\    }}
+    \\
     \\    /// setState uses the not null members of param settings to modify self.state.
     \\    /// param settings is owned by the caller.
     \\    pub fn setState(self: *View, settings: Options) !void {{
     \\        self.lock.lock();
     \\        defer self.lock.unlock();
     \\
-    \\        self.state.?.reset(self.allocator, settings) catch |err| {{
+    \\        return self._setState(settings);
+    \\    }}
+    \\
+    \\    /// _setState uses the not null members of param settings to modify self.state.
+    \\    /// Use _setState during framing or whenever View is locked.
+    \\    /// self.lock must be locked.
+    \\    /// param settings is owned by the caller.
+    \\    /// Refreshes this view after updating the state.
+    \\    fn _setState(self: *View, settings: Options) !void {{
+    \\        self.state.?.reset(settings) catch |err| {{
     \\            self.exit(@src(), err, "{0s}.{1s} unable to set state");
     \\            return err;
     \\        }};
     \\        self.container.?.refresh();
-    \\    }}
-    \\
-    \\    /// The caller does not own the returned value.
-    \\    /// The return value is read only.
-    \\    pub fn getState(self: *View) !*Options {{
-    \\        self.lock.lock();
-    \\        defer self.lock.unlock();
-    \\
-    \\        return self.state.?.*;
     \\    }}
     \\
     \\    pub fn willFrame(self: *View) bool {{

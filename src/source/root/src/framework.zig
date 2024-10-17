@@ -7,7 +7,6 @@ const _root_template_ = @import("root_template.zig");
 const _src_backend_ = @import("backend/framework.zig");
 const _src_frontend_ = @import("frontend/framework.zig");
 const _src_deps_ = @import("source_deps");
-const window_icon_png = @embedFile("zig-favicon.png");
 
 pub const frontend = _src_frontend_;
 pub const backend = _src_backend_;
@@ -41,14 +40,6 @@ pub fn create(allocator: std.mem.Allocator, app_name: []const u8, use_messenger:
         ofile = try src_dir.createFile(_filenames_.root_file_name, .{});
         defer ofile.close();
         try ofile.writeAll(_root_template_.content);
-    }
-
-    {
-        // zig-favicon.png
-        // Open, write and close the file.
-        ofile = try src_dir.createFile(_filenames_.favicon_file_name, .{});
-        defer ofile.close();
-        try ofile.writeAll(window_icon_png);
     }
 
     if (use_messenger) {

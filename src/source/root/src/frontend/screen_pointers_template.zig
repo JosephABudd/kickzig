@@ -242,8 +242,8 @@ const line1: []const u8 =
     \\const _main_menu_ = @import("main_menu");
     \\const _startup_ = @import("startup");
     \\
-    \\const Container = @import("various").Container;
-    \\const Content = @import("various").Content;
+    \\const Container = @import("cont").Container;
+    \\const Content = @import("cont").Content;
     \\const ScreenTags = @import("framers").ScreenTags;
     \\
     \\
@@ -321,9 +321,30 @@ const line4_init_tab: []const u8 =
     \\                .{0s} => {{
     \\                    // KICKZIG TODO: You can customize the init_options. See deps/widgets/tabbar/api.zig.
     \\                    const main_view_as_container: *Container = try startup.main_view.as{0s}Container();
-    \\                    // The 3rd param is a Tabs.Options.
-    \\                    // The 4th param is the {0s} screen Options. See screen/tab/{0s}.zig Options.
-    \\                    self.{0s} = try {0s}.init(startup, main_view_as_container, .{{}}, .{{}});
+    \\                    self.{0s} = try {0s}.init(
+    \\                        startup,
+    \\                        main_view_as_container,
+    \\                        .{{
+    \\                            // Tabs.Options.
+    \\                            // KICKZIG TODO:
+    \\                            // Use custom settings for the {0s} tab.
+    \\
+    \\                            //.direction = .horizontal,
+    \\                            //.toggle_direction = true,
+    \\                            //.tabs_movable = true,
+    \\                            //.tabs_closable = true,
+    \\                            //.toggle_vertical_bar_visibility = true,
+    \\                            //.show_tab_close_icon = true,
+    \\                            //.show_tab_move_icons = true,
+    \\                            //.show_tab_context_menu = true,
+    \\                        }},
+    \\                        .{{
+    \\                            // {0s} screen Options.
+    \\                            // KICKZIG TODO:
+    \\                            // Use custom settings for the {0s} screen.
+    \\                            // See screen/tab/{0s}.zig Options.
+    \\                        }},
+    \\                    );
     \\                    errdefer main_view_as_container.deinit();
     \\                }},
     \\
@@ -332,8 +353,16 @@ const line4_init_not_modal: []const u8 =
     \\
     \\                .{0s} => {{
     \\                    const main_view_as_container: *Container = try startup.main_view.as{0s}Container();
-    \\                    // The 3rd param is the {0s} screen Options. See screen/panel/{0s}.zig Options.
-    \\                    self.{0s} = try {0s}.init(startup, main_view_as_container, .{{}});
+    \\                    self.{0s} = try {0s}.init(
+    \\                        startup,
+    \\                        main_view_as_container,
+    \\                        .{{
+    \\                            // {0s} screen Options.
+    \\                            // KICKZIG TODO:
+    \\                            // Use custom settings for the {0s} screen.
+    \\                            // See screen/tab/{0s}.zig Options.
+    \\                        }},
+    \\                    );
     \\                    errdefer main_view_as_container.deinit();
     \\                }},
     \\

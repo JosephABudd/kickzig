@@ -37,7 +37,7 @@ pub const content: []const u8 =
     \\    }
     \\
     \\    /// The caller owns the returned value.
-    \\    pub fn label(_: *Screen, allocator: std.mem.Allocator) ![]const u8 {
+    \\    pub fn mainMenuLabel(_: *Screen, allocator: std.mem.Allocator) ![]const u8 {
     \\        const screen_name: []const u8 = "OK";
     \\        const container_label: []const u8 = try allocator.alloc(u8, screen_name.len);
     \\        @memcpy(@constCast(container_label), screen_name);

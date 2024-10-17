@@ -81,14 +81,13 @@ const line_1_use_messenger: []const u8 =
 const line_2_f: []const u8 =
     \\const _closer_ = @import("closer");
     \\const _closedownjobs_ = @import("closedownjobs");
+    \\const _embed_ = @import("embed");
     \\const _frontend_ = @import("frontend/api.zig");
     \\const _modal_params_ = @import("modal_params");
     \\const _startup_ = @import("startup");
     \\
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
-    \\
-    \\const window_icon_png = @embedFile("zig-favicon.png");
     \\
     \\// KICKZIG TODO:
     \\// When the user clicks the window's X:
@@ -117,7 +116,7 @@ const line_2_f: []const u8 =
     \\        // .min_size = .{{ .w = 500.0, .h = 400.0 }},
     \\        .vsync = vsync,
     \\        .title = "{0s}",
-    \\        .icon = window_icon_png, // can also call setIconFromFileContent()
+    \\        .icon = _embed_.window_icon_png,
     \\    }});
     \\    defer sdl_backend.deinit();
     \\
@@ -218,14 +217,6 @@ const line_5: []const u8 =
     \\
     \\        // send all SDL events to dvui for processing
     \\        const quit = try sdl_backend.addAllEvents(&win);
-    \\
-    \\        for (dvui.events()) |*e| {
-    \\            if (e.evt == .key and e.evt.key.code == .f10 and e.evt.key.action == .down) {
-    \\                e.handled = true;
-    \\                _frontend_.main_menu_key_pressed = true;
-    \\                break;
-    \\            }
-    \\        }
     \\
     \\        // The state of the app's closer.
     \\        switch (_closer_.context()) {

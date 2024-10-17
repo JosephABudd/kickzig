@@ -130,8 +130,9 @@ const line_1_a_use_messenger: []const u8 =
 const line_1_b: []const u8 =
     \\const _startup_ = @import("startup");
     \\
-    \\const Container = @import("various").Container;
-    \\const Content = @import("various").Content;
+    \\const Container = @import("cont").Container;
+    \\const ContainerLabel = @import("cont").ContainerLabel;
+    \\const Content = @import("cont").Content;
     \\const MainView = @import("framers").MainView;
     \\
 ;
@@ -150,48 +151,47 @@ const line_2_f: []const u8 =
     \\/// Keep each value optional and set to null by default.
     \\//KICKZIG TODO: Customize Options to your requirements.
     \\pub const Options = struct {{
+    \\    allocator: std.mem.Allocator = undefined,
     \\    screen_name: ?[]const u8 = null, // Example field.
     \\
     \\    fn copyOf(values: Options, allocator: std.mem.Allocator) !*Options {{
     \\        var copy_of: *Options = try allocator.create(Options);
+    \\        copy_of.allocator = allocator;
     \\        // Null optional members for fn reset.
     \\        copy_of.screen_name = null;
-    \\        try copy_of.reset(allocator, values);
+    \\        try copy_of.reset(values);
     \\        errdefer copy_of.deinit();
     \\        return copy_of;
     \\    }}
     \\
-    \\    fn deinit(self: *Options, allocator: std.mem.Allocator) void {{
+    \\    fn deinit(self: *Options) void {{
     \\        // Screen name.
     \\        if (self.screen_name) |member| {{
-    \\            allocator.free(member);
+    \\            self.allocator.free(member);
     \\        }}
-    \\        allocator.destroy(self);
+    \\        self.allocator.destroy(self);
     \\    }}
     \\
     \\
     \\    fn reset(
     \\        self: *Options,
-    \\        allocator: std.mem.Allocator,
     \\        settings: Options,
     \\    ) !void {{
     \\        return self._reset(
-    \\            allocator,
     \\            settings.screen_name,
     \\        );
     \\    }}
     \\
     \\    fn _reset(
     \\        self: *Options,
-    \\        allocator: std.mem.Allocator,
     \\        screen_name: ?[]const u8,
     \\    ) !void {{
     \\        // Screen name.
     \\        if (screen_name) |reset_value| {{
     \\            if (self.screen_name) |value| {{
-    \\                allocator.free(value);
+    \\                self.allocator.free(value);
     \\            }}
-    \\            self.screen_name = try allocator.alloc(u8, reset_value.len);
+    \\            self.screen_name = try self.allocator.alloc(u8, reset_value.len);
     \\            errdefer {{
     \\                self.screen_name = null;
     \\                self.deinit();
@@ -271,7 +271,7 @@ const line_3_c: []const u8 =
     \\            self.deinit();
     \\            return err;
     \\        };
-    \\        try self.state.?.reset(startup.allocator, screen_options);
+    \\        try self.state.?.reset(screen_options);
     \\        errdefer self.deinit();
     \\
 ;
@@ -306,13 +306,14 @@ const line_4_use_messenger: []const u8 =
 const line_5_f: []const u8 =
     \\        // The {0s} panel is the default.
     \\        self.all_panels.?.setCurrentTo{0s}();
+    \\
     \\        self.container = container;
     \\        return self;
     \\    }}
     \\
     \\    pub fn deinit(self: *Screen) void {{
     \\        if (self.state) |state| {{
-    \\            state.deinit(self.allocator);
+    \\            state.deinit();
     \\        }}
     \\        // A screen is deinited by it's container or by a failed init.
     \\        // So don't deinit the container.
@@ -334,7 +335,8 @@ const line_6: []const u8 =
     \\    }
     \\
     \\    /// The caller owns the returned value.
-    \\    pub fn label(self: *Screen, allocator: std.mem.Allocator) ![]const u8 {
+    \\    /// Returns this screen's text label for the main menu.
+    \\    pub fn mainMenuLabel(self: *Screen, allocator: std.mem.Allocator) ![]const u8 {
     \\        return try std.fmt.allocPrint(allocator, "{s}", .{self.state.?.screen_name.?});
     \\    }
     \\
@@ -392,10 +394,17 @@ const line_6: []const u8 =
     \\
     \\    /// labelContentFn is an implementation of the Content interface.
     \\    /// The Container may call this when it refreshes.
-    \\    /// The caller does not own the returned value.
-    \\    pub fn labelContentFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror![]const u8 {
+    \\    pub fn labelContentFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror!*ContainerLabel {
     \\        var self: *Screen = @alignCast(@ptrCast(implementor));
-    \\        return self.label(arena);
+    \\        const text: []const u8 = try self.mainMenuLabel(arena);
+    \\        defer arena.free(text);
+    \\        return ContainerLabel.init(
+    \\            arena,
+    \\            null, // badge
+    \\            text,
+    \\            null, // icons
+    \\            null, // menu_items
+    \\        );
     \\    }
     \\
     \\    /// setContainerContentFn is an implementation of the Content interface.
@@ -413,6 +422,7 @@ const line_6_example_f: []const u8 =
     \\    fn exampleCloseDownJob(_: *anyopaque) void {{
     \\        std.log.info("This is an example close down job in frontend/screen/panel/{0s}/screen.zig", .{{}});
     \\    }}
+    \\
 ;
 
 const line_7: []const u8 =

@@ -146,6 +146,19 @@ const line_2: []const u8 =
     \\        },
     \\    );
     \\
+    \\    // cont_mod. A framework deps/ module.
+    \\    const cont_mod = b.addModule(
+    \\        "cont",
+    \\        .{
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/cont/api.zig",
+    \\                },
+    \\            },
+    \\        },
+    \\    );
+    \\
     \\    // counter_mod. A framework deps/ module.
     \\    const counter_mod = b.addModule(
     \\        "counter",
@@ -154,6 +167,19 @@ const line_2: []const u8 =
     \\                .src_path = .{
     \\                    .owner = b,
     \\                    .sub_path = "src/deps/counter/api.zig",
+    \\                },
+    \\            },
+    \\        },
+    \\    );
+    \\
+    \\    // embed_mod. A framework deps/ module.
+    \\    const embed_mod = b.addModule(
+    \\        "embed",
+    \\        .{
+    \\            .root_source_file = .{
+    \\                .src_path = .{
+    \\                    .owner = b,
+    \\                    .sub_path = "src/deps/embed/api.zig",
     \\                },
     \\            },
     \\        },
@@ -297,10 +323,14 @@ const line_4: []const u8 =
     \\
     \\    // Dependencies for framers_mod. A framework deps/ module.
     \\    framers_mod.addImport("dvui", dvui_dep.module("dvui"));
+    \\    framers_mod.addImport("cont", cont_mod);
     \\    framers_mod.addImport("main_menu", main_menu_mod);
     \\    framers_mod.addImport("modal_params", modal_params_mod);
     \\    framers_mod.addImport("startup", startup_mod);
     \\    framers_mod.addImport("various", various_mod);
+    \\
+    \\    // Dependencies from cont_mod. A framwork deps/ module.
+    \\    cont_mod.addImport("counter", counter_mod);
     \\
 ;
 
@@ -334,7 +364,9 @@ const line_5_use_messenger: []const u8 =
 const line_6: []const u8 =
     \\    screen_pointers_mod.addImport("closedownjobs", closedownjobs_mod);
     \\    screen_pointers_mod.addImport("closer", closer_mod);
+    \\    screen_pointers_mod.addImport("cont", cont_mod);
     \\    screen_pointers_mod.addImport("dvui", dvui_dep.module("dvui"));
+    \\    screen_pointers_mod.addImport("embed", embed_mod);
     \\    screen_pointers_mod.addImport("framers", framers_mod);
     \\
 ;
@@ -405,7 +437,9 @@ const line_8_use_messenger: []const u8 =
 const line_9: []const u8 =
     \\    exe.root_module.addImport("closedownjobs", closedownjobs_mod);
     \\    exe.root_module.addImport("closer", closer_mod);
+    \\    exe.root_module.addImport("cont", cont_mod);
     \\    exe.root_module.addImport("counter", counter_mod);
+    \\    exe.root_module.addImport("embed", embed_mod);
     \\    exe.root_module.addImport("framers", framers_mod);
     \\    exe.root_module.addImport("main_menu", main_menu_mod);
     \\

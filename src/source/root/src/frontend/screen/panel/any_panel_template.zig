@@ -75,7 +75,7 @@ const line_1: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
-    \\const Container = @import("various").Container;
+    \\const Container = @import("cont").Container;
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\

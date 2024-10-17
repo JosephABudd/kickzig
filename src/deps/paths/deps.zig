@@ -11,6 +11,7 @@ const folder_name_closer: []const u8 = "closer";
 const folder_name_counter: []const u8 = "counter";
 const folder_name_closedownjobs: []const u8 = "closedownjobs";
 pub const folder_name_deps: []const u8 = "deps";
+pub const folder_name_embed: []const u8 = "embed";
 pub const folder_name_fbf: []const u8 = "fbf";
 const folder_name_framers: []const u8 = "framers";
 pub const folder_name_fronttoback: []const u8 = "fronttoback";
@@ -23,6 +24,7 @@ const folder_name_tabbar: []const u8 = "tabbar";
 pub const folder_name_trigger: []const u8 = "trigger";
 const folder_name_various: []const u8 = "various";
 const folder_name_widget: []const u8 = "widget";
+const folder_name_cont: []const u8 = "cont";
 
 /// returns the deps/channel/ path.
 /// The caller owns the returned value.
@@ -56,6 +58,14 @@ pub fn pathChannelTriggerFolder(allocator: std.mem.Allocator) ![]const u8 {
     return path;
 }
 
+/// returns the deps/cont/ path.
+/// The caller owns the returned value.
+pub fn pathContFolder(allocator: std.mem.Allocator) ![]const u8 {
+    var params = [2][]const u8{ folder_name_deps, folder_name_cont };
+    const path = try fspath.join(allocator, &params);
+    return path;
+}
+
 /// returns the deps/closer/ path.
 /// The caller owns the returned value.
 pub fn pathCloserFolder(allocator: std.mem.Allocator) ![]const u8 {
@@ -76,6 +86,14 @@ pub fn pathCounterFolder(allocator: std.mem.Allocator) ![]const u8 {
 /// The caller owns the returned value.
 pub fn pathCloseDownJobsFolder(allocator: std.mem.Allocator) ![]const u8 {
     const params = [2][]const u8{ folder_name_deps, folder_name_closedownjobs };
+    const path = try fspath.join(allocator, &params);
+    return path;
+}
+
+/// returns the deps/embed/ path.
+/// The caller owns the returned value.
+pub fn pathEmbedFolder(allocator: std.mem.Allocator) ![]const u8 {
+    const params = [2][]const u8{ folder_name_deps, folder_name_embed };
     const path = try fspath.join(allocator, &params);
     return path;
 }

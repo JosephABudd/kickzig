@@ -2,18 +2,27 @@ pub const content =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
-    \\const _framers_ = @import("framers");
     \\const _startup_ = @import("startup");
     \\const _tab_bar_widget_ = @import("TabBarWidget.zig");
     \\const _tab_bar_item_widget_ = @import("TabBarItemWidget.zig").TabBarItemWidget;
     \\
-    \\const Container = @import("various").Container;
-    \\const Content = @import("various").Content;
+    \\const Container = @import("cont").Container;
+    \\const ContainerLabel = @import("cont").ContainerLabel;
+    \\const Content = @import("cont").Content;
     \\const Direction = dvui.enums.Direction;
     \\const MainView = @import("framers").MainView;
+    \\const UserAction = _tab_bar_item_widget_.UserAction;
     \\
     \\const MaxTabs: usize = 100;
     \\const MaxLabelSize: usize = 255;
+    \\
+    \\const DoContextState = struct {
+    \\    arena: std.mem.Allocator,
+    \\    tabs: []*Tab,
+    \\    tab_settings: Tabs.Options,
+    \\    tab_index: usize,
+    \\    tab_label: *ContainerLabel,
+    \\};
     \\
     \\/// Tab is a container and implements Container.
     \\/// Tab has content.
@@ -27,12 +36,16 @@ pub const content =
     \\    content: *Content,
     \\    as_container: ?*Container,
     \\    to_be_closed: bool,
+    \\    to_be_refreshed: bool,
     \\
     \\    settings: Options,
     \\
     \\    const Options = struct {
     \\        movable: ?bool = null,
     \\        closable: ?bool = null,
+    \\        show_close_icon: ?bool = null,
+    \\        show_move_icons: ?bool = null,
+    \\        show_context_menu: ?bool = null,
     \\    };
     \\
     \\    pub fn asContainer(self: *Tab) !*Container {
@@ -70,15 +83,30 @@ pub const content =
     \\        // Settings.
     \\        self.settings = Options{};
     \\        // The tabs options for each tab can be overridden with the init options.
-    \\        if (options.closable) |closable| {
-    \\            self.settings.closable = closable;
+    \\        if (options.closable) |value| {
+    \\            self.settings.closable = value;
     \\        } else {
     \\            self.settings.closable = tabs.settings.tabs_closable;
     \\        }
-    \\        if (options.movable) |movable| {
-    \\            self.settings.movable = movable;
+    \\        if (options.movable) |value| {
+    \\            self.settings.movable = value;
     \\        } else {
     \\            self.settings.movable = tabs.settings.tabs_movable;
+    \\        }
+    \\        if (options.show_close_icon) |value| {
+    \\            self.settings.show_close_icon = value;
+    \\        } else {
+    \\            self.settings.show_close_icon = tabs.settings.show_tab_close_icon;
+    \\        }
+    \\        if (options.show_move_icons) |value| {
+    \\            self.settings.show_move_icons = value;
+    \\        } else {
+    \\            self.settings.show_move_icons = tabs.settings.show_tab_move_icons;
+    \\        }
+    \\        if (options.show_context_menu) |value| {
+    \\            self.settings.show_context_menu = value;
+    \\        } else {
+    \\            self.settings.show_context_menu = tabs.settings.show_tab_context_menu;
     \\        }
     \\        self.to_be_closed = false;
     \\        // As container.
@@ -92,7 +120,7 @@ pub const content =
     \\        return self;
     \\    }
     \\
-    \\    pub fn label(self: *Tab, allocator: std.mem.Allocator) ![]const u8 {
+    \\    pub fn label(self: *Tab, allocator: std.mem.Allocator) !*ContainerLabel {
     \\        return self.content.label(allocator);
     \\    }
     \\
@@ -145,12 +173,26 @@ pub const content =
     \\
     \\    settings: Options,
     \\
+    \\    const default_settings: Options = Options{
+    \\        .direction = .horizontal,
+    \\        .toggle_direction = true,
+    \\        .tabs_movable = true,
+    \\        .tabs_closable = true,
+    \\        .toggle_vertical_bar_visibility = true,
+    \\        .show_tab_close_icon = true,
+    \\        .show_tab_move_icons = true,
+    \\        .show_tab_context_menu = true,
+    \\    };
+    \\
     \\    pub const Options = struct {
-    \\        direction: ?dvui.enums.Direction = .horizontal,
-    \\        toggle_direction: ?bool = true,
-    \\        tabs_movable: ?bool = true,
-    \\        tabs_closable: ?bool = true,
-    \\        toggle_vertical_bar_visibility: ?bool = true,
+    \\        direction: ?dvui.enums.Direction = null,
+    \\        toggle_direction: ?bool = null,
+    \\        tabs_movable: ?bool = null,
+    \\        tabs_closable: ?bool = null,
+    \\        toggle_vertical_bar_visibility: ?bool = null,
+    \\        show_tab_close_icon: ?bool = null,
+    \\        show_tab_move_icons: ?bool = null,
+    \\        show_tab_context_menu: ?bool = null,
     \\
     \\        pub fn reset(
     \\            original: Options,
@@ -176,6 +218,15 @@ pub const content =
     \\            // Allow the user to toggle the visiblity of the vertical tab-bar.
     \\            if (settings.toggle_vertical_bar_visibility) |value| {
     \\                reset_options.toggle_vertical_bar_visibility = value;
+    \\            }
+    \\            if (settings.show_tab_close_icon) |value| {
+    \\                reset_options.show_tab_close_icon = value;
+    \\            }
+    \\            if (settings.show_tab_move_icons) |value| {
+    \\                reset_options.show_tab_move_icons = value;
+    \\            }
+    \\            if (settings.show_tab_context_menu) |value| {
+    \\                reset_options.show_tab_context_menu = value;
     \\            }
     \\            return reset_options;
     \\        }
@@ -311,7 +362,7 @@ pub const content =
     \\        self.main_view = startup.main_view;
     \\        self.allocator = startup.allocator;
     \\        self.tabs = std.ArrayList(*Tab).init(startup.allocator);
-    \\        self.settings = Options.reset(Options{}, init_options);
+    \\        self.settings = Options.reset(default_settings, init_options);
     \\        self.vertical_bar_is_visible = true;
     \\        return self;
     \\    }
@@ -428,8 +479,6 @@ pub const content =
     \\                    defer tabbar.deinit();
     \\
     \\                    const tabs: []*Tab = try self._slice();
-    \\                    const last: usize = tabs.len - 1;
-    \\                    var had_context: bool = false;
     \\                    var previous_tab: ?*Tab = null;
     \\                    for (tabs, 0..) |tab, i| {
     \\                        if (!tab.content.willFrame()) {
@@ -439,102 +488,64 @@ pub const content =
     \\                            }
     \\                            continue;
     \\                        }
+    \\
     \\                        defer previous_tab = tab;
     \\                        if (self.selected_tab == null) {
     \\                            self.selected_tab = tab;
     \\                        }
+    \\                        // Is this tab the currently selected tab?
     \\                        const selected: bool = self.selected_tab == tab;
-    \\                        // The context area around the menu item.
-    \\                        var context_options: dvui.Options = undefined;
-    \\                        if (selected) {
-    \\                            context_options = _tab_bar_item_widget_.verticalSelectedContextOptions();
-    \\                        } else {
-    \\                            context_options = _tab_bar_item_widget_.verticalContextOptions();
-    \\                        }
-    \\                        context_options.id_extra = i;
-    \\                        const context = try dvui.context(@src(), context_options);
-    \\                        defer context.deinit();
     \\
-    \\                        if (context.activePoint()) |cp| {
-    \\                            had_context = true;
-    \\                            if (had_context and (tab.settings.movable.? or tab.settings.closable.?)) {
-    \\                                const tab_label: []const u8 = try tab.label(arena);
-    \\                                defer arena.free(tab_label);
-    \\                                var context_menu = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(cp), .{ .id_extra = i });
-    \\                                defer context_menu.deinit();
-    \\
-    \\                                if (tab.settings.movable.?) {
-    \\                                    if (i > 0) {
-    \\                                        // Go left label.
-    \\                                        if (try dvui.menuItemLabel(@src(), "Move Tab Above", .{ .submenu = true }, .{ .expand = .horizontal })) |r| {
-    \\                                            var move_left = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
-    \\                                            defer move_left.deinit();
-    \\                                            var j: usize = i - 1;
-    \\                                            while (j >= 0) : (j -= 1) {
-    \\                                                const left_tab: *Tab = tabs[j];
-    \\                                                const left_tab_label: []const u8 = try left_tab.label(arena);
-    \\                                                defer arena.free(left_tab_label);
-    \\                                                if ((try dvui.menuItemLabel(@src(), left_tab_label, .{ .submenu = false }, .{ .expand = .vertical, .id_extra = j })) != null) {
-    \\                                                    try self.moveTab(j, i);
-    \\                                                    dvui.menuGet().?.close();
-    \\                                                }
-    \\
-    \\                                                if (j == 0) {
-    \\                                                    break;
-    \\                                                }
-    \\                                            }
-    \\                                        }
-    \\                                    }
-    \\
-    \\                                    if (i < last) {
-    \\                                        // Go right label.
-    \\                                        if (try dvui.menuItemLabel(@src(), "Move Tab Below", .{ .submenu = true }, .{ .expand = .horizontal })) |r| {
-    \\                                            var move_right = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
-    \\                                            defer move_right.deinit();
-    \\                                            var j: usize = i + 1;
-    \\                                            while (j <= last) : (j += 1) {
-    \\                                                const right_tab: *Tab = tabs[j];
-    \\                                                const right_tab_label: []const u8 = try right_tab.label(arena);
-    \\                                                defer arena.free(right_tab_label);
-    \\                                                if ((try dvui.menuItemLabel(@src(), right_tab_label, .{ .submenu = false }, .{ .expand = .vertical, .id_extra = j })) != null) {
-    \\                                                    try self.moveTab(j, i);
-    \\                                                    dvui.menuGet().?.close();
-    \\                                                }
-    \\                                            }
-    \\                                        }
-    \\                                    }
-    \\                                }
-    \\
-    \\                                if (try dvui.menuItemIcon(@src(), "close", dvui.entypo.align_top, .{ .submenu = false }, .{ .expand = .vertical }) != null) {
-    \\                                    dvui.menuGet().?.close();
-    \\                                    return;
-    \\                                }
-    \\
-    \\                                if (tab.settings.closable.?) {
-    \\                                    // Close tab.
-    \\                                    const close_label: []const u8 = try std.fmt.allocPrint(self.allocator, "Close this {s} tab.", .{tab_label});
-    \\                                    if ((try dvui.menuItemLabel(@src(), close_label, .{ .submenu = false }, .{ .expand = .vertical, .color_text = .{ .color = dvui.Color{ .r = 0xff, .g = 0x00, .b = 0x00 } } })) != null) {
-    \\                                        tab.close();
-    \\                                        dvui.menuGet().?.close();
-    \\                                    }
-    \\                                }
-    \\                            }
-    \\                        }
-    \\
-    \\                        {
-    \\                            const tab_label: []const u8 = try tab.label(arena);
-    \\                            defer arena.free(tab_label);
-    \\                            if (try _tab_bar_item_widget_.verticalTabBarItemLabel(@src(), tab_label, .{ .selected = selected, .id_extra = i })) |_| {
-    \\                                if (had_context) {
-    \\                                    // Right mouse button click.
-    \\                                    return;
-    \\                                }
-    \\                                // Left mouse click.
-    \\                                // The user selected this tab.
-    \\                                if (!selected) {
-    \\                                    self.selected_tab = tab;
-    \\                                }
-    \\                            }
+    \\                        // Get the label information for this tab.
+    \\                        const tab_label: *ContainerLabel = try tab.label(arena);
+    \\                        defer tab_label.deinit();
+    \\                        // Allow the Tab.setting to override the Tabs.settings.
+    \\                        const tab_settings: Options = Options.reset(
+    \\                            self.settings,
+    \\                            Options{
+    \\                                .tabs_movable = tab.settings.movable,
+    \\                                .tabs_closable = tab.settings.closable,
+    \\                                .show_tab_close_icon = tab.settings.show_close_icon,
+    \\                                .show_tab_move_icons = tab.settings.show_move_icons,
+    \\                                .show_tab_context_menu = tab.settings.show_context_menu,
+    \\                            },
+    \\                        );
+    \\                        // State for the do context menu call-back function.
+    \\                        const do_context_state: *DoContextState = try arena.create(DoContextState);
+    \\                        do_context_state.arena = arena;
+    \\                        do_context_state.tabs = tabs;
+    \\                        do_context_state.tab_settings = tab_settings;
+    \\                        do_context_state.tab_index = i;
+    \\                        do_context_state.tab_label = tab_label;
+    \\                        const user_action: UserAction = try _tab_bar_item_widget_.verticalTabBarItemLabel(
+    \\                            tab_label,
+    \\                            .{
+    \\                                .selected = selected,
+    \\                                .id_extra = i,
+    \\                                .count_tabs = tabs.len,
+    \\                                .index = i,
+    \\                                .show_close_icon = tab_settings.show_tab_close_icon,
+    \\                                .show_move_icons = tab_settings.show_tab_move_icons,
+    \\                                .show_context_menu = tab_settings.show_tab_context_menu,
+    \\                            },
+    \\                            Tabs.doContextFn,
+    \\                            self,
+    \\                            do_context_state,
+    \\                        );
+    \\                        switch (user_action.user_selection) {
+    \\                            .close_tab => {
+    \\                                tab.close();
+    \\                            },
+    \\                            .select_tab => {
+    \\                                self.selected_tab = tab;
+    \\                            },
+    \\                            .move_tab_right_down => {
+    \\                                try self.moveTab(i + 1, i);
+    \\                            },
+    \\                            .move_tab_left_up => {
+    \\                                try self.moveTab(i - 1, i);
+    \\                            },
+    \\                            else => {},
     \\                        }
     \\                    }
     \\                }
@@ -573,6 +584,7 @@ pub const content =
     \\        var layout = try dvui.box(@src(), .vertical, .{ .expand = .both });
     \\        defer layout.deinit();
     \\
+    \\        const tabs: []*Tab = try self._slice();
     \\        {
     \\            // The horizontal row.
     \\            var row = try _tab_bar_widget_.horizontalTabBarRow(@src());
@@ -592,9 +604,6 @@ pub const content =
     \\            var tabbar = try _tab_bar_widget_.horizontalTabBar(@src());
     \\            defer tabbar.deinit();
     \\
-    \\            const tabs: []*Tab = try self._slice();
-    \\            const last: usize = tabs.len - 1;
-    \\            var had_context: bool = false;
     \\            var previous_tab: ?*Tab = null;
     \\            for (tabs, 0..) |tab, i| {
     \\                if (!tab.content.willFrame()) {
@@ -608,97 +617,53 @@ pub const content =
     \\                if (self.selected_tab == null) {
     \\                    self.selected_tab = tab;
     \\                }
+    \\                // Is this tab the curretnly selected tab?
     \\                const selected: bool = self.selected_tab == tab;
-    \\                const context = try dvui.context(@src(), .{ .id_extra = i });
-    \\                defer context.deinit();
     \\
-    \\                if (context.activePoint()) |cp| {
-    \\                    had_context = true;
-    \\                    if (tab.settings.movable.? or tab.settings.closable.?) {
-    \\                        var context_menu = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(cp), .{ .id_extra = i });
-    \\                        defer context_menu.deinit();
+    \\                // Get the label information for this tab.
+    \\                const tab_label: *ContainerLabel = try tab.label(arena);
+    \\                defer tab_label.deinit();
+    \\                // State for the do context menu call-back function.
+    \\                const do_context_state: *DoContextState = try arena.create(DoContextState);
+    \\                defer arena.destroy(do_context_state);
+    \\                do_context_state.arena = arena;
+    \\                do_context_state.tabs = tabs;
+    \\                do_context_state.tab_settings = self.settings;
+    \\                do_context_state.tab_index = i;
+    \\                do_context_state.tab_label = tab_label;
+    \\                const user_action: UserAction = try _tab_bar_item_widget_.horizontalTabBarItemLabel(
+    \\                    tab_label,
+    \\                    .{
+    \\                        .selected = selected,
+    \\                        .id_extra = i,
+    \\                        .count_tabs = tabs.len,
+    \\                        .index = i,
+    \\                        .show_close_icon = tab.settings.show_close_icon,
+    \\                        .show_move_icons = tab.settings.show_move_icons,
+    \\                        .show_context_menu = tab.settings.show_context_menu,
+    \\                    },
+    \\                    Tabs.doContextFn,
+    \\                    self,
+    \\                    do_context_state,
+    \\                );
     \\
-    \\                        if (tab.settings.movable.?) {
-    \\                            if (i > 0) {
-    \\                                // Go left label.
-    \\                                if (try dvui.menuItemLabel(@src(), "Move Left Of", .{ .submenu = true }, .{ .expand = .horizontal })) |r| {
-    \\                                    var move_left = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
-    \\                                    defer move_left.deinit();
-    \\                                    var j: usize = i - 1;
-    \\                                    while (j >= 0) : (j -= 1) {
-    \\                                        const left_tab: *Tab = tabs[j];
-    \\                                        const left_tab_label: []const u8 = try left_tab.label(arena);
-    \\                                        defer arena.free(left_tab_label);
-    \\                                        if ((try dvui.menuItemLabel(@src(), left_tab_label, .{ .submenu = false }, .{ .expand = .vertical, .id_extra = j })) != null) {
-    \\                                            try self.moveTab(j, i);
-    \\                                            dvui.menuGet().?.close();
-    \\                                        }
-    \\
-    \\                                        if (j == 0) {
-    \\                                            break;
-    \\                                        }
-    \\                                    }
-    \\                                }
-    \\                            }
-    \\
-    \\                            if (i < last) {
-    \\                                // Go right label.
-    \\                                if (try dvui.menuItemLabel(@src(), "Move Right Of", .{ .submenu = true }, .{ .expand = .horizontal })) |r| {
-    \\                                    var move_right = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
-    \\                                    defer move_right.deinit();
-    \\                                    var j: usize = i + 1;
-    \\                                    while (j <= last) : (j += 1) {
-    \\                                        const right_tab: *Tab = tabs[j];
-    \\                                        const right_tab_label: []const u8 = try right_tab.label(arena);
-    \\                                        defer arena.free(right_tab_label);
-    \\                                        if ((try dvui.menuItemLabel(@src(), right_tab_label, .{ .submenu = false }, .{ .expand = .vertical, .id_extra = j })) != null) {
-    \\                                            try self.moveTab(j, i);
-    \\                                            dvui.menuGet().?.close();
-    \\                                        }
-    \\                                    }
-    \\                                }
-    \\                            }
-    \\                        }
-    \\
-    \\                        if (try dvui.menuItemIcon(@src(), "close", dvui.entypo.align_top, .{ .submenu = false }, .{ .expand = .horizontal }) != null) {
-    \\                            dvui.menuGet().?.close();
-    \\                            return;
-    \\                        }
-    \\
-    \\                        if (tab.settings.closable.?) {
-    \\                            // Close tab.
-    \\                            const tab_label: []const u8 = try tab.label(arena);
-    \\                            defer arena.free(tab_label);
-    \\                            const close_label: []const u8 = try std.fmt.allocPrint(self.allocator, "Close this {s} tab.", .{tab_label});
-    \\                            if ((try dvui.menuItemLabel(@src(), close_label, .{ .submenu = false }, .{ .expand = .horizontal, .color_text = .{ .color = dvui.Color{ .r = 0xff, .g = 0x00, .b = 0x00 } } })) != null) {
-    \\                                tab.close();
-    \\                                dvui.menuGet().?.close();
-    \\                            }
-    \\                        }
-    \\                    }
-    \\                }
-    \\
-    \\                {
-    \\                    // const tab_label: []const u8 = try tab.labelFn(tab.implementor);
-    \\                    const tab_label: []const u8 = try tab.label(arena);
-    \\                    defer arena.free(tab_label);
-    \\                    if (try _tab_bar_item_widget_.horizontalTabBarItemLabel(@src(), tab_label, .{ .selected = selected, .id_extra = i })) |_| {
-    \\                        if (had_context) {
-    \\                            // Right mouse button click.
-    \\                            return;
-    \\                        }
-    \\                        // Left mouse click.
-    \\                        // The user selected this tab.
-    \\                        if (!selected) {
-    \\                            self.selected_tab = tab;
-    \\                        }
-    \\                    }
+    \\                switch (user_action.user_selection) {
+    \\                    .close_tab => {
+    \\                        tab.close();
+    \\                    },
+    \\                    .select_tab => {
+    \\                        self.selected_tab = tab;
+    \\                    },
+    \\                    .move_tab_right_down => {
+    \\                        try self.moveTab(i + 1, i);
+    \\                    },
+    \\                    .move_tab_left_up => {
+    \\                        try self.moveTab(i - 1, i);
+    \\                    },
+    \\                    else => {},
     \\                }
     \\            }
     \\        }
-    \\
-    \\        // The content area for a tab's content.
-    \\        // Display the selected tab's content.
     \\
     \\        // KICKZIG TODO:
     \\        // Display your selected tab's content if there is a selected tab.
@@ -711,5 +676,120 @@ pub const content =
     \\            try selected_tab.frame(arena);
     \\        }
     \\    }
+    \\
+    \\    fn doContextFn(implementor: *anyopaque, state: *anyopaque, point_of_context: dvui.Point) !void {
+    \\        var self: *Tabs = @alignCast(@ptrCast(implementor));
+    \\        const do_state: *DoContextState = @alignCast(@ptrCast(state));
+    \\        const tab: *Tab = do_state.tabs[do_state.tab_index];
+    \\        const tab_state: Tab.Options = tab.settings;
+    \\
+    \\        var context_menu = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(point_of_context), .{ .tab_index = @as(u16, @truncate(do_state.tab_index)), .id_extra = @as(u16, @truncate(do_state.tab_index)) });
+    \\        defer self.refresh();
+    \\        defer {
+    \\            context_menu.deinit();
+    \\        }
+    \\
+    \\        // MenuItems appear in the context menu.
+    \\        if (do_state.tab_label.menu_items) |menu_items| {
+    \\            for (menu_items, 0..) |menu_item, i| {
+    \\                if (try dvui.menuItemLabel(@src(), menu_item.label.?, .{}, .{ .expand = .horizontal, .id_extra = @as(u16, @truncate(i)) })) |_| {
+    \\                    // user clicked.
+    \\                    try menu_item.call_back(menu_item.implementor, menu_item.state);
+    \\                    // Close the context menu.
+    \\                    var closeE = dvui.Event{ .evt = .{ .close_popup = .{ .intentional = false } } };
+    \\                    context_menu.processEvent(&closeE, true);
+    \\                    return;
+    \\                }
+    \\            }
+    \\        }
+    \\
+    \\        if (tab_state.movable.?) {
+    \\            if (do_state.tab_index > 0) {
+    \\                // Go left/up label.
+    \\                const move_label: []const u8 = switch (self.settings.direction.?) {
+    \\                    .horizontal => "Move Left Of",
+    \\                    .vertical => "Move Above",
+    \\                };
+    \\                if (try dvui.menuItemLabel(@src(), move_label, .{ .submenu = true }, .{ .expand = .horizontal, .id_extra = @as(u16, @truncate(do_state.tab_index)) })) |r| {
+    \\                    var move_left = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+    \\                    defer move_left.deinit();
+    \\                    var j: usize = do_state.tab_index - 1;
+    \\                    while (j >= 0) : (j -= 1) {
+    \\                        const left_tab: *Tab = do_state.tabs[j];
+    \\                        const left_tab_label: *ContainerLabel = try left_tab.label(do_state.arena);
+    \\                        defer left_tab_label.deinit();
+    \\                        if ((try dvui.menuItemLabel(@src(), left_tab_label.text.?, .{}, .{ .expand = .horizontal, .id_extra = @as(u16, @truncate(j)) })) != null) {
+    \\                            try self.moveTab(j, do_state.tab_index);
+    \\                            // Close the context menu.
+    \\                            var closeE = dvui.Event{ .evt = .{ .close_popup = .{ .intentional = false } } };
+    \\                            context_menu.processEvent(&closeE, true);
+    \\                            return;
+    \\                        }
+    \\
+    \\                        if (j == 0) {
+    \\                            break;
+    \\                        }
+    \\                    }
+    \\                }
+    \\            }
+    \\
+    \\            const last: usize = do_state.tabs.len - 1;
+    \\            if (do_state.tab_index < last) {
+    \\                // Go right label.
+    \\                // Go left/up label.
+    \\                const move_label: []const u8 = switch (self.settings.direction.?) {
+    \\                    .horizontal => "Move Right Of",
+    \\                    .vertical => "Move Below",
+    \\                };
+    \\                if (try dvui.menuItemLabel(@src(), move_label, .{ .submenu = true }, .{ .expand = .horizontal, .id_extra = @as(u16, @truncate(do_state.tab_index)) })) |r| {
+    \\                    var move_right = try dvui.floatingMenu(@src(), dvui.Rect.fromPoint(dvui.Point{ .x = r.x, .y = r.y + r.h }), .{});
+    \\                    defer move_right.deinit();
+    \\                    var j: usize = do_state.tab_index + 1;
+    \\                    while (j <= last) : (j += 1) {
+    \\                        const right_tab: *Tab = do_state.tabs[j];
+    \\                        const right_tab_label: *ContainerLabel = try right_tab.label(do_state.arena);
+    \\                        defer right_tab_label.deinit();
+    \\                        if ((try dvui.menuItemLabel(@src(), right_tab_label.text.?, .{}, .{ .expand = .horizontal, .id_extra = @as(u16, @truncate(j)) })) != null) {
+    \\                            try self.moveTab(j, do_state.tab_index);
+    \\                            // Close the context menu.
+    \\                            var closeE = dvui.Event{ .evt = .{ .close_popup = .{ .intentional = false } } };
+    \\                            context_menu.processEvent(&closeE, true);
+    \\                            return;
+    \\                        }
+    \\                    }
+    \\                }
+    \\            }
+    \\
+    \\            if (tab_state.closable.?) {
+    \\                if (try dvui.menuItemIcon(@src(), "close", dvui.entypo.align_top, .{ .submenu = false }, .{ .expand = .horizontal, .id_extra = @as(u16, @truncate(do_state.tab_index)) }) != null) {
+    \\                    // Close the context menu.
+    \\                    var closeE = dvui.Event{ .evt = .{ .close_popup = .{ .intentional = false } } };
+    \\                    context_menu.processEvent(&closeE, true);
+    \\                    return;
+    \\                }
+    \\            }
+    \\        }
+    \\    }
+    \\
+    \\    pub fn refresh(self: *Tabs) void {
+    \\        // The tab's label may have been changed.
+    \\        // Force refresh.
+    \\        self.container.refresh();
+    \\    }
     \\};
+    \\
+    \\fn setFocus(widget_id: u32) !void {
+    \\    var window: dvui.Window = dvui.currentWindow();
+    \\    var sub_window: dvui.Window.Subwindow = undefined;
+    \\    // focused_subwindowId
+    \\    // subwindows
+    \\
+    \\    var i: usize = 0;
+    \\    while (i < window.subwindows.items.len) : (i += 1) {
+    \\        sub_window = &window.subwindows.items[i];
+    \\        if (sub_window.id == window.focused_subwindowId) {
+    \\            sub_window.focused_widgetId = widget_id;
+    \\        }
+    \\    }
+    \\}
 ;

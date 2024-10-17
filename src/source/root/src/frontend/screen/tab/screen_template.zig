@@ -205,8 +205,9 @@ const line_2_use_panels: []const u8 =
     \\
 ;
 const line_3: []const u8 =
-    \\const Container = @import("various").Container;
-    \\const Content = @import("various").Content;
+    \\const Container = @import("cont").Container;
+    \\const ContainerLabel = @import("cont").ContainerLabel;
+    \\const Content = @import("cont").Content;
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\const ScreenPointers = _screen_pointers_.ScreenPointers;
@@ -234,6 +235,7 @@ const line_4_f: []const u8 =
     \\/// Keep each value optional and set to null by default.
     \\//KICKZIG TODO: Customize Options to your requirements.
     \\pub const Options = struct {{
+    \\    allocator: std.mem.Allocator = undefined,
     \\    screen_name: ?[]const u8 = null, // Example field.
     \\
     \\    fn label(self: *Options, allocator: std.mem.Allocator) ![]const u8 {{
@@ -243,43 +245,41 @@ const line_4_f: []const u8 =
     \\
     \\    fn copyOf(values: Options, allocator: std.mem.Allocator) !*Options {{
     \\        var copy_of: *Options = try allocator.create(Options);
+    \\        copy_of.allocator = allocator;
     \\        // Null optional members for fn reset.
     \\        copy_of.screen_name = null;
-    \\        try copy_of.reset(allocator, values);
+    \\        try copy_of.reset(values);
     \\        errdefer copy_of.deinit();
     \\        return copy_of;
     \\    }}
     \\
-    \\    fn deinit(self: *Options, allocator: std.mem.Allocator) void {{
+    \\    fn deinit(self: *Options) void {{
     \\        // Screen name.
     \\        if (self.screen_name) |member| {{
-    \\            allocator.free(member);
+    \\            self.allocator.free(member);
     \\        }}
-    \\        allocator.destroy(self);
+    \\        self.allocator.destroy(self);
     \\    }}
     \\
     \\    fn reset(
     \\        self: *Options,
-    \\        allocator: std.mem.Allocator,
     \\        settings: Options,
     \\    ) !void {{
     \\        return self._reset(
-    \\            allocator,
     \\            settings.screen_name,
     \\        );
     \\    }}
     \\
     \\    fn _reset(
     \\        self: *Options,
-    \\        allocator: std.mem.Allocator,
     \\        screen_name: ?[]const u8,
     \\    ) !void {{
     \\        // Screen name.
     \\        if (screen_name) |reset_value| {{
     \\            if (self.screen_name) |value| {{
-    \\                allocator.free(value);
+    \\                self.allocator.free(value);
     \\            }}
-    \\            self.screen_name = try allocator.alloc(u8, reset_value.len);
+    \\            self.screen_name = try self.allocator.alloc(u8, reset_value.len);
     \\            errdefer {{
     \\                self.screen_name = null;
     \\                self.deinit();
@@ -352,9 +352,13 @@ const line_7_b: []const u8 =
     \\            panel_as_content,
     \\            .{{
     \\                // KICKZIG TODO:
-    \\                // You can override the options for the {0s} tab.
+    \\                // Use custom settings for the {0s} tab.
+    \\
     \\                //.closable = true,
     \\                //.movable = true,
+    \\                //.show_close_icon = true,
+    \\                //.show_move_icons = true,
+    \\                //.show_context_menu = true,
     \\            }},
     \\        );
     \\        errdefer {{
@@ -377,7 +381,8 @@ const line_8_f: []const u8 =
     \\        self: *Screen,
     \\        selected: bool,
     \\    ) !void {{
-    \\        // The {0s} tab uses the {0s} screen for content.
+    \\        // Create the content for the tab.
+    \\        // The {0s} tab uses the {0s} panel screen for content.
     \\        // The {0s}Screen.init second param container, is null because Tab will set it.
     \\        // The {0s}Screen.init third param screen_options, is a the options for the {0s}Screen.
     \\        // * KICKZIG TODO: You may find setting some screen_options to be usesful.
@@ -392,15 +397,20 @@ const line_8_f: []const u8 =
     \\        errdefer screen.deinit();
     \\        // screen_as_content now owns screen.
     \\
+    \\        // Create the tab.
     \\        const tab: *Tab = try Tab.init(
     \\            self.tabs.?,
     \\            self.main_view,
     \\            screen_as_content,
     \\            .{{
     \\                // KICKZIG TODO:
-    \\                // You can override the options for the {0s} tab.
+    \\                // Use custom settings for the {0s} tab.
+    \\
     \\                //.closable = true,
     \\                //.movable = true,
+    \\                //.show_close_icon = true,
+    \\                //.show_move_icons = true,
+    \\                //.show_context_menu = true,
     \\            }},
     \\        );
     \\        errdefer {{
@@ -422,12 +432,11 @@ const line_9_f: []const u8 =
     \\        self: *Screen,
     \\        selected: bool,
     \\    ) !void {{
+    \\
+    \\        // Create the content for the tab.
     \\        // The {0s} tab uses the {0s} screen for content.
     \\        // The {0s}Screen.init second param container, is null because Tab will set it.
     \\        // The {0s}Screen.init third param tabs_options, is the options for the {0s}Screen's tab-bar.
-    \\        // * KICKZIG TODO: You may find setting some tabs_options to be usesful.
-    \\        // * Param tab_options has no members defined so the tab-bar will use it's default settings.
-    \\        // * See deps/widgets/tabbar/api.zig.
     \\        // The {0s}Screen.init fourth param screen_options, is a the options for the {0s}Screen.
     \\        // * KICKZIG TODO: You may find setting some screen_options to be usesful.
     \\        // * Param screen_options has no members defined so the {0s}Screen will use it default settings.
@@ -436,11 +445,27 @@ const line_9_f: []const u8 =
     \\        const screen: *{0s}Screen = try {0s}Screen.init(
     \\            self.startup,
     \\            null,
-    \\            .{{}},
+    \\            .{{
+    \\                // param tab_options.
+    \\                // KICKZIG TODO:
+    \\                // Use custom settings for the {0s} screen's tab-bar.
+    \\
+    \\                // .direction = .horizontal,
+    \\                // .toggle_direction = true,
+    \\                // .tabs_movable = true,
+    \\                // .tabs_closable = true,
+    \\                // .toggle_vertical_bar_visibility = true,
+    \\                // .show_tab_close_icon = true,
+    \\                // .show_tab_move_icons = true,
+    \\                // .show_tab_context_menu = true,
+    \\            }},
     \\            .{{}},
     \\        );
     \\        const screen_as_content: *Content = try screen.asContent();
     \\        errdefer screen.deinit();
+    \\
+    \\        // Create the tab.
+    \\        // The last param is the tab's settings.
     \\        // screen_as_content now owns screen.
     \\        const tab: *Tab = try Tab.init(
     \\            self.tabs.?,
@@ -448,9 +473,13 @@ const line_9_f: []const u8 =
     \\            screen_as_content,
     \\            .{{
     \\                // KICKZIG TODO:
-    \\                // You can override the options for the {0s} tab.
+    \\                // Use custom settings for the {0s} tab.
+    \\
     \\                //.closable = true,
     \\                //.movable = true,
+    \\                //.show_close_icon = true,
+    \\                //.show_move_icons = true,
+    \\                //.show_context_menu = true,
     \\            }},
     \\        );
     \\        errdefer {{
@@ -496,7 +525,7 @@ const line_11_a: []const u8 =
     \\            self.deinit();
     \\            return err;
     \\        };
-    \\        try self.state.?.reset(startup.allocator, screen_options);
+    \\        try self.state.?.reset(screen_options);
     \\        errdefer self.deinit();
     \\
     \\        const self_as_container: *Container = try self.asContainer();
@@ -539,6 +568,7 @@ const line_12_f: []const u8 =
 ;
 
 const line_13: []const u8 =
+    \\
     \\        self.container = container;
     \\        return self;
     \\    }
@@ -554,6 +584,9 @@ const line_13: []const u8 =
     \\    pub fn deinit(self: *Screen) void {
     \\        // A screen is deinited by it's container or by a failed init.
     \\        // So don't deinit the container.
+    \\        if (self.state) |state| {
+    \\           state.deinit();
+    \\        }
     \\
 ;
 const line_13_use_messenger: []const u8 =
@@ -568,7 +601,7 @@ const line_14: []const u8 =
     \\    }
     \\
     \\    /// The caller owns the returned value.
-    \\    pub fn label(self: *Screen, arena: std.mem.Allocator) ![]const u8 {
+    \\    pub fn mainMenuLabel(self: *Screen, arena: std.mem.Allocator) ![]const u8 {
     \\        return self.state.?.label(arena);
     \\    }
     \\
@@ -627,9 +660,17 @@ const line_14: []const u8 =
     \\
     \\    /// labelContentFn is an implementation of the Content interface.
     \\    /// The Container may call this when it refreshes.
-    \\    pub fn labelContentFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror![]const u8 {
+    \\    pub fn labelContentFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror!*ContainerLabel {
     \\        var self: *Screen = @alignCast(@ptrCast(implementor));
-    \\        return self.label(arena);
+    \\        const text: []const u8 = try self.mainMenuLabel(arena);
+    \\        defer arena.free(text);
+    \\        return ContainerLabel.init(
+    \\            arena,
+    \\            null, // badge
+    \\            text,
+    \\            null, // icons
+    \\            null, // menu_items
+    \\        );
     \\    }
     \\
     \\    // Container interface functions.

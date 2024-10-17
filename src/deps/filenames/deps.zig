@@ -9,6 +9,9 @@ pub const eoj_file_name = "EOJ.zig";
 pub const tabbar_widget_file_name = "TabBarWidget.zig";
 pub const tabbar_item_widget_file_name = "TabBarItemWidget.zig";
 pub const general_dispatcher_file_name = "general_dispatcher.zig";
+pub const window_icon_file_name = "window_icon_16x16.png";
+pub const container_file_name: []const u8 = "container.zig";
+pub const content_file_name: []const u8 = "content.zig";
 
 pub fn allMessageNames(allocator: std.mem.Allocator) ![][]const u8 {
     const folders = try paths.folders();

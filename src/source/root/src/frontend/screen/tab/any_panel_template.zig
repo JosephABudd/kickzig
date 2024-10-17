@@ -68,8 +68,8 @@ const line_1: []const u8 =
     \\const std = @import("std");
     \\const dvui = @import("dvui");
     \\
-    \\const Content = @import("various").Content;
-    \\const Container = @import("various").Container;
+    \\const Content = @import("cont").Content;
+    \\const Container = @import("cont").Container;
     \\const ExitFn = @import("various").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\
@@ -175,12 +175,19 @@ const line_4: []const u8 =
     \\        try self.view.frame(arena);
     \\    }
     \\
-    \\    /// Called by the container when it refreshes.
-    \\    /// When a container refreshes, it refreshes it's label.
-    \\    /// The caller owns the returned value.
+    \\    /// labelContentFn is an implementation of the Content interface.
+    \\    /// The Container may call this when it refreshes.
     \\    pub fn labelContentFn(implementor: *anyopaque, arena: std.mem.Allocator) anyerror![]const u8 {
     \\        var self: *Panel = @alignCast(@ptrCast(implementor));
-    \\        return self.view.label(arena);
+    \\        const text: []const u8 = try self.view.label(arena);
+    \\        defer arena.free(text);
+    \\        return ContainerLabel.init(
+    \\            arena,
+    \\            null, // badge
+    \\            text,
+    \\            null, // icons
+    \\            null, // menu_items
+    \\        );
     \\    }
     \\
     \\    /// Called by the container.

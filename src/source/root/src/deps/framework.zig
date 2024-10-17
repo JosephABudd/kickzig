@@ -6,7 +6,9 @@
 /// - deps/widget/api.zig, tabbar.zig
 const std = @import("std");
 const _channel_ = @import("channel/framework.zig");
+const _cont_ = @import("cont/framework.zig");
 const _counter_ = @import("counter/framework.zig");
+const _embed_ = @import("embed/framework.zig");
 const _framers_ = @import("framers/framework.zig");
 const _main_menu_ = @import("main_menu/framework.zig");
 const _message_ = @import("message/framework.zig");
@@ -24,7 +26,9 @@ pub fn create(allocator: std.mem.Allocator, use_messenger: bool) !void {
         try _channel_.create(allocator);
         try _message_.create(allocator);
     }
+    try _cont_.create();
     try _counter_.create();
+    try _embed_.create(allocator);
     try _framers_.create(allocator);
     try _main_menu_.create();
     try _modal_params_.create(allocator);
