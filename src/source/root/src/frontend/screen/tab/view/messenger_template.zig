@@ -14,7 +14,7 @@ const template: []const u8 =
     \\const _modal_params_ = @import("modal_params");
     \\const _panels_ = @import("../panels.zig");
     \\
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\const PanelTags = _panels_.PanelTags;
     \\const ScreenOptions = @import("../screen.zig").Options;

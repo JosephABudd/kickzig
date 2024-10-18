@@ -61,7 +61,7 @@ const line_2: []const u8 =
     \\const _closedownjobs_ = @import("closedownjobs");
     \\const _modal_params_ = @import("modal_params");
     \\
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\const ScreenPointers = @import("screen_pointers").ScreenPointers;
     \\

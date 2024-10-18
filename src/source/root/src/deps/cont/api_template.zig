@@ -4,5 +4,5 @@ pub const content: []const u8 =
     \\
     \\pub const Container = @import("container.zig").Container;
     \\pub const ContainerLabel = @import("container.zig").ContainerLabel;
-    \\pub const Content = @import("content.zig");
+    \\pub const Content = @import("content.zig").Content;
 ;

@@ -271,19 +271,6 @@ const line_3: []const u8 =
     \\        },
     \\    );
     \\
-    \\    // various_mod. A framework deps/ module.
-    \\    const various_mod = b.addModule(
-    \\        "various",
-    \\        .{
-    \\            .root_source_file = .{
-    \\                .src_path = .{
-    \\                    .owner = b,
-    \\                    .sub_path = "src/deps/various/api.zig",
-    \\                },
-    \\            },
-    \\        },
-    \\    );
-    \\
     \\    // widget_mod. A framework deps/ module.
     \\    const widget_mod = b.addModule(
     \\        "widget",
@@ -304,8 +291,8 @@ const line_3: []const u8 =
 ;
 
 const line_3_use_messenger: []const u8 =
+    \\    channel_mod.addImport("closer", closer_mod);
     \\    channel_mod.addImport("message", message_mod);
-    \\    channel_mod.addImport("various", various_mod);
     \\
 ;
 
@@ -316,18 +303,18 @@ const line_4: []const u8 =
     \\
     \\    // Dependencies for closer_mod. A framework deps/ module.
     \\    closer_mod.addImport("closedownjobs", closedownjobs_mod);
+    \\    closer_mod.addImport("closer", closer_mod);
     \\    closer_mod.addImport("dvui", dvui_dep.module("dvui"));
     \\    closer_mod.addImport("framers", framers_mod);
     \\    closer_mod.addImport("modal_params", modal_params_mod);
-    \\    closer_mod.addImport("various", various_mod);
     \\
     \\    // Dependencies for framers_mod. A framework deps/ module.
     \\    framers_mod.addImport("dvui", dvui_dep.module("dvui"));
+    \\    framers_mod.addImport("closer", closer_mod);
     \\    framers_mod.addImport("cont", cont_mod);
     \\    framers_mod.addImport("main_menu", main_menu_mod);
     \\    framers_mod.addImport("modal_params", modal_params_mod);
     \\    framers_mod.addImport("startup", startup_mod);
-    \\    framers_mod.addImport("various", various_mod);
     \\
     \\    // Dependencies from cont_mod. A framwork deps/ module.
     \\    cont_mod.addImport("counter", counter_mod);
@@ -339,8 +326,8 @@ const line_4_use_messenger: []const u8 =
     \\    // Dependencies for message_mod. A framework deps/ module.
     \\    message_mod.addImport("counter", counter_mod);
     \\    message_mod.addImport("closedownjobs", closedownjobs_mod);
+    \\    message_mod.addImport("closer", closer_mod);
     \\    message_mod.addImport("framers", framers_mod);
-    \\    message_mod.addImport("various", various_mod);
     \\
 ;
 
@@ -380,7 +367,7 @@ const line_7: []const u8 =
     \\    screen_pointers_mod.addImport("main_menu", main_menu_mod);
     \\    screen_pointers_mod.addImport("modal_params", modal_params_mod);
     \\    screen_pointers_mod.addImport("startup", startup_mod);
-    \\    screen_pointers_mod.addImport("various", various_mod);
+    \\    screen_pointers_mod.addImport("closer", closer_mod);
     \\    screen_pointers_mod.addImport("widget", widget_mod);
     \\
     \\    // Dependencies for startup_mod. A framework deps/ module.
@@ -397,18 +384,15 @@ const line_8_f: []const u8 =
     \\    startup_mod.addImport("dvui", dvui_dep.module("dvui"));
     \\    startup_mod.addImport("framers", framers_mod);
     \\    startup_mod.addImport("modal_params", modal_params_mod);
-    \\    startup_mod.addImport("various", various_mod);
+    \\    startup_mod.addImport("closer", closer_mod);
     \\    startup_mod.addImport("screen_pointers", screen_pointers_mod);
     \\
-    \\    // Dependencies for various. A framework deps/ module.
-    \\    // various should not have dependencies but needs counter.
-    \\    various_mod.addImport("counter", counter_mod);
-    \\
     \\    // Dependencies for widget_mod. A framework deps/ module.
+    \\    widget_mod.addImport("closer", closer_mod);
+    \\    widget_mod.addImport("cont", cont_mod);
     \\    widget_mod.addImport("dvui", dvui_dep.module("dvui"));
     \\    widget_mod.addImport("framers", framers_mod);
     \\    widget_mod.addImport("startup", startup_mod);
-    \\    widget_mod.addImport("various", various_mod);
     \\
     \\    const exe = b.addExecutable(.{{
     \\        .name = "{0s}",
@@ -454,7 +438,6 @@ const line_10: []const u8 =
     \\    exe.root_module.addImport("modal_params", modal_params_mod);
     \\    exe.root_module.addImport("screen_pointers", screen_pointers_mod);
     \\    exe.root_module.addImport("startup", startup_mod);
-    \\    exe.root_module.addImport("various", various_mod);
     \\    exe.root_module.addImport("widget", widget_mod);
     \\
     \\    // This declares intent for the executable to be installed into the

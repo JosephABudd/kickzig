@@ -164,7 +164,7 @@ pub const Template = struct {
             \\
             \\const BackToFrontDispatcher = @import("backtofront/general_dispatcher.zig").GeneralDispatcher;
             \\const FrontToBackDispatcher = @import("fronttoback/general_dispatcher.zig").GeneralDispatcher;
-            \\const ExitFn = @import("various").ExitFn;
+            \\const ExitFn = @import("closer").ExitFn;
             \\
             \\
         ;

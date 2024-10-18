@@ -187,7 +187,7 @@ const line_panel_imports_f: []const u8 =
 
 // screen name {0s}
 const line_imports_panel_tags_f: []const u8 =
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\const ModalParams = @import("modal_params").{0s};
     \\

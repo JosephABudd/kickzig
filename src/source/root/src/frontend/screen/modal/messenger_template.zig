@@ -5,7 +5,7 @@ pub const content: []const u8 =
     \\const _message_ = @import("message");
     \\const _modal_params_ = @import("modal_params");
     \\
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\const Panels = @import("../panels.zig").Panels;
     \\const ScreenTags = @import("framers").ScreenTags;

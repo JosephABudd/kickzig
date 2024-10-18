@@ -183,7 +183,7 @@ const line_import =
     \\const startup_screen_tag = @import("main_menu").startup_screen_tag;
     \\
     \\const Container = @import("cont").Container;
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\
     \\pub const ScreenTags = @import("screen_tags.zig").ScreenTags;
     \\

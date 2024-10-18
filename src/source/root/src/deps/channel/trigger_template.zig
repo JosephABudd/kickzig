@@ -37,7 +37,7 @@ const template =
     \\const std = @import("std");
     \\
     \\pub const _message_ = @import("message").{{ channel_name }};
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\
     \\/// Behavior is an implementor and it's message trigger fn.
     \\/// The behavior is by default, only implemented by the back-end's {{ channel_name }} messenger.

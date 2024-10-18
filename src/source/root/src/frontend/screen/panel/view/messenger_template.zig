@@ -12,7 +12,7 @@ const template: []const u8 =
     \\const _channel_ = @import("channel");
     \\const _message_ = @import("message");
     \\
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\//const OKModalParams = @import("modal_params").OK;
     \\const Panels = @import("../panels.zig").Panels;

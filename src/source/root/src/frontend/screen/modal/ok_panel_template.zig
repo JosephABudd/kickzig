@@ -3,7 +3,7 @@ pub const content: []const u8 =
     \\const dvui = @import("dvui");
     \\
     \\const Panels = @import("panels.zig").Panels;
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\const ModalParams = @import("modal_params").OK;
     \\const View = @import("view/OK.zig").View;

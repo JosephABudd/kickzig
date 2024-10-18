@@ -112,7 +112,7 @@ const line_start_1: []const u8 =
     \\const dvui = @import("dvui");
     \\
     \\const Container = @import("cont").Container;
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\
 ;

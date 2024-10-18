@@ -1,6 +1,6 @@
 # kickzig "zig and dvui my way"
 
-## Oct 17, 2024: version 0.5.0
+## Oct 18, 2024: version 0.6.0
 
 1. Works with [dvui first release](https://github.com/david-vanderson/dvui/releases/tag/v0.1.0).
 1. Works with zig 0.13.0.
@@ -8,13 +8,17 @@
 ### The example CRUD application and the kickzig wiki
 
 * I am in the process of rebuilding the crud with this new version. When I am finished I will update the kickzig wiki. Building the crud is how I test each version of kickzig.
-* Currently, the kickzig previous version's framework (0.4.0) is displayed in the [crud](https://github.com/JosephABudd/crud) which is built using 2 differenct layouts.
-* The [kickzig.wiki](https://github.com/JosephABudd/kickzig/wiki) documents building that same CRUD.
+* Currently, the [crud](https://github.com/JosephABudd/crud) displays the (0.4.0) version of kickzig's framework.
+* Currently, the [kickzig.wiki](https://github.com/JosephABudd/kickzig/wiki) documents building that same CRUD.
 
-### This new version
+### Not yet completed
 
-1. Reorganized some packages in the deps folder
-1. A more versital tab-bar layout
+1. Put removed messages and screens in the recycle bin.
+
+### Completed with this new version
+
+1. Finished reorganizing all packages in the deps folder.
+1. A more versital tab-bar layout.
 
 This page displays a few screen shots of tab-bars.
 
@@ -44,22 +48,12 @@ While the tab-bar has it's general settings that it applies to each tab, the dev
 
 ![The app's enhanced vertical tabs example.](images/icon_tabs_vertical.png)
 
-### An embed files package in deps
-
-The **embeds** package is where ebedded files can be imported. I needed it for my tab badges.
-
 ### Kickzig does everything I want so at this point I continue
 
 * looking for any legacy code patterns to replace with the zig code patterns that I now favor.
 * reviewing inline documentation.
 * reviewing messages displayed to the user.
 * keep up with changes to dvui and zig.
-
-### The example CRUD application and the kickzig wiki
-
-* I am in the process of rebuilding the crud with this new version. When I am finished I will update the kickzig wiki.
-* The kickzig v:0.4.0 framework is displayed in the [crud](https://github.com/JosephABudd/crud) which is built using 2 differenct layouts.
-* The [kickzig.wiki](https://github.com/JosephABudd/kickzig/wiki) documents building that same CRUD.
 
 ## Summary
 
@@ -130,9 +124,12 @@ The framework's front-end is a collection of screens. A screen is a layout of pa
 1. Contains one example tab for each tab-type that the developer named. However, the developer may have 0 or more tabs of each tab-type in the tab-bar. For example, lets say, my tab-bar has a Log tab-type which will display a log from an IRC Chat room. I can open a Log tab-type whenever the user joins a chat room. A tab can also close when the user leaves the tab's chat room. A tab-bar screen with no visible tabs will not display by default.
 1. Defaults to:
    * A .horizontal bar direction that the user can toggle between .horizontal and .vertical.
-   * User closable tabs.
-   * User movable tabs.
-   * A visible vertical tab-bar that the user can toggle between visible and not visible.
+   * A vertical tab-bar visibility that the user can toggle.
+   * The user can close each tab.
+   * The user can move each tab.
+   * A visible close icon for each tab.
+   * Visible move icons for each tab.
+   * A context menu for each tab.
 
 A horizontal tab-bar layout lays the horizontal tab-bar above where the selected tab's content is displayed.
 

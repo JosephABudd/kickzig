@@ -177,7 +177,6 @@ pub const FolderPaths = struct {
     root_src_deps_widget: ?[]const u8,
     root_src_deps_widget_tabbar: ?[]const u8,
     root_src_deps_startup: ?[]const u8,
-    root_src_deps_various: ?[]const u8,
 
     fn init(allocator: std.mem.Allocator) !*FolderPaths {
         var self: *FolderPaths = try allocator.create(FolderPaths);
@@ -209,7 +208,6 @@ pub const FolderPaths = struct {
         self.root_src_deps_widget = null;
         self.root_src_deps_widget_tabbar = null;
         self.root_src_deps_startup = null;
-        self.root_src_deps_various = null;
         return self;
     }
 
@@ -294,9 +292,6 @@ pub const FolderPaths = struct {
             allocator.free(member);
         }
         if (self.root_src_deps_startup) |member| {
-            allocator.free(member);
-        }
-        if (self.root_src_deps_various) |member| {
             allocator.free(member);
         }
         allocator.destroy(self);
@@ -494,12 +489,6 @@ pub const FolderPaths = struct {
         {
             // deps/startup/
             temp = try deps.pathStartupFolder(self.allocator);
-            defer self.allocator.free(temp);
-            try src_dir.makePath(temp);
-        }
-        {
-            // deps/various/
-            temp = try deps.pathVariousFolder(self.allocator);
             defer self.allocator.free(temp);
             try src_dir.makePath(temp);
         }
@@ -919,20 +908,6 @@ pub fn folders() !*FolderPaths {
             defer gpa.free(temp);
             params2[1] = temp;
             folder_paths.root_src_deps_widget_tabbar = try fspath.join(gpa, params2);
-            errdefer {
-                folder_paths.deinit();
-            }
-        }
-
-        {
-            // /src/deps/various/ path.
-            temp = try deps.pathVariousFolder(gpa);
-            errdefer {
-                folder_paths.deinit();
-            }
-            defer gpa.free(temp);
-            params2[1] = temp;
-            folder_paths.root_src_deps_various = try fspath.join(gpa, params2);
             errdefer {
                 folder_paths.deinit();
             }

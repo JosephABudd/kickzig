@@ -86,7 +86,7 @@ const line_2_f: []const u8 =
     \\const _modal_params_ = @import("modal_params");
     \\const _startup_ = @import("startup");
     \\
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = _closer_.ExitFn;
     \\const MainView = @import("framers").MainView;
     \\
     \\// KICKZIG TODO:

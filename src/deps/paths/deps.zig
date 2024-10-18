@@ -22,7 +22,6 @@ const folder_name_modal_params: []const u8 = "modal_params";
 const folder_name_startup: []const u8 = "startup";
 const folder_name_tabbar: []const u8 = "tabbar";
 pub const folder_name_trigger: []const u8 = "trigger";
-const folder_name_various: []const u8 = "various";
 const folder_name_widget: []const u8 = "widget";
 const folder_name_cont: []const u8 = "cont";
 
@@ -144,14 +143,6 @@ pub fn pathModalParamsFolder(allocator: std.mem.Allocator) ![]const u8 {
 /// The caller owns the returned value.
 pub fn pathStartupFolder(allocator: std.mem.Allocator) ![]const u8 {
     const params = [2][]const u8{ folder_name_deps, folder_name_startup };
-    const path = try fspath.join(allocator, &params);
-    return path;
-}
-
-/// returns the deps/various/ path.
-/// The caller owns the returned value.
-pub fn pathVariousFolder(allocator: std.mem.Allocator) ![]const u8 {
-    const params = [2][]const u8{ folder_name_deps, folder_name_various };
     const path = try fspath.join(allocator, &params);
     return path;
 }

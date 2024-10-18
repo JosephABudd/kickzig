@@ -76,7 +76,7 @@ const line_end =
     \\const std = @import("std");
     \\const GeneralDispatcher = @import("general_dispatcher.zig").GeneralDispatcher;
     \\
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\pub const Message = @import("message").{0s};
     \\
     \\/// Behavior is call-backs and state.

@@ -17,7 +17,6 @@ const _widget_ = @import("widget/framework.zig");
 const _startup_ = @import("startup/framework.zig");
 const _closer_ = @import("closer/framework.zig");
 const _closedownjobs_ = @import("closedownjobs/framework.zig");
-const _various_ = @import("various/framework.zig");
 
 pub const modal_params = _modal_params_;
 
@@ -36,7 +35,6 @@ pub fn create(allocator: std.mem.Allocator, use_messenger: bool) !void {
     try _widget_.create();
     try _closer_.create();
     try _closedownjobs_.create();
-    try _various_.create();
 }
 
 pub fn rebuildForUpdatedScreens(allocator: std.mem.Allocator) !void {

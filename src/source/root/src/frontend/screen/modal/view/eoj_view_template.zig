@@ -4,7 +4,7 @@ pub const content: []const u8 =
     \\
     \\const _closer_ = @import("closer");
     \\
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = _closer_.ExitFn;
     \\const MainView = @import("framers").MainView;
     \\const ModalParams = @import("modal_params").EOJ;
     \\const Panels = @import("../panels.zig").Panels;

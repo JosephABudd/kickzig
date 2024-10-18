@@ -70,7 +70,7 @@ const line_1: []const u8 =
     \\
     \\const Content = @import("cont").Content;
     \\const Container = @import("cont").Container;
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\
 ;

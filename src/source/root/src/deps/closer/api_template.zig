@@ -3,9 +3,11 @@ pub const content =
     \\const dvui = @import("dvui");
     \\
     \\const _jobs_ = @import("closedownjobs");
-    \\const ExitFn = @import("various").ExitFn;
+    \\
     \\const MainView = @import("framers").MainView;
     \\const Params = @import("modal_params").EOJ;
+    \\
+    \\pub const ExitFn = *const fn (src: std.builtin.SourceLocation, err: anyerror, description: []const u8) void;
     \\
     \\const Context = enum {
     \\    none,

@@ -41,7 +41,7 @@ const template =
     \\const _channel_ = @import("channel");
     \\const _startup_ = @import("startup");
     \\
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const Message = @import("message").{0s};
     \\
     \\pub const Messenger = struct {{

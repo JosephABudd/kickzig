@@ -114,7 +114,7 @@ const line_import_a: []const u8 =
     \\
     \\const _channel_ = @import("channel");
     \\
-    \\const ExitFn = @import("various").ExitFn;
+    \\const ExitFn = @import("closer").ExitFn;
     \\const MainView = @import("framers").MainView;
     \\
 ;
